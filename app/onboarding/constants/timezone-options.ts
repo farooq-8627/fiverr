@@ -1,0 +1,43 @@
+export const timezoneOptions = [
+  { title: "(GMT-12:00) International Date Line West", value: "Etc/GMT+12" },
+  { title: "(GMT-11:00) Midway Island, Samoa", value: "Pacific/Midway" },
+  { title: "(GMT-10:00) Hawaii", value: "Pacific/Honolulu" },
+  { title: "(GMT-09:00) Alaska", value: "America/Anchorage" },
+  {
+    title: "(GMT-08:00) Pacific Time (US & Canada)",
+    value: "America/Los_Angeles",
+  },
+  { title: "(GMT-07:00) Mountain Time (US & Canada)", value: "America/Denver" },
+  { title: "(GMT-06:00) Central Time (US & Canada)", value: "America/Chicago" },
+  {
+    title: "(GMT-05:00) Eastern Time (US & Canada)",
+    value: "America/New_York",
+  },
+  { title: "(GMT-04:00) Atlantic Time (Canada)", value: "America/Halifax" },
+  {
+    title: "(GMT-03:00) Buenos Aires, Georgetown",
+    value: "America/Argentina/Buenos_Aires",
+  },
+  { title: "(GMT-02:00) Mid-Atlantic", value: "Atlantic/South_Georgia" },
+  { title: "(GMT-01:00) Azores", value: "Atlantic/Azores" },
+  { title: "(GMT+00:00) London, Dublin, Edinburgh", value: "Europe/London" },
+  { title: "(GMT+01:00) Paris, Berlin, Rome, Madrid", value: "Europe/Paris" },
+  { title: "(GMT+02:00) Cairo, Helsinki, Athens", value: "Europe/Helsinki" },
+  { title: "(GMT+03:00) Moscow, Baghdad", value: "Europe/Moscow" },
+  { title: "(GMT+04:00) Dubai, Baku", value: "Asia/Dubai" },
+  { title: "(GMT+05:00) Karachi, Tashkent", value: "Asia/Karachi" },
+  { title: "(GMT+05:30) Kolkata, Mumbai, New Delhi", value: "Asia/Kolkata" },
+  { title: "(GMT+06:00) Dhaka, Almaty", value: "Asia/Dhaka" },
+  { title: "(GMT+07:00) Bangkok, Jakarta", value: "Asia/Bangkok" },
+  {
+    title: "(GMT+08:00) Beijing, Singapore, Hong Kong",
+    value: "Asia/Singapore",
+  },
+  { title: "(GMT+09:00) Tokyo, Seoul", value: "Asia/Tokyo" },
+  { title: "(GMT+10:00) Sydney, Melbourne", value: "Australia/Sydney" },
+  {
+    title: "(GMT+11:00) Solomon Is., New Caledonia",
+    value: "Pacific/Guadalcanal",
+  },
+  { title: "(GMT+12:00) Fiji, Auckland", value: "Pacific/Fiji" },
+];
