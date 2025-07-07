@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { FormSectionLayout } from "@/components/Forms/FormSectionLayout";
-import { RightContentLayout } from "@/components/Forms/RightContentLayout";
+import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
+import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
 import { motion, Variants } from "framer-motion";
 import { Checkbox } from "@/components/UI/checkbox";
 import { Button } from "@/components/UI/button";

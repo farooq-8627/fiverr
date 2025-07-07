@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Input } from "@/components/UI/input";
-import { FormSectionLayout } from "@/components/Forms/FormSectionLayout";
+import { FormSectionLayout } from "./FormSectionLayout";
 import { MultiSelect } from "@/components/UI/MultiSelect";
 import { motion, Variants } from "framer-motion";
 
@@ -113,7 +113,7 @@ export function Automation({
               placeholder={servicesPlaceholder}
               value={otherServices}
               onChange={(e) => setOtherServices(e.target.value)}
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+              className="bg-white/5 text-white placeholder:text-white/40"
             />
           </motion.div>
         </motion.div>
@@ -140,7 +140,7 @@ export function Automation({
               placeholder={toolsPlaceholder}
               value={otherTools}
               onChange={(e) => setOtherTools(e.target.value)}
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+              className="bg-white/5 text-white placeholder:text-white/40"
             />
           </motion.div>
         </motion.div>

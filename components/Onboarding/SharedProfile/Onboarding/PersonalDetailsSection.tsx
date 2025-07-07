@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { Input } from "@/components/UI/input";
-import { SocialMediaIcons } from "@/components/Forms/SocialMediaIcons";
-import { ImageUpload } from "@/components/Forms/ImageUpload";
-import { FormSectionLayout } from "@/components/Forms/FormSectionLayout";
-import { RightContentLayout } from "@/components/Forms/RightContentLayout";
+import { SocialMediaIcons } from "@/components/Onboarding/Forms/SocialMediaIcons";
+import { ImageUpload } from "@/components/Onboarding/Forms/ImageUpload";
+import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
+import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
 import { motion } from "framer-motion";
 
 interface PersonalDetailsSectionProps {
@@ -94,10 +94,10 @@ export function PersonalDetailsSection({
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="space-y-6"
+        className="space-y-4"
       >
         {/* Required Fields */}
-        <motion.div variants={containerVariants} className="space-y-4">
+        <motion.div variants={containerVariants} className="space-y-3">
           {/* Email Field */}
           <motion.div variants={itemVariants} className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -108,7 +108,7 @@ export function PersonalDetailsSection({
               type="email"
               required
               placeholder="Email Address"
-              className="bg-white/5 border-white/10 text-white pl-10"
+              className="bg-white/5 text-white pl-10"
             />
           </motion.div>
 
@@ -122,7 +122,20 @@ export function PersonalDetailsSection({
               type="tel"
               required
               placeholder="Phone Number"
-              className="bg-white/5 border-white/10 text-white pl-10"
+              className="bg-white/5 text-white pl-10"
+            />
+          </motion.div>
+
+          <motion.div variants={itemVariants} className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i className="fas fa-user text-white/40 text-lg" />
+            </div>
+            <Input
+              id="username"
+              type="tel"
+              required
+              placeholder="Username"
+              className="bg-white/5 text-white pl-10"
             />
           </motion.div>
 
@@ -135,7 +148,7 @@ export function PersonalDetailsSection({
               id="website"
               type="url"
               placeholder="Website URL"
-              className="bg-white/5 border-white/10 text-white pl-10"
+              className="bg-white/5 text-white pl-10"
             />
           </motion.div>
 

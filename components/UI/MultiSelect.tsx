@@ -38,7 +38,7 @@ export function MultiSelect({
             "border bg-background/50",
             selectedValues.includes(option.id)
               ? "bg-purple-600/90 border-purple-500 text-white shadow-sm"
-              : "border-white/10 text-white/70 hover:border-white/20 hover:bg-white/5"
+              : "border-white/20 text-white/70 hover:border-white/20 hover:bg-white/5"
           )}
         >
           {option.label}

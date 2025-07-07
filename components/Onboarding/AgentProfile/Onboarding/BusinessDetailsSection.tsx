@@ -1,7 +1,5 @@
 import React, { useState } from "react";
-import { FormSectionLayout } from "@/components/Forms/FormSectionLayout";
-import { MultiSelect } from "@/components/UI/MultiSelect";
-import { RightContentLayout } from "@/components/Forms/RightContentLayout";
+import { motion, Variants } from "framer-motion";
 import {
   Select,
   SelectContent,
@@ -9,7 +7,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/UI/select";
-import { motion, Variants } from "framer-motion";
+import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
+import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
+import { MultiSelect } from "@/components/UI/MultiSelect";
+import {
+  PRICING_MODELS,
+  PROJECT_SIZE_PREFERENCES,
+  TEAM_SIZES,
+  AVAILABILITY_OPTIONS,
+} from "@/sanity/schemaTypes/constants";
+import {
+  convertToOnboardingFormat,
+  convertToSelectFormat,
+} from "@/lib/constants-utils";
 
 interface BusinessDetailsSectionProps {
   onNext: () => void;
@@ -48,34 +58,11 @@ const itemVariants: Variants = {
   },
 };
 
-const pricingModels = [
-  { value: "hourly", label: "Hourly" },
-  { value: "project", label: "Project-based" },
-  { value: "retainer", label: "Retainer" },
-  { value: "performance", label: "Performance-based" },
-];
-
-const projectSizes = [
-  { id: "micro", label: "$0-500" },
-  { id: "small", label: "$500-1,000" },
-  { id: "medium", label: "$1,000-5,000" },
-  { id: "large", label: "$5,000-10,000" },
-  { id: "enterprise", label: "$10,000+" },
-];
-
-const teamSizes = [
-  { value: "solo", label: "Solo (1 member)" },
-  { value: "small", label: "Small Team (2-5)" },
-  { value: "medium", label: "Medium Team (5-10)" },
-  { value: "large", label: "Large Team (10-50)" },
-  { value: "enterprise", label: "Enterprise (50+)" },
-];
-
-const availabilityOptions = [
-  { value: "full-time", label: "Full-time" },
-  { value: "part-time", label: "Part-time" },
-  { value: "project", label: "Project-based" },
-];
+// Use centralized constants converted to the format needed by the component
+const pricingModels = convertToSelectFormat(PRICING_MODELS);
+const projectSizes = convertToOnboardingFormat(PROJECT_SIZE_PREFERENCES);
+const teamSizes = convertToSelectFormat(TEAM_SIZES);
+const availabilityOptions = convertToSelectFormat(AVAILABILITY_OPTIONS);
 
 export function BusinessDetailsSection({
   onNext,
@@ -136,7 +123,7 @@ export function BusinessDetailsSection({
         {/* Pricing Model */}
         <motion.div variants={itemVariants}>
           <Select value={pricingModel} onValueChange={setPricingModel}>
-            <SelectTrigger className="w-full bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="What's your pricing model?" />
             </SelectTrigger>
             <SelectContent>
@@ -174,7 +161,7 @@ export function BusinessDetailsSection({
         {/* Team Size */}
         <motion.div variants={itemVariants}>
           <Select value={teamSize} onValueChange={setTeamSize}>
-            <SelectTrigger className="w-full bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="How big is your team?" />
             </SelectTrigger>
             <SelectContent>
@@ -190,7 +177,7 @@ export function BusinessDetailsSection({
         {/* Availability */}
         <motion.div variants={itemVariants}>
           <Select value={availability} onValueChange={setAvailability}>
-            <SelectTrigger className="w-full bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="What's your availability?" />
             </SelectTrigger>
             <SelectContent>
@@ -202,34 +189,41 @@ export function BusinessDetailsSection({
             </SelectContent>
           </Select>
         </motion.div>
-      </motion.div>
 
-      {/* Pro Tip Section */}
-      {(!pricingModel ||
-        !selectedProjectSizes.length ||
-        !teamSize ||
-        !availability) && (
-        <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4 mt-6">
+        {/* Pro Tip Section */}
+        <motion.div
+          variants={itemVariants}
+          className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4 mt-6"
+        >
           <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-purple-500/20">
+            <motion.div
+              variants={itemVariants}
+              className="p-2 rounded-lg bg-purple-500/20"
+            >
               <i className="fas fa-lightbulb text-purple-400" />
-            </div>
+            </motion.div>
             <div>
-              <h4 className="font-medium text-white mb-1">
+              <motion.h4
+                variants={itemVariants}
+                className="font-medium text-white mb-1"
+              >
                 Pro Tip: Complete Business Profile
-              </h4>
-              <p className="text-sm text-white/70">
+              </motion.h4>
+              <motion.p
+                variants={itemVariants}
+                className="text-sm text-white/70"
+              >
                 Agents with complete business profiles are{" "}
                 <span className="text-purple-400 font-medium">
                   3x more likely
                 </span>{" "}
                 to match with their ideal clients. A detailed profile helps
                 clients understand your business model and capacity.
-              </p>
+              </motion.p>
             </div>
           </div>
-        </div>
-      )}
+        </motion.div>
+      </motion.div>
     </FormSectionLayout>
   );
 }

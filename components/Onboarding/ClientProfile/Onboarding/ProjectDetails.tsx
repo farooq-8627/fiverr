@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FormSectionLayout } from "@/components/Forms/FormSectionLayout";
+import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
 import { Input } from "@/components/UI/input";
 import { Textarea } from "@/components/UI/textarea";
 import {
@@ -10,19 +10,15 @@ import {
   SelectValue,
 } from "@/components/UI/select";
 import { motion, Variants } from "framer-motion";
-import { RightContentLayout } from "@/components/Forms/RightContentLayout";
+import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
+import { INDUSTRY_DOMAINS } from "@/sanity/schemaTypes/constants";
+import { convertToSelectFormat } from "@/lib/constants-utils";
+import { ProjectRequirements } from "@/types/profile";
 
 interface ProjectDetailsProps {
   onNext: () => void;
   onPrev?: () => void;
   onSkip?: () => void;
-}
-
-interface ProjectRequirements {
-  title: string;
-  description: string;
-  businessDomain: string;
-  painPoints: string;
 }
 
 const containerVariants: Variants = {
@@ -58,19 +54,8 @@ const itemVariants: Variants = {
   },
 };
 
-const businessDomains = [
-  { value: "ecommerce", label: "E-commerce" },
-  { value: "finance", label: "Finance & Banking" },
-  { value: "healthcare", label: "Healthcare" },
-  { value: "education", label: "Education" },
-  { value: "retail", label: "Retail" },
-  { value: "manufacturing", label: "Manufacturing" },
-  { value: "technology", label: "Technology" },
-  { value: "logistics", label: "Logistics & Supply Chain" },
-  { value: "real-estate", label: "Real Estate" },
-  { value: "hospitality", label: "Hospitality" },
-  { value: "other", label: "Other" },
-];
+// Use centralized constants converted to the format needed by the component
+const businessDomains = convertToSelectFormat(INDUSTRY_DOMAINS);
 
 export function ProjectDetails({
   onNext,
@@ -141,7 +126,7 @@ export function ProjectDetails({
             placeholder="Enter your project title"
             value={projectRequirements.title}
             onChange={(e) => updateField("title", e.target.value)}
-            className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+            className="bg-white/5 text-white placeholder:text-white/40"
           />
         </motion.div>
 
@@ -153,7 +138,7 @@ export function ProjectDetails({
             value={projectRequirements.businessDomain}
             onValueChange={(value) => updateField("businessDomain", value)}
           >
-            <SelectTrigger className="bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="bg-white/5  text-white">
               <SelectValue placeholder="Select your business domain" />
             </SelectTrigger>
             <SelectContent>
@@ -174,7 +159,7 @@ export function ProjectDetails({
             placeholder="Describe your project in detail. What are you trying to achieve?"
             value={projectRequirements.description}
             onChange={(e) => updateField("description", e.target.value)}
-            className="bg-white/5 border-white/10 text-white placeholder:text-white/40 min-h-[100px]"
+            className="bg-white/5  text-white placeholder:text-white/40 min-h-[100px]"
           />
         </motion.div>
 
@@ -186,7 +171,7 @@ export function ProjectDetails({
             placeholder="What challenges or pain points are you currently facing that you want to solve with automation?"
             value={projectRequirements.painPoints}
             onChange={(e) => updateField("painPoints", e.target.value)}
-            className="bg-white/5 border-white/10 text-white placeholder:text-white/40 min-h-[100px]"
+            className="bg-white/5 text-white placeholder:text-white/40 min-h-[100px]"
           />
         </motion.div>
 

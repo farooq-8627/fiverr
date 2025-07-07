@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { FormSectionLayout } from "@/components/Forms/FormSectionLayout";
-import { RightContentLayout } from "@/components/Forms/RightContentLayout";
+import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
+import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
 import {
   Select,
   SelectContent,
@@ -9,6 +9,15 @@ import {
   SelectValue,
 } from "@/components/UI/select";
 import { motion, Variants } from "framer-motion";
+import {
+  BUDGET_RANGES,
+  TIMELINE_OPTIONS,
+  PROJECT_COMPLEXITY,
+  ENGAGEMENT_TYPES,
+  TEAM_SIZES,
+  EXPERIENCE_LEVELS,
+} from "@/sanity/schemaTypes/constants";
+import { convertToSelectFormat } from "@/lib/constants-utils";
 
 interface ProjectScopeDetailsProps {
   onNext: () => void;
@@ -47,50 +56,13 @@ const itemVariants: Variants = {
   },
 };
 
-const budgetRanges = [
-  { value: "micro", label: "$0-500" },
-  { value: "small", label: "$500 - $2,000" },
-  { value: "medium", label: "$2,000 - $5,000" },
-  { value: "large", label: "$5,000 - $10,000" },
-  { value: "enterprise", label: "$10,000+" },
-];
-
-const timelineOptions = [
-  { value: "asap", label: "ASAP" },
-  { value: "1week", label: "Within 1 Week" },
-  { value: "2weeks", label: "Within 2 Weeks" },
-  { value: "1month", label: "Within 1 Month" },
-  { value: "3months", label: "1-3 Months" },
-  { value: "flexible", label: "Flexible" },
-];
-
-const complexityOptions = [
-  { value: "simple", label: "Simple" },
-  { value: "moderate", label: "Moderate" },
-  { value: "complex", label: "Complex" },
-  { value: "veryComplex", label: "Very Complex" },
-];
-
-const engagementTypes = [
-  { value: "oneTime", label: "One-time Project" },
-  { value: "ongoing", label: "Ongoing Support" },
-  { value: "training", label: "Training & Implementation" },
-];
-
-const teamSizes = [
-  { value: "solo", label: "Solo (1 member)" },
-  { value: "small", label: "Small Team (2-5)" },
-  { value: "medium", label: "Medium Team (5-10)" },
-  { value: "large", label: "Large Team (10-50)" },
-  { value: "enterprise", label: "Enterprise (50+)" },
-];
-
-const experienceLevels = [
-  { value: "none", label: "No Prior Experience" },
-  { value: "basic", label: "Basic Understanding" },
-  { value: "moderate", label: "Some Experience" },
-  { value: "extensive", label: "Extensive Experience" },
-];
+// Use centralized constants converted to the format needed by the component
+const budgetRanges = convertToSelectFormat(BUDGET_RANGES);
+const timelineOptions = convertToSelectFormat(TIMELINE_OPTIONS);
+const complexityOptions = convertToSelectFormat(PROJECT_COMPLEXITY);
+const engagementTypes = convertToSelectFormat(ENGAGEMENT_TYPES);
+const teamSizes = convertToSelectFormat(TEAM_SIZES);
+const experienceLevels = convertToSelectFormat(EXPERIENCE_LEVELS);
 
 export function ProjectScopeDetails({
   onNext,
@@ -149,7 +121,7 @@ export function ProjectScopeDetails({
         {/* Budget Range */}
         <motion.div variants={itemVariants}>
           <Select value={budgetRange} onValueChange={setBudgetRange}>
-            <SelectTrigger className="w-full bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="w-full bg-white/5  text-white">
               <SelectValue placeholder="Select your budget range" />
             </SelectTrigger>
             <SelectContent>
@@ -165,7 +137,7 @@ export function ProjectScopeDetails({
         {/* Timeline */}
         <motion.div variants={itemVariants}>
           <Select value={timeline} onValueChange={setTimeline}>
-            <SelectTrigger className="w-full bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="Select your preferred timeline" />
             </SelectTrigger>
             <SelectContent>
@@ -181,7 +153,7 @@ export function ProjectScopeDetails({
         {/* Project Complexity */}
         <motion.div variants={itemVariants}>
           <Select value={complexity} onValueChange={setComplexity}>
-            <SelectTrigger className="w-full bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="Select the project complexity" />
             </SelectTrigger>
             <SelectContent>
@@ -197,7 +169,7 @@ export function ProjectScopeDetails({
         {/* Type of Engagement */}
         <motion.div variants={itemVariants}>
           <Select value={engagementType} onValueChange={setEngagementType}>
-            <SelectTrigger className="w-full bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="w-full bg-white/5  text-white">
               <SelectValue placeholder="Select the type of engagement" />
             </SelectTrigger>
             <SelectContent>
@@ -213,7 +185,7 @@ export function ProjectScopeDetails({
         {/* Team Size */}
         <motion.div variants={itemVariants}>
           <Select value={teamSize} onValueChange={setTeamSize}>
-            <SelectTrigger className="w-full bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="Select your team size" />
             </SelectTrigger>
             <SelectContent>
@@ -229,7 +201,7 @@ export function ProjectScopeDetails({
         {/* Automation Experience */}
         <motion.div variants={itemVariants}>
           <Select value={experience} onValueChange={setExperience}>
-            <SelectTrigger className="w-full bg-white/5 border-white/10 text-white">
+            <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="Select your automation experience" />
             </SelectTrigger>
             <SelectContent>

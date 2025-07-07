@@ -2,7 +2,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { GlassCard } from "../UI/GlassCard";
+import { GlassCard } from "../../UI/GlassCard";
 
 interface OnboardingLayoutProps {
   theme?: "dark" | "light";

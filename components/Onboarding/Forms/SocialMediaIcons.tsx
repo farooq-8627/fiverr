@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { Input } from "../UI/input";
+import { Input } from "../../UI/input";
 import { cn } from "@/lib/utils";
 
 export type SocialPlatform = {
@@ -269,7 +269,7 @@ export function SocialMediaIcons({
                     socialPlatforms.find((p) => p.id === activeIcon)
                       ?.placeholder
                   }
-                  className="flex-1 bg-transparent border-white/10 text-white placeholder:text-white/50"
+                  className="flex-1 bg-transparent border-white/20 text-white placeholder:text-white/50"
                   defaultValue={
                     socialLinks.find((link) => link.platform === activeIcon)
                       ?.url || ""

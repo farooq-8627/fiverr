@@ -1,6 +1,11 @@
 import React from "react";
-import { RightContentLayout } from "@/components/Forms/RightContentLayout";
-import { Automation } from "@/components/Forms/Automation";
+import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
+import { Automation } from "@/components/Onboarding/Forms/Automation";
+import {
+  AGENT_AUTOMATION_SERVICES,
+  AGENT_TOOLS_EXPERTISE,
+} from "@/sanity/schemaTypes/constants";
+import { convertToOnboardingFormat } from "@/lib/constants-utils";
 
 interface AutomationExpertiseSectionProps {
   onNext: () => void;
@@ -8,24 +13,11 @@ interface AutomationExpertiseSectionProps {
   onSkip?: () => void;
 }
 
-const agentAutomationServices = [
-  { id: "marketing", label: "Marketing Automation" },
-  { id: "sales", label: "Sales Automation" },
-  { id: "ecommerce", label: "E-commerce Automation" },
-  { id: "workflow", label: "Workflow Automation" },
-  { id: "data", label: "Data Automation" },
-  { id: "ai", label: "AI & Chatbots" },
-  { id: "custom", label: "Custom Development" },
-];
-
-const agentToolsExpertise = [
-  { id: "automation", label: "Zapier & Make.com" },
-  { id: "crm", label: "HubSpot & Salesforce" },
-  { id: "email", label: "Klaviyo & Mailchimp" },
-  { id: "project", label: "Airtable & Notion" },
-  { id: "commerce", label: "Shopify & WooCommerce" },
-  { id: "ai_tools", label: "ChatGPT & Claude" },
-];
+// Use centralized constants converted to the format needed by the component
+const agentAutomationServices = convertToOnboardingFormat(
+  AGENT_AUTOMATION_SERVICES
+);
+const agentToolsExpertise = convertToOnboardingFormat(AGENT_TOOLS_EXPERTISE);
 
 export function AutomationExpertiseSection({
   onNext,

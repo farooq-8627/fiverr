@@ -1,6 +1,11 @@
 import React from "react";
-import { RightContentLayout } from "@/components/Forms/RightContentLayout";
-import { Automation } from "@/components/Forms/Automation";
+import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
+import { Automation } from "@/components/Onboarding/Forms/Automation";
+import {
+  CLIENT_AUTOMATION_NEEDS,
+  CLIENT_CURRENT_TOOLS,
+} from "@/sanity/schemaTypes/constants";
+import { convertToOnboardingFormat } from "@/lib/constants-utils";
 
 interface AutomationNeedsSectionProps {
   onNext: () => void;
@@ -8,21 +13,11 @@ interface AutomationNeedsSectionProps {
   onSkip?: () => void;
 }
 
-const clientAutomationNeeds = [
-  { id: "lead_gen", label: "Lead Generation & Nurturing" },
-  { id: "email", label: "Email Marketing Campaigns" },
-  { id: "social", label: "Social Media Management" },
-  { id: "ecommerce", label: "E-commerce Operations" },
-  { id: "data", label: "Data Collection & Reporting" },
-  { id: "workflow", label: "Workflow & Process Automation" },
-];
-
-const clientCurrentTools = [
-  { id: "crm", label: "CRM (HubSpot, Salesforce, Pipedrive)" },
-  { id: "email", label: "Email (Mailchimp, Klaviyo, ActiveCampaign)" },
-  { id: "ecommerce", label: "E-commerce (Shopify, WooCommerce, Amazon)" },
-  { id: "other", label: "Other Business Tools" },
-];
+// Use centralized constants converted to the format needed by the component
+const clientAutomationNeeds = convertToOnboardingFormat(
+  CLIENT_AUTOMATION_NEEDS
+);
+const clientCurrentTools = convertToOnboardingFormat(CLIENT_CURRENT_TOOLS);
 
 export function AutomationNeedsSection({
   onNext,

@@ -11,9 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/UI/select";
-import { ImageUpload } from "@/components/Forms/ImageUpload";
-import { FormSectionLayout } from "@/components/Forms/FormSectionLayout";
-import { RightContentLayout } from "@/components/Forms/RightContentLayout";
+import { ImageUpload } from "@/components/Onboarding/Forms/ImageUpload";
+import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
+import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
+import { TEAM_SIZES } from "@/sanity/schemaTypes/constants";
+import { convertToSelectFormat } from "@/lib/constants-utils";
 
 interface CoreIdentitySectionProps {
   onNext: () => void;
@@ -72,13 +74,8 @@ const companyDetailsVariants: Variants = {
   },
 };
 
-const teamSizes = [
-  { value: "solo", label: "Solo" },
-  { value: "2-5", label: "2-5 Members" },
-  { value: "6-15", label: "6-15 Members" },
-  { value: "16-50", label: "16-50 Members" },
-  { value: "50+", label: "50+ Members" },
-];
+// Use the correct utility function for Select components
+const teamSizes = convertToSelectFormat(TEAM_SIZES);
 
 export function CoreIdentitySection({
   onNext,
@@ -143,7 +140,7 @@ export function CoreIdentitySection({
               placeholder="What's your full name?"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+              className="bg-white/5 text-white placeholder:text-white/40"
             />
           </motion.div>
 
@@ -181,7 +178,7 @@ export function CoreIdentitySection({
                         name: e.target.value,
                       })
                     }
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+                    className="bg-white/5 text-white placeholder:text-white/40"
                   />
                 </motion.div>
 
@@ -192,7 +189,7 @@ export function CoreIdentitySection({
                       setCompanyDetails({ ...companyDetails, teamSize: value })
                     }
                   >
-                    <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                    <SelectTrigger className="bg-white/5 text-white">
                       <SelectValue placeholder="How big is your team?" />
                     </SelectTrigger>
                     <SelectContent>
@@ -215,7 +212,7 @@ export function CoreIdentitySection({
                         bio: e.target.value,
                       })
                     }
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/40 min-h-[60px] max-h-[120px] resize-none"
+                    className="bg-white/5 text-white placeholder:text-white/40 min-h-[60px] max-h-[120px] resize-none"
                   />
                 </motion.div>
 
@@ -233,7 +230,7 @@ export function CoreIdentitySection({
                         website: e.target.value,
                       })
                     }
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/40 pl-10"
+                    className="bg-white/5 text-white placeholder:text-white/40 pl-10"
                   />
                 </motion.div>
 

@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { cn } from "@/lib/utils";
-import { GlassCard } from "../UI/GlassCard";
+import { GlassCard } from "../../UI/GlassCard";
 import { HTMLMotionProps } from "framer-motion";
 
 interface OnboardingCardProps extends HTMLMotionProps<"div"> {

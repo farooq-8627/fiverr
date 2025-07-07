@@ -1,23 +1,13 @@
 import React, { useState } from "react";
-import { FormSectionLayout } from "@/components/Forms/FormSectionLayout";
+import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
 import { Input } from "@/components/UI/input";
 import { Textarea } from "@/components/UI/textarea";
 import { Button } from "@/components/UI/button";
 import { Plus, X, Upload, Link as LinkIcon, Trash, Image } from "lucide-react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { RightContentLayout } from "@/components/Forms/RightContentLayout";
-
-interface Project {
-  id: string;
-  title: string;
-  description: string;
-  projectLink: string;
-  technologies: string[];
-  images: File[];
-  imageUrls: string[];
-  activeImageIndex: number;
-}
+import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
+import { Project } from "@/types/profile";
 
 interface ProjectsSectionProps {
   onNext: () => void;
@@ -202,7 +192,7 @@ export function ProjectsSection({
                     onChange={(e) =>
                       updateCurrentProject("title", e.target.value)
                     }
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+                    className="bg-white/5 text-white placeholder:text-white/40"
                   />
                 </motion.div>
 
@@ -216,7 +206,7 @@ export function ProjectsSection({
                     onChange={(e) =>
                       updateCurrentProject("projectLink", e.target.value)
                     }
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+                    className="bg-white/5 text-white placeholder:text-white/40"
                   />
                 </motion.div>
                 <motion.div variants={itemVariants}>
@@ -229,7 +219,7 @@ export function ProjectsSection({
                         e.target.value.split(",").map((t) => t.trim())
                       )
                     }
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+                    className="bg-white/5 text-white placeholder:text-white/40"
                   />
                 </motion.div>
                 <motion.div variants={itemVariants}>
@@ -239,7 +229,7 @@ export function ProjectsSection({
                     onChange={(e) =>
                       updateCurrentProject("description", e.target.value)
                     }
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/40 min-h-[120px]"
+                    className="bg-white/5 text-white placeholder:text-white/40 min-h-[120px]"
                   />
                 </motion.div>
               </motion.div>
@@ -325,7 +315,10 @@ export function ProjectsSection({
                         ))}
                       </AnimatePresence>
                     ) : (
-                      <motion.div className="w-[200px] h-[150px] border-2 border-dashed border-white/20 rounded-lg flex flex-col items-center justify-center text-center p-4 hover:border-purple-500/50 transition-colors">
+                      <motion.div
+                        variants={itemVariants}
+                        className="w-[200px] h-[150px] border-2 border-dashed border-white/20 rounded-lg flex flex-col items-center justify-center text-center p-4 hover:border-purple-500/50 transition-colors"
+                      >
                         <motion.div className="h-10 w-10 text-white/40 mb-2">
                           <Image className="h-10 w-10 text-white/40 mb-2" />
                         </motion.div>
@@ -339,8 +332,11 @@ export function ProjectsSection({
 
                 {/* Upload Button */}
                 {currentProject.imageUrls.length < 6 && (
-                  <motion.div className="flex items-center justify-center mt-4 w-full">
-                    <motion.label className="flex items-center gap-2 px-4 py-2 border border-white/10 rounded-lg cursor-pointer hover:bg-white/5 transition-colors">
+                  <motion.div
+                    variants={itemVariants}
+                    className="flex items-center justify-center mt-4 w-full"
+                  >
+                    <motion.label className="flex items-center gap-2 px-4 py-2 border border-white/20 rounded-lg cursor-pointer hover:bg-white/5 transition-colors">
                       <input
                         type="file"
                         className="hidden"
@@ -368,7 +364,7 @@ export function ProjectsSection({
               className={cn(
                 "w-full border py-2 mt-4 transition-colors",
                 !currentProject.title || !currentProject.description
-                  ? "bg-white/5 hover:bg-white/10 text-white border-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                  ? "bg-white/5 hover:bg-white/10 text-white border-white/30 disabled:opacity-50 disabled:cursor-not-allowed"
                   : "bg-purple-700 hover:bg-purple-600 text-white border-transparent"
               )}
             >
@@ -385,9 +381,9 @@ export function ProjectsSection({
                 {projects.map((project, index) => (
                   <motion.div
                     key={project.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
                     transition={{
                       duration: 0.5,
                       ease: "easeOut",
@@ -396,7 +392,10 @@ export function ProjectsSection({
                     className="bg-white/[0.02] rounded-lg relative group/card border border-white/5 hover:border-purple-500/30 transition-all duration-300 w-[200px] flex-shrink-0"
                   >
                     {project.imageUrls.length > 0 ? (
-                      <motion.div className="aspect-[3/2] rounded-md overflow-hidden relative">
+                      <motion.div
+                        variants={itemVariants}
+                        className="aspect-[3/2] rounded-md overflow-hidden relative"
+                      >
                         <img
                           src={project.imageUrls[0]}
                           alt={project.title}
@@ -409,7 +408,10 @@ export function ProjectsSection({
                         </motion.div>
                       </motion.div>
                     ) : (
-                      <motion.div className="aspect-[3/2] rounded-md relative flex items-center justify-center bg-white/5">
+                      <motion.div
+                        variants={itemVariants}
+                        className="aspect-[3/2] rounded-md relative flex items-center justify-center bg-white/5"
+                      >
                         <span className="text-white font-medium text-sm text-center px-2">
                           {project.title}
                         </span>
@@ -427,29 +429,42 @@ export function ProjectsSection({
             </div>
           </motion.div>
         </motion.div>
+
+        {projects.length === 0 && (
+          <motion.div
+            variants={itemVariants}
+            className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4"
+          >
+            <div className="flex items-start gap-3">
+              <motion.div
+                variants={itemVariants}
+                className="p-2 rounded-lg bg-purple-500/20"
+              >
+                <i className="fas fa-lightbulb text-purple-400" />
+              </motion.div>
+              <div>
+                <motion.h4
+                  variants={itemVariants}
+                  className="font-medium text-white mb-1"
+                >
+                  Pro Tip: Stand Out with Your Portfolio
+                </motion.h4>
+                <motion.p
+                  variants={itemVariants}
+                  className="text-sm text-white/70"
+                >
+                  Agents who showcase 3+ projects are{" "}
+                  <span className="text-purple-400 font-medium">
+                    4x more likely
+                  </span>{" "}
+                  to get client attention. Each project you share significantly
+                  increases your chances of landing your ideal clients.
+                </motion.p>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </motion.div>
-      {projects.length === 0 && (
-        <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-purple-500/20">
-              <i className="fas fa-lightbulb text-purple-400" />
-            </div>
-            <div>
-              <h4 className="font-medium text-white mb-1">
-                Pro Tip: Stand Out with Your Portfolio
-              </h4>
-              <p className="text-sm text-white/70">
-                Agents who showcase 3+ projects are{" "}
-                <span className="text-purple-400 font-medium">
-                  4x more likely
-                </span>{" "}
-                to get client attention. Each project you share significantly
-                increases your chances of landing your ideal clients.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </FormSectionLayout>
   );
 }

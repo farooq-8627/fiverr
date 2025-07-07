@@ -1,6 +1,6 @@
 import React from "react";
 import { FileUpload } from "./file-upload";
-import { Button } from "../UI/button";
+import { Button } from "../../UI/button";
 
 interface ImageUploadProps {
   type: "profile" | "banner" | "project";
@@ -42,7 +42,7 @@ export function ImageUpload({
         className={`relative ${
           isProfile
             ? "w-20 h-20 rounded-full"
-            : "h-24 rounded-lg bg-white/5 border border-white/10"
+            : "h-24 rounded-lg bg-white/5 border border-white/20"
         } overflow-hidden`}
       >
         {image ? (
@@ -71,7 +71,7 @@ export function ImageUpload({
         ) : (
           <div
             className={`w-full h-full ${
-              isProfile ? "rounded-full bg-white/5 border border-white/10" : ""
+              isProfile ? "rounded-full bg-white/5 border border-white/20" : ""
             }`}
           >
             {!isProfile && (
