@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
 import { Input } from "@/components/UI/input";
 import { Textarea } from "@/components/UI/textarea";
@@ -19,6 +19,8 @@ interface ProjectDetailsProps {
   onNext: () => void;
   onPrev?: () => void;
   onSkip?: () => void;
+  formData?: any;
+  setFormData?: (data: any) => void;
 }
 
 const containerVariants: Variants = {
@@ -61,6 +63,8 @@ export function ProjectDetails({
   onNext,
   onPrev,
   onSkip,
+  formData,
+  setFormData,
 }: ProjectDetailsProps) {
   const [projectRequirements, setProjectRequirements] =
     useState<ProjectRequirements>({
@@ -70,11 +74,58 @@ export function ProjectDetails({
       painPoints: "",
     });
 
+  // Initialize from formData if available
+  useEffect(() => {
+    if (formData) {
+      setProjectRequirements({
+        title: formData.projectTitle || "",
+        description: formData.projectDescription || "",
+        businessDomain: formData.businessDomain || "",
+        painPoints: formData.painPoints || "",
+      });
+    }
+  }, [formData]);
+
   const updateField = (field: keyof ProjectRequirements, value: string) => {
     setProjectRequirements((prev) => ({
       ...prev,
       [field]: value,
     }));
+
+    // Update parent form data if available
+    if (setFormData) {
+      const updatedData: any = {};
+      switch (field) {
+        case "title":
+          updatedData.projectTitle = value;
+          break;
+        case "description":
+          updatedData.projectDescription = value;
+          break;
+        case "businessDomain":
+          updatedData.businessDomain = value;
+          break;
+        case "painPoints":
+          updatedData.painPoints = value;
+          break;
+      }
+      setFormData({ ...formData, ...updatedData });
+    }
+  };
+
+  // Custom next handler
+  const handleNext = () => {
+    // Save all data to parent form before proceeding
+    if (setFormData && formData) {
+      setFormData({
+        ...formData,
+        projectTitle: projectRequirements.title,
+        businessDomain: projectRequirements.businessDomain,
+        projectDescription: projectRequirements.description,
+        painPoints: projectRequirements.painPoints,
+      });
+    }
+    onNext();
   };
 
   const rightContent = (
@@ -107,7 +158,7 @@ export function ProjectDetails({
     <FormSectionLayout
       title="Project Details"
       description="Tell us about your automation project"
-      onNext={onNext}
+      onNext={handleNext}
       onPrev={onPrev}
       onSkip={onSkip}
       rightContent={rightContent}

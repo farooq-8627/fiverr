@@ -2,8 +2,6 @@ import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import Script from "next/script";
 import localFont from "next/font/local";
-import { TwentyFirstToolbar } from "@21st-extension/toolbar-next";
-import { ReactPlugin } from "@21st-extension/react";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
@@ -58,13 +56,11 @@ export default function RootLayout({
         />
       </head>
       <ClerkProvider appearance={clerkAppearanceObject}>
-        <body className={`min-h-screen flex flex-col antialiased`}>
+        <body
+          className={`min-h-screen flex flex-col antialiased`}
+          suppressHydrationWarning={true}
+        >
           {children}
-          <TwentyFirstToolbar
-            config={{
-              plugins: [ReactPlugin],
-            }}
-          />
         </body>
       </ClerkProvider>
 

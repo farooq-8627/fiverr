@@ -33,11 +33,12 @@ export function MultiSelect({
           key={option.id}
           type="button"
           onClick={() => toggleOption(option.id)}
+          data-value={option.id}
           className={cn(
             "px-3 py-1.5 rounded-md text-sm transition-all duration-200",
             "border bg-background/50",
             selectedValues.includes(option.id)
-              ? "bg-purple-600/90 border-purple-500 text-white shadow-sm"
+              ? "bg-purple-600/90 border-purple-500 text-white shadow-sm selected-item"
               : "border-white/20 text-white/70 hover:border-white/20 hover:bg-white/5"
           )}
         >

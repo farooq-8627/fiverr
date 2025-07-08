@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
 import {
@@ -23,6 +23,8 @@ interface ProjectScopeDetailsProps {
   onNext: () => void;
   onPrev?: () => void;
   onSkip?: () => void;
+  formData?: any;
+  setFormData?: (data: any) => void;
 }
 
 const containerVariants: Variants = {
@@ -68,6 +70,8 @@ export function ProjectScopeDetails({
   onNext,
   onPrev,
   onSkip,
+  formData,
+  setFormData,
 }: ProjectScopeDetailsProps) {
   const [budgetRange, setBudgetRange] = useState("");
   const [timeline, setTimeline] = useState("");
@@ -75,6 +79,76 @@ export function ProjectScopeDetails({
   const [engagementType, setEngagementType] = useState("");
   const [teamSize, setTeamSize] = useState("");
   const [experience, setExperience] = useState("");
+
+  // Initialize from formData if available
+  useEffect(() => {
+    if (formData) {
+      setBudgetRange(formData.budgetRange || "");
+      setTimeline(formData.timeline || "");
+      setComplexity(formData.priority || ""); // Using complexity for priority
+      setEngagementType(formData.engagementType || "");
+      setTeamSize(formData.teamSizeRequired || "");
+      setExperience(formData.experienceLevel || "");
+    }
+  }, [formData]);
+
+  // Update parent form data when local state changes
+  const updateFormData = (field: string, value: string) => {
+    if (setFormData && formData) {
+      setFormData({
+        ...formData,
+        [field]: value,
+      });
+    }
+  };
+
+  // Custom handlers for each field
+  const handleBudgetChange = (value: string) => {
+    setBudgetRange(value);
+    updateFormData("budgetRange", value);
+  };
+
+  const handleTimelineChange = (value: string) => {
+    setTimeline(value);
+    updateFormData("timeline", value);
+  };
+
+  const handleComplexityChange = (value: string) => {
+    setComplexity(value);
+    updateFormData("priority", value);
+  };
+
+  const handleEngagementChange = (value: string) => {
+    setEngagementType(value);
+    updateFormData("engagementType", value);
+  };
+
+  const handleTeamSizeChange = (value: string) => {
+    setTeamSize(value);
+    updateFormData("teamSizeRequired", value);
+  };
+
+  const handleExperienceChange = (value: string) => {
+    setExperience(value);
+    updateFormData("experienceLevel", value);
+  };
+
+  // Custom next handler
+  const handleNext = () => {
+    // Save all data to parent form before proceeding
+    if (setFormData && formData) {
+      setFormData({
+        ...formData,
+        budgetRange,
+        timeline,
+        priority: complexity,
+        engagementType,
+        teamSizeRequired: teamSize,
+        experienceLevel: experience,
+      });
+    }
+    onNext();
+  };
 
   const rightContent = (
     <RightContentLayout
@@ -107,7 +181,7 @@ export function ProjectScopeDetails({
     <FormSectionLayout
       title="Project Scope"
       description="Define the scale and requirements of your automation project"
-      onNext={onNext}
+      onNext={handleNext}
       onPrev={onPrev}
       onSkip={onSkip}
       rightContent={rightContent}
@@ -120,7 +194,7 @@ export function ProjectScopeDetails({
       >
         {/* Budget Range */}
         <motion.div variants={itemVariants}>
-          <Select value={budgetRange} onValueChange={setBudgetRange}>
+          <Select value={budgetRange} onValueChange={handleBudgetChange}>
             <SelectTrigger className="w-full bg-white/5  text-white">
               <SelectValue placeholder="Select your budget range" />
             </SelectTrigger>
@@ -136,7 +210,7 @@ export function ProjectScopeDetails({
 
         {/* Timeline */}
         <motion.div variants={itemVariants}>
-          <Select value={timeline} onValueChange={setTimeline}>
+          <Select value={timeline} onValueChange={handleTimelineChange}>
             <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="Select your preferred timeline" />
             </SelectTrigger>
@@ -152,7 +226,7 @@ export function ProjectScopeDetails({
 
         {/* Project Complexity */}
         <motion.div variants={itemVariants}>
-          <Select value={complexity} onValueChange={setComplexity}>
+          <Select value={complexity} onValueChange={handleComplexityChange}>
             <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="Select the project complexity" />
             </SelectTrigger>
@@ -168,7 +242,7 @@ export function ProjectScopeDetails({
 
         {/* Type of Engagement */}
         <motion.div variants={itemVariants}>
-          <Select value={engagementType} onValueChange={setEngagementType}>
+          <Select value={engagementType} onValueChange={handleEngagementChange}>
             <SelectTrigger className="w-full bg-white/5  text-white">
               <SelectValue placeholder="Select the type of engagement" />
             </SelectTrigger>
@@ -184,7 +258,7 @@ export function ProjectScopeDetails({
 
         {/* Team Size */}
         <motion.div variants={itemVariants}>
-          <Select value={teamSize} onValueChange={setTeamSize}>
+          <Select value={teamSize} onValueChange={handleTeamSizeChange}>
             <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="Select your team size" />
             </SelectTrigger>
@@ -200,7 +274,7 @@ export function ProjectScopeDetails({
 
         {/* Automation Experience */}
         <motion.div variants={itemVariants}>
-          <Select value={experience} onValueChange={setExperience}>
+          <Select value={experience} onValueChange={handleExperienceChange}>
             <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="Select your automation experience" />
             </SelectTrigger>

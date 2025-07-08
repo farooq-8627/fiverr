@@ -1,33 +1,57 @@
 import React, { useState } from "react";
+import { Checkbox } from "@/components/UI/checkbox";
 import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
-import { motion, Variants } from "framer-motion";
-import { Checkbox } from "@/components/UI/checkbox";
-import { Button } from "@/components/UI/button";
 import Link from "next/link";
+import { motion, Variants } from "framer-motion";
 
 interface ConclusionSectionProps {
   onSubmit: () => void;
-  onPrev?: () => void;
-  userType: "client" | "agent";
+  onPrev: () => void;
+  userType: "agent" | "client";
+  formData?: any;
+  setFormData?: (data: any) => void;
+  isLoading?: boolean;
 }
 
 export function ConclusionSection({
   onSubmit,
   onPrev,
   userType,
+  formData,
+  setFormData,
+  isLoading = false,
 }: ConclusionSectionProps) {
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
-  const [acceptedCommunication, setAcceptedCommunication] = useState(false);
+  // Use form data if provided, otherwise use local state
+  const [localState, setLocalState] = useState({
+    acceptedTerms: false,
+    acceptedPrivacy: false,
+    acceptedCommunications: false,
+  });
+
+  const acceptedTerms = formData?.acceptedTerms ?? localState.acceptedTerms;
+  const acceptedPrivacy =
+    formData?.acceptedPrivacy ?? localState.acceptedPrivacy;
+  const acceptedCommunications =
+    formData?.acceptedCommunications ?? localState.acceptedCommunications;
+
+  const handleCheckboxChange = (field: string, checked: boolean) => {
+    if (setFormData && formData) {
+      setFormData({ ...formData, [field]: checked });
+    } else {
+      setLocalState((prev) => ({ ...prev, [field]: checked }));
+    }
+  };
 
   const containerVariants: Variants = {
     hidden: {
       opacity: 0,
+      y: 20,
       transition: { duration: 0.3 },
     },
     visible: {
       opacity: 1,
+      y: 0,
       transition: {
         duration: 0.5,
         staggerChildren: 0.1,
@@ -51,33 +75,35 @@ export function ConclusionSection({
 
   const rightContent = (
     <RightContentLayout
-      title="Almost There!"
-      subtitle={`Complete your ${userType === "client" ? "client" : "agent"} profile setup by reviewing and accepting our terms.`}
+      title={
+        userType === "agent" ? "Ready for Opportunities" : "Ready to Connect"
+      }
+      subtitle={
+        userType === "agent"
+          ? "Get ready to connect with clients and showcase your expertise"
+          : "Your profile will help match you with the perfect automation specialists"
+      }
       features={[
         {
-          icon: "fa-shield-alt",
-          title: "Data Protection",
-          description:
-            "Your data is protected under our privacy policy and security measures",
-        },
-        {
           icon: "fa-handshake",
-          title: "Fair Usage",
-          description:
-            "Our terms ensure a fair and professional environment for all users",
+          title: "Agreement",
+          description: "Terms and privacy ensure a safe environment for all",
         },
         {
           icon: "fa-bell",
-          title: "Stay Updated",
-          description: "Opt in to receive important updates and opportunities",
+          title: "Updates",
+          description: "Stay informed about new opportunities and connections",
+        },
+        {
+          icon: "fa-rocket",
+          title: "Launch",
+          description: "Complete your profile to start your journey",
         },
       ]}
       currentStep={5}
       totalSteps={6}
     />
   );
-
-  const isSubmitEnabled = acceptedTerms && acceptedPrivacy;
 
   return (
     <FormSectionLayout
@@ -86,6 +112,7 @@ export function ConclusionSection({
       onSubmit={onSubmit}
       onPrev={onPrev}
       rightContent={rightContent}
+      isSubmitting={isLoading}
     >
       <motion.div
         variants={containerVariants}
@@ -100,7 +127,7 @@ export function ConclusionSection({
               id="terms"
               checked={acceptedTerms}
               onCheckedChange={(checked) =>
-                setAcceptedTerms(checked as boolean)
+                handleCheckboxChange("acceptedTerms", checked as boolean)
               }
               className="mt-1"
             />
@@ -122,7 +149,7 @@ export function ConclusionSection({
               id="privacy"
               checked={acceptedPrivacy}
               onCheckedChange={(checked) =>
-                setAcceptedPrivacy(checked as boolean)
+                handleCheckboxChange("acceptedPrivacy", checked as boolean)
               }
               className="mt-1"
             />
@@ -141,21 +168,23 @@ export function ConclusionSection({
           {/* Communication Preferences */}
           <div className="flex items-start space-x-3">
             <Checkbox
-              id="communication"
-              checked={acceptedCommunication}
+              id="communications"
+              checked={acceptedCommunications}
               onCheckedChange={(checked) =>
-                setAcceptedCommunication(checked as boolean)
+                handleCheckboxChange(
+                  "acceptedCommunications",
+                  checked as boolean
+                )
               }
               className="mt-1"
             />
-            <label htmlFor="communication" className="text-sm text-white/80">
-              I would like to receive updates about new features, matching
-              opportunities, and platform news (optional).
+            <label htmlFor="communications" className="text-sm text-white/80">
+              I agree to receive important updates, new opportunities, and
+              occasional newsletters. (Optional)
             </label>
           </div>
         </motion.div>
 
-        {/* Summary Section */}
         <motion.div
           variants={itemVariants}
           className="mt-8 p-4 rounded-lg bg-white/[0.03] border border-white/10"
@@ -169,14 +198,18 @@ export function ConclusionSection({
             <li className="flex items-center space-x-2">
               <i className="fas fa-check-circle text-purple-400" />
               <span>
-                You'll get access to the{" "}
-                {userType === "client" ? "talent pool" : "project listings"}
+                Once approved, your profile will be visible to{" "}
+                {userType === "agent" ? "clients" : "automation specialists"}
               </span>
             </li>
             <li className="flex items-center space-x-2">
               <i className="fas fa-check-circle text-purple-400" />
               <span>
-                You can enhance your profile with additional details anytime
+                You can start{" "}
+                {userType === "agent"
+                  ? "bidding on projects"
+                  : "posting automation projects"}{" "}
+                right away
               </span>
             </li>
           </ul>

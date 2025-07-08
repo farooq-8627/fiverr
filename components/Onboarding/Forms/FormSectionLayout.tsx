@@ -12,6 +12,7 @@ interface FormSectionLayoutProps {
   rightContent?: React.ReactNode;
   onSubmit?: () => void;
   onFirstSection?: () => void;
+  isSubmitting?: boolean;
 }
 
 export function FormSectionLayout({
@@ -24,6 +25,7 @@ export function FormSectionLayout({
   rightContent,
   onSubmit,
   onFirstSection,
+  isSubmitting = false,
 }: FormSectionLayoutProps) {
   return (
     <div className="grid grid-cols-2 h-[82vh]">
@@ -66,6 +68,7 @@ export function FormSectionLayout({
               {onPrev && (
                 <Button
                   onClick={onPrev}
+                  disabled={isSubmitting}
                   className="border border-white/20 hover:bg-white/10 text-white px-8 py-2"
                 >
                   Prev
@@ -74,6 +77,7 @@ export function FormSectionLayout({
               {onFirstSection && (
                 <Button
                   onClick={onFirstSection}
+                  disabled={isSubmitting}
                   className="border border-white/20 hover:bg-white/10 text-white px-8 py-2"
                 >
                   Prev
@@ -82,6 +86,7 @@ export function FormSectionLayout({
               {onSkip && (
                 <Button
                   onClick={onSkip}
+                  disabled={isSubmitting}
                   className="text-white/60 hover:text-white px-8 py-2"
                 >
                   Skip
@@ -96,6 +101,7 @@ export function FormSectionLayout({
               >
                 <Button
                   onClick={onNext}
+                  disabled={isSubmitting}
                   className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-2"
                 >
                   Next
@@ -105,9 +111,19 @@ export function FormSectionLayout({
             {onSubmit && (
               <Button
                 onClick={onSubmit}
+                disabled={isSubmitting}
                 className="bg-purple-600 hover:bg-purple-700 text-white px-12 py-2"
               >
-                Submit
+                {isSubmitting ? (
+                  <>
+                    <span className="mr-2">
+                      <i className="fas fa-circle-notch fa-spin" />
+                    </span>
+                    Submitting...
+                  </>
+                ) : (
+                  "Submit"
+                )}
               </Button>
             )}
           </motion.div>

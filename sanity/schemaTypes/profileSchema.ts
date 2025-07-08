@@ -135,20 +135,8 @@ export const automationExpertiseSchema = defineType({
       of: [{ type: "string" }],
     }),
     defineField({
-      name: "customAutomationServices",
-      title: "Custom Automation Services",
-      type: "array",
-      of: [{ type: "string" }],
-    }),
-    defineField({
       name: "toolsExpertise",
       title: "Tools Expertise",
-      type: "array",
-      of: [{ type: "string" }],
-    }),
-    defineField({
-      name: "customToolsExpertise",
-      title: "Custom Tools Expertise",
       type: "array",
       of: [{ type: "string" }],
     }),
@@ -212,20 +200,8 @@ export const automationNeedsSchema = defineType({
       of: [{ type: "string" }],
     }),
     defineField({
-      name: "customAutomationRequirements",
-      title: "Custom Automation Requirements",
-      type: "array",
-      of: [{ type: "string" }],
-    }),
-    defineField({
       name: "currentTools",
       title: "Current Tools",
-      type: "array",
-      of: [{ type: "string" }],
-    }),
-    defineField({
-      name: "customCurrentTools",
-      title: "Custom Current Tools",
       type: "array",
       of: [{ type: "string" }],
     }),

@@ -280,7 +280,8 @@ export const CLIENT_AUTOMATION_NEEDS = [
   { title: "Social Media Management", value: "social" },
   { title: "E-commerce Operations", value: "ecommerce" },
   { title: "Data Collection & Reporting", value: "data" },
-  { title: "Workflow & Process Automation", value: "workflow" },
+  { title: "Workflow Automation", value: "workflow" },
+  { title: "Others", value: "others" },
 ];
 
 // Client Current Tools options
@@ -300,6 +301,7 @@ export const AGENT_AUTOMATION_SERVICES = [
   { title: "Data Automation", value: "data" },
   { title: "AI & Chatbots", value: "ai" },
   { title: "Custom Development", value: "custom" },
+  { title: "Other Services", value: "others" },
 ];
 
 // Agent Tools Expertise options
@@ -310,6 +312,7 @@ export const AGENT_TOOLS_EXPERTISE = [
   { title: "Airtable & Notion", value: "project" },
   { title: "Shopify & WooCommerce", value: "commerce" },
   { title: "ChatGPT & Claude", value: "ai_tools" },
+  { title: "Other Tools", value: "others" },
 ];
 
 // Export a function to get industry title by value

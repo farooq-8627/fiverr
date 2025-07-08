@@ -1,9 +1,20 @@
-import React from "react";
+import React, { useState } from "react";
 import { FileUpload } from "./file-upload";
 import { Button } from "../../UI/button";
+import { toast } from "sonner";
+
+// Supported image formats
+const SUPPORTED_FORMATS = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/svg+xml",
+];
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 interface ImageUploadProps {
-  type: "profile" | "banner" | "project";
+  type: "profile" | "banner" | "project" | "logo";
   image: File | null;
   onImageChange: (file: File | null) => void;
   className?: string;
@@ -15,12 +26,41 @@ export function ImageUpload({
   onImageChange,
   className,
 }: ImageUploadProps) {
-  const isProfile = type === "profile";
+  const isProfile = type === "profile" || type === "logo";
+  const [error, setError] = useState<string | null>(null);
+
+  const validateImage = (file: File | null): boolean => {
+    if (!file) return true;
+
+    // Check file type
+    if (!SUPPORTED_FORMATS.includes(file.type)) {
+      setError(
+        `Unsupported file type: ${file.type}. Please use JPG, PNG, GIF, WebP, or SVG.`
+      );
+      toast.error(
+        `Unsupported file type. Please use JPG, PNG, GIF, WebP, or SVG.`
+      );
+      return false;
+    }
+
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+      setError(
+        `File too large: ${(file.size / (1024 * 1024)).toFixed(2)}MB. Maximum size is 5MB.`
+      );
+      toast.error(`File too large. Maximum size is 5MB.`);
+      return false;
+    }
+
+    setError(null);
+    return true;
+  };
 
   const handleRemove = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     onImageChange(null);
+    setError(null);
   };
 
   const handleEdit = (e: React.MouseEvent) => {
@@ -28,12 +68,23 @@ export function ImageUpload({
     e.stopPropagation();
     const fileInput = document.createElement("input");
     fileInput.type = "file";
-    fileInput.accept = "image/*";
+    fileInput.accept =
+      "image/jpeg,image/png,image/gif,image/webp,image/svg+xml";
     fileInput.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) onImageChange(file);
+      if (file) {
+        if (validateImage(file)) {
+          onImageChange(file);
+        }
+      }
     };
     fileInput.click();
+  };
+
+  const handleFileChange = (file: File | null) => {
+    if (file && validateImage(file)) {
+      onImageChange(file);
+    }
   };
 
   return (
@@ -49,7 +100,13 @@ export function ImageUpload({
           <div className="relative w-full h-full group/image">
             <img
               src={URL.createObjectURL(image)}
-              alt={isProfile ? "Profile" : "Banner"}
+              alt={
+                type === "profile"
+                  ? "Profile"
+                  : type === "logo"
+                    ? "Logo"
+                    : "Banner"
+              }
               className={`w-full h-full object-cover ${isProfile ? "rounded-full" : ""}`}
             />
             {/* Overlay with edit/remove options */}
@@ -91,12 +148,14 @@ export function ImageUpload({
             )}
             {isProfile && (
               <div className="flex items-center justify-center h-full gap-4">
-                <i className="fas fa-user text-2xl text-white/30" />
+                <i
+                  className={`${type === "logo" ? "fas fa-building" : "fas fa-user"} text-2xl text-white/30`}
+                />
               </div>
             )}
             <FileUpload
-              accept="image/*"
-              onChange={onImageChange}
+              accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
+              onChange={handleFileChange}
               className="absolute inset-0 opacity-0 cursor-pointer"
             />
           </div>

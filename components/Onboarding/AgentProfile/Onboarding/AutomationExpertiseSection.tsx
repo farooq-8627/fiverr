@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
 import { Automation } from "@/components/Onboarding/Forms/Automation";
 import {
@@ -11,6 +11,8 @@ interface AutomationExpertiseSectionProps {
   onNext: () => void;
   onPrev?: () => void;
   onSkip?: () => void;
+  formData: any;
+  setFormData: (data: any) => void;
 }
 
 // Use centralized constants converted to the format needed by the component
@@ -23,7 +25,53 @@ export function AutomationExpertiseSection({
   onNext,
   onPrev,
   onSkip,
+  formData,
+  setFormData,
 }: AutomationExpertiseSectionProps) {
+  // Track selected values in state
+  const [automationExpertise, setAutomationExpertise] = useState<{
+    services: string[];
+    tools: string[];
+  }>({
+    services: formData?.skills || [],
+    tools: formData?.automationTools || [],
+  });
+
+  // Custom next handler to capture data from Automation component
+  const handleNext = () => {
+    // Get the selected values from the DOM
+    const servicesElements = document.querySelectorAll(
+      ".automation-services .selected-item"
+    );
+    const toolsElements = document.querySelectorAll(
+      ".tools-expertise .selected-item"
+    );
+
+    const newSelectedServices = Array.from(servicesElements).map(
+      (el) => el.getAttribute("data-value") || ""
+    );
+    const newSelectedTools = Array.from(toolsElements).map(
+      (el) => el.getAttribute("data-value") || ""
+    );
+
+    // Update local state
+    setAutomationExpertise({
+      services: newSelectedServices,
+      tools: newSelectedTools,
+    });
+
+    // Update form data
+    setFormData({
+      ...formData,
+      skills: newSelectedServices,
+      automationTools: newSelectedTools,
+      expertiseLevel: "intermediate", // Add a default expertise level to pass validation
+    });
+
+    // Call the parent's onNext
+    onNext();
+  };
+
   const rightContent = (
     <RightContentLayout
       title="Showcase Your Expertise"
@@ -54,7 +102,7 @@ export function AutomationExpertiseSection({
 
   return (
     <Automation
-      onNext={onNext}
+      onNext={handleNext}
       onPrev={onPrev}
       onSkip={onSkip}
       rightContent={rightContent}
@@ -64,8 +112,8 @@ export function AutomationExpertiseSection({
       toolsTitle="Tools/Platforms Expertise"
       servicesOptions={agentAutomationServices}
       toolsOptions={agentToolsExpertise}
-      servicesPlaceholder="Other automation services..."
-      toolsPlaceholder="Other tools or platforms..."
+      initialServices={automationExpertise.services}
+      initialTools={automationExpertise.tools}
     />
   );
 }

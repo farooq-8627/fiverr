@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { Input } from "@/components/UI/input";
-import { Label } from "@/components/UI/label";
 import { Switch } from "@/components/UI/switch";
 import { Textarea } from "@/components/UI/textarea";
+import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
+import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
+import { ImageUpload } from "@/components/Onboarding/Forms/ImageUpload";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import {
   Select,
@@ -11,18 +13,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/UI/select";
-import { ImageUpload } from "@/components/Onboarding/Forms/ImageUpload";
-import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
-import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
 import { TEAM_SIZES } from "@/sanity/schemaTypes/constants";
-import { convertToSelectFormat } from "@/lib/constants-utils";
+import { convertToSelectFormat } from "@/lib/utils";
 
 interface CoreIdentitySectionProps {
   onNext: () => void;
-  onPrev?: () => void;
+  onPrev: () => void;
   onSkip?: () => void;
+  formData?: any;
+  setFormData?: (data: any) => void;
 }
 
+// Animation variants
 const containerVariants: Variants = {
   hidden: {
     opacity: 0,
@@ -81,17 +83,62 @@ export function CoreIdentitySection({
   onNext,
   onPrev,
   onSkip,
+  formData,
+  setFormData,
 }: CoreIdentitySectionProps) {
-  const [name, setName] = useState("");
-  const [hasCompany, setHasCompany] = useState(false);
-  const [companyDetails, setCompanyDetails] = useState({
-    name: "",
-    teamSize: "",
-    bio: "",
-    website: "",
-    logo: null as File | null,
-    banner: null as File | null,
+  // Local state for when no formData is provided
+  const [localState, setLocalState] = useState({
+    fullName: "",
+    hasCompany: false,
+    companyDetails: {
+      name: "",
+      teamSize: "",
+      bio: "",
+      website: "",
+      logo: null as File | null,
+      banner: null as File | null,
+    },
   });
+
+  // Use formData if provided, otherwise use local state
+  const fullName = formData?.fullName ?? localState.fullName;
+  const hasCompany = formData?.hasCompany ?? localState.hasCompany;
+  const companyDetails = formData?.companyDetails ?? localState.companyDetails;
+
+  // Update either formData or localState based on what's available
+  const updateState = (updates: any) => {
+    if (setFormData && formData) {
+      setFormData({
+        ...formData,
+        ...updates,
+      });
+    } else {
+      setLocalState((prev) => ({
+        ...prev,
+        ...updates,
+      }));
+    }
+  };
+
+  // Handle company details updates
+  const updateCompanyDetails = (updates: any) => {
+    const updatedCompanyDetails = {
+      ...(formData?.companyDetails ?? localState.companyDetails),
+      ...updates,
+    };
+
+    if (setFormData && formData) {
+      setFormData({
+        ...formData,
+        companyDetails: updatedCompanyDetails,
+      });
+    } else {
+      setLocalState((prev) => ({
+        ...prev,
+        companyDetails: updatedCompanyDetails,
+      }));
+    }
+  };
 
   const rightContent = (
     <RightContentLayout
@@ -138,8 +185,8 @@ export function CoreIdentitySection({
           <motion.div variants={itemVariants}>
             <Input
               placeholder="What's your full name?"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={fullName}
+              onChange={(e) => updateState({ fullName: e.target.value })}
               className="bg-white/5 text-white placeholder:text-white/40"
             />
           </motion.div>
@@ -156,7 +203,12 @@ export function CoreIdentitySection({
                 Create a company profile to showcase your business
               </motion.p>
             </motion.div>
-            <Switch checked={hasCompany} onCheckedChange={setHasCompany} />
+            <Switch
+              checked={hasCompany}
+              onCheckedChange={(checked) =>
+                updateState({ hasCompany: checked })
+              }
+            />
           </motion.div>
 
           <AnimatePresence>
@@ -173,8 +225,7 @@ export function CoreIdentitySection({
                     placeholder="Your company name"
                     value={companyDetails.name}
                     onChange={(e) =>
-                      setCompanyDetails({
-                        ...companyDetails,
+                      updateCompanyDetails({
                         name: e.target.value,
                       })
                     }
@@ -186,7 +237,7 @@ export function CoreIdentitySection({
                   <Select
                     value={companyDetails.teamSize}
                     onValueChange={(value) =>
-                      setCompanyDetails({ ...companyDetails, teamSize: value })
+                      updateCompanyDetails({ teamSize: value })
                     }
                   >
                     <SelectTrigger className="bg-white/5 text-white">
@@ -207,8 +258,7 @@ export function CoreIdentitySection({
                     placeholder="Tell us about your company's mission and expertise..."
                     value={companyDetails.bio}
                     onChange={(e) =>
-                      setCompanyDetails({
-                        ...companyDetails,
+                      updateCompanyDetails({
                         bio: e.target.value,
                       })
                     }
@@ -225,8 +275,7 @@ export function CoreIdentitySection({
                     placeholder="Company website URL"
                     value={companyDetails.website}
                     onChange={(e) =>
-                      setCompanyDetails({
-                        ...companyDetails,
+                      updateCompanyDetails({
                         website: e.target.value,
                       })
                     }
@@ -234,17 +283,18 @@ export function CoreIdentitySection({
                   />
                 </motion.div>
 
-                {/* Profile Images */}
                 <motion.div className="space-y-4" variants={itemVariants}>
                   <motion.div
-                    className="flex items-center justify-between"
                     variants={itemVariants}
+                    className="flex items-center justify-between"
                   >
                     <ImageUpload
-                      type="profile"
+                      type="logo"
                       image={companyDetails.logo}
                       onImageChange={(file) =>
-                        setCompanyDetails({ ...companyDetails, logo: file })
+                        updateCompanyDetails({
+                          logo: file,
+                        })
                       }
                       className="flex-shrink-0"
                     />
@@ -253,7 +303,7 @@ export function CoreIdentitySection({
                         Company Logo
                       </h3>
                       <p className="text-white/60 text-sm">
-                        Add a logo to help others recognize your company
+                        Add your company logo for better brand recognition
                       </p>
                     </div>
                   </motion.div>
@@ -262,7 +312,9 @@ export function CoreIdentitySection({
                       type="banner"
                       image={companyDetails.banner}
                       onImageChange={(file) =>
-                        setCompanyDetails({ ...companyDetails, banner: file })
+                        updateCompanyDetails({
+                          banner: file,
+                        })
                       }
                       className="w-full"
                     />

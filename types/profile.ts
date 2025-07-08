@@ -48,6 +48,7 @@ export interface Project {
   title: string;
   description: string;
   projectLink?: string;
+  demoLink?: string;
   technologies: string[];
   // Fields for handling image uploads in the UI
   images: File[];

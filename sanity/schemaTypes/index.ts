@@ -22,11 +22,7 @@ import {
   clientProjectSchema,
 } from "./projectSchema";
 
-import {
-  companySchema,
-  agentCompanySchema,
-  clientCompanySchema,
-} from "./companySchema";
+import { companySchema } from "./companySchema";
 
 export const schema: { types: SchemaTypeDefinition[] } = {
   types: [
@@ -36,8 +32,6 @@ export const schema: { types: SchemaTypeDefinition[] } = {
 
     // Company schemas
     companySchema,
-    agentCompanySchema,
-    clientCompanySchema,
 
     // Project schemas
     agentProjectSchema,

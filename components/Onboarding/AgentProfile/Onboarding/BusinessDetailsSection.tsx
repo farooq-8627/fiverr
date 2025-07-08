@@ -15,6 +15,7 @@ import {
   PROJECT_SIZE_PREFERENCES,
   TEAM_SIZES,
   AVAILABILITY_OPTIONS,
+  WORKING_HOURS_PREFERENCES,
 } from "@/sanity/schemaTypes/constants";
 import {
   convertToOnboardingFormat,
@@ -25,6 +26,8 @@ interface BusinessDetailsSectionProps {
   onNext: () => void;
   onPrev?: () => void;
   onSkip?: () => void;
+  formData: any;
+  setFormData: (data: any) => void;
 }
 
 const containerVariants: Variants = {
@@ -63,18 +66,68 @@ const pricingModels = convertToSelectFormat(PRICING_MODELS);
 const projectSizes = convertToOnboardingFormat(PROJECT_SIZE_PREFERENCES);
 const teamSizes = convertToSelectFormat(TEAM_SIZES);
 const availabilityOptions = convertToSelectFormat(AVAILABILITY_OPTIONS);
+const workTypeOptions = convertToSelectFormat(WORKING_HOURS_PREFERENCES);
 
 export function BusinessDetailsSection({
   onNext,
   onPrev,
   onSkip,
+  formData,
+  setFormData,
 }: BusinessDetailsSectionProps) {
-  const [pricingModel, setPricingModel] = useState("");
-  const [selectedProjectSizes, setSelectedProjectSizes] = useState<string[]>(
-    []
+  // Initialize state from formData if available
+  const [pricingModel, setPricingModel] = useState(
+    formData?.pricingModel || ""
   );
-  const [teamSize, setTeamSize] = useState("");
-  const [availability, setAvailability] = useState("");
+  const [selectedProjectSizes, setSelectedProjectSizes] = useState<string[]>(
+    formData?.projectSizePreference || []
+  );
+  const [teamSize, setTeamSize] = useState(formData?.teamSize || "");
+  const [availability, setAvailability] = useState(
+    formData?.availability || ""
+  );
+  const [workType, setWorkType] = useState(formData?.workType || "");
+
+  // Custom handlers to update both local state and formData
+  const handlePricingChange = (value: string) => {
+    setPricingModel(value);
+    setFormData({
+      ...formData,
+      pricingModel: value,
+    });
+  };
+
+  const handleProjectSizesChange = (sizes: string[]) => {
+    setSelectedProjectSizes(sizes);
+    setFormData({
+      ...formData,
+      projectSizePreference: sizes, // Store as an array
+    });
+  };
+
+  const handleTeamSizeChange = (value: string) => {
+    setTeamSize(value);
+    setFormData({
+      ...formData,
+      teamSize: value,
+    });
+  };
+
+  const handleAvailabilityChange = (value: string) => {
+    setAvailability(value);
+    setFormData({
+      ...formData,
+      availability: value,
+    });
+  };
+
+  const handleWorkTypeChange = (value: string) => {
+    setWorkType(value);
+    setFormData({
+      ...formData,
+      workType: value,
+    });
+  };
 
   const rightContent = (
     <RightContentLayout
@@ -105,11 +158,27 @@ export function BusinessDetailsSection({
     />
   );
 
+  // Custom next handler to ensure all form data is captured before proceeding
+  const handleNext = () => {
+    // Make sure all current values are in formData before proceeding
+    setFormData({
+      ...formData,
+      pricingModel: pricingModel,
+      projectSizePreference: selectedProjectSizes, // Keep as an array
+      teamSize: teamSize,
+      availability: availability,
+      workType: workType,
+    });
+
+    // Then call the parent's onNext
+    onNext();
+  };
+
   return (
     <FormSectionLayout
       title="Business Details"
       description="Set your business structure and project preferences"
-      onNext={onNext}
+      onNext={handleNext}
       onPrev={onPrev}
       onSkip={onSkip}
       rightContent={rightContent}
@@ -122,7 +191,7 @@ export function BusinessDetailsSection({
       >
         {/* Pricing Model */}
         <motion.div variants={itemVariants}>
-          <Select value={pricingModel} onValueChange={setPricingModel}>
+          <Select value={pricingModel} onValueChange={handlePricingChange}>
             <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="What's your pricing model?" />
             </SelectTrigger>
@@ -150,7 +219,7 @@ export function BusinessDetailsSection({
             <MultiSelect
               options={projectSizes}
               selectedValues={selectedProjectSizes}
-              onChange={setSelectedProjectSizes}
+              onChange={handleProjectSizesChange}
             />
           </motion.div>
           <motion.p className="text-xs text-white/60" variants={itemVariants}>
@@ -158,9 +227,25 @@ export function BusinessDetailsSection({
           </motion.p>
         </motion.div>
 
+        {/* Work Type */}
+        <motion.div variants={itemVariants}>
+          <Select value={workType} onValueChange={handleWorkTypeChange}>
+            <SelectTrigger className="w-full bg-white/5 text-white">
+              <SelectValue placeholder="What's your preferred work type?" />
+            </SelectTrigger>
+            <SelectContent>
+              {workTypeOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </motion.div>
+
         {/* Team Size */}
         <motion.div variants={itemVariants}>
-          <Select value={teamSize} onValueChange={setTeamSize}>
+          <Select value={teamSize} onValueChange={handleTeamSizeChange}>
             <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="How big is your team?" />
             </SelectTrigger>
@@ -176,7 +261,7 @@ export function BusinessDetailsSection({
 
         {/* Availability */}
         <motion.div variants={itemVariants}>
-          <Select value={availability} onValueChange={setAvailability}>
+          <Select value={availability} onValueChange={handleAvailabilityChange}>
             <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="What's your availability?" />
             </SelectTrigger>

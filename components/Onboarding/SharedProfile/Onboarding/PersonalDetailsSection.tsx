@@ -1,16 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/UI/input";
 import { SocialMediaIcons } from "@/components/Onboarding/Forms/SocialMediaIcons";
 import { ImageUpload } from "@/components/Onboarding/Forms/ImageUpload";
 import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
 import { motion } from "framer-motion";
+import { useUser } from "@clerk/nextjs";
 
 interface PersonalDetailsSectionProps {
   onNext: () => void;
   onPrev?: () => void;
   onSkip?: () => void;
   onFirstSection?: () => void;
+  formData?: any;
+  setFormData?: (data: any) => void;
 }
 
 export function PersonalDetailsSection({
@@ -18,12 +21,61 @@ export function PersonalDetailsSection({
   onPrev,
   onSkip,
   onFirstSection,
+  formData,
+  setFormData,
 }: PersonalDetailsSectionProps) {
+  const { user, isLoaded } = useUser();
+
+  // Initialize local state from formData or empty values
   const [socialLinks, setSocialLinks] = useState<
     { platform: string; url: string }[]
-  >([]);
-  const [profilePicture, setProfilePicture] = useState<File | null>(null);
-  const [bannerImage, setBannerImage] = useState<File | null>(null);
+  >(formData?.socialLinks || []);
+
+  const [profilePicture, setProfilePicture] = useState<File | null>(
+    formData?.profilePicture || null
+  );
+
+  const [bannerImage, setBannerImage] = useState<File | null>(
+    formData?.bannerImage || null
+  );
+
+  const [userData, setUserData] = useState({
+    email: formData?.email || "",
+    phone: formData?.phone || "",
+    username: formData?.username || "",
+    website: formData?.website || "",
+  });
+
+  // Update local state when formData changes (e.g., from parent component)
+  useEffect(() => {
+    if (formData) {
+      setUserData({
+        email: formData.email || "",
+        phone: formData.phone || "",
+        username: formData.username || "",
+        website: formData.website || "",
+      });
+      setSocialLinks(formData.socialLinks || []);
+      setProfilePicture(formData.profilePicture || null);
+      setBannerImage(formData.bannerImage || null);
+    }
+  }, [formData]);
+
+  // Handle form input changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setUserData({
+      ...userData,
+      [id]: value,
+    });
+
+    if (setFormData && formData) {
+      setFormData({
+        ...formData,
+        [id]: value,
+      });
+    }
+  };
 
   // Animation variants
   const containerVariants = {
@@ -52,6 +104,38 @@ export function PersonalDetailsSection({
       y: 0,
       transition: { duration: 0.5 },
     },
+  };
+
+  const handleSocialLinksChange = (
+    links: { platform: string; url: string }[]
+  ) => {
+    setSocialLinks(links);
+    if (setFormData && formData) {
+      setFormData({
+        ...formData,
+        socialLinks: links,
+      });
+    }
+  };
+
+  const handleProfilePictureChange = (file: File | null) => {
+    setProfilePicture(file);
+    if (setFormData && formData) {
+      setFormData({
+        ...formData,
+        profilePicture: file,
+      });
+    }
+  };
+
+  const handleBannerImageChange = (file: File | null) => {
+    setBannerImage(file);
+    if (setFormData && formData) {
+      setFormData({
+        ...formData,
+        bannerImage: file,
+      });
+    }
   };
 
   const rightContent = (
@@ -107,8 +191,10 @@ export function PersonalDetailsSection({
               id="email"
               type="email"
               required
+              disabled={true}
+              value={userData.email}
               placeholder="Email Address"
-              className="bg-white/5 text-white pl-10"
+              className="bg-white/5 text-white pl-10 opacity-70"
             />
           </motion.div>
 
@@ -121,8 +207,10 @@ export function PersonalDetailsSection({
               id="phone"
               type="tel"
               required
+              disabled={true}
+              value={userData.phone}
               placeholder="Phone Number"
-              className="bg-white/5 text-white pl-10"
+              className="bg-white/5 text-white pl-10 opacity-70"
             />
           </motion.div>
 
@@ -132,10 +220,12 @@ export function PersonalDetailsSection({
             </div>
             <Input
               id="username"
-              type="tel"
+              type="text"
               required
+              disabled={true}
+              value={userData.username}
               placeholder="Username"
-              className="bg-white/5 text-white pl-10"
+              className="bg-white/5 text-white pl-10 opacity-70"
             />
           </motion.div>
 
@@ -147,13 +237,18 @@ export function PersonalDetailsSection({
             <Input
               id="website"
               type="url"
+              value={userData.website}
+              onChange={handleInputChange}
               placeholder="Website URL"
               className="bg-white/5 text-white pl-10"
             />
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <SocialMediaIcons onSocialLinksChange={setSocialLinks} />
+            <SocialMediaIcons
+              onSocialLinksChange={handleSocialLinksChange}
+              initialLinks={socialLinks}
+            />
           </motion.div>
         </motion.div>
 
@@ -166,7 +261,7 @@ export function PersonalDetailsSection({
             <ImageUpload
               type="profile"
               image={profilePicture}
-              onImageChange={setProfilePicture}
+              onImageChange={handleProfilePictureChange}
               className="flex-shrink-0"
             />
             <div className="flex-grow pl-6">
@@ -180,7 +275,7 @@ export function PersonalDetailsSection({
             <ImageUpload
               type="banner"
               image={bannerImage}
-              onImageChange={setBannerImage}
+              onImageChange={handleBannerImageChange}
               className="w-full"
             />
           </motion.div>

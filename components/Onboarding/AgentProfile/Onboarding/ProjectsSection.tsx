@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from "react";
 import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
 import { Input } from "@/components/UI/input";
@@ -8,11 +9,14 @@ import { motion, AnimatePresence, Variants } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
 import { Project } from "@/types/profile";
+import { ProjectCard } from "../../Forms/ProjectCard";
 
 interface ProjectsSectionProps {
   onNext: () => void;
   onPrev?: () => void;
   onSkip?: () => void;
+  formData: any;
+  setFormData: (data: any) => void;
 }
 
 const containerVariants: Variants = {
@@ -52,8 +56,11 @@ export function ProjectsSection({
   onNext,
   onPrev,
   onSkip,
+  formData,
+  setFormData,
 }: ProjectsSectionProps) {
-  const [projects, setProjects] = useState<Project[]>([]);
+  // Initialize state from formData if available
+  const [projects, setProjects] = useState<Project[]>(formData?.projects || []);
   const [currentProject, setCurrentProject] = useState<Project>({
     id: "new",
     title: "",
@@ -65,6 +72,10 @@ export function ProjectsSection({
     activeImageIndex: -1,
   });
   const [isHovered, setIsHovered] = useState(false);
+  // Add state to track the saved project images for immediate display
+  const [savedProjectImages, setSavedProjectImages] = useState<{
+    [key: string]: string[];
+  }>({});
 
   const handleImageUpload = (files: FileList | null) => {
     if (!files) return;
@@ -76,8 +87,8 @@ export function ProjectsSection({
 
     setCurrentProject((prev) => ({
       ...prev,
-      images: [...imagesToAdd, ...prev.images],
-      imageUrls: [...newImageUrls, ...prev.imageUrls],
+      images: [...prev.images, ...imagesToAdd], // Preserve order: add new images at the end
+      imageUrls: [...prev.imageUrls, ...newImageUrls], // Preserve order: add new URLs at the end
       activeImageIndex: -1,
     }));
   };
@@ -107,10 +118,61 @@ export function ProjectsSection({
   const addProject = () => {
     if (!currentProject.title || !currentProject.description) return;
 
-    setProjects((prev) => [
-      ...prev,
-      { ...currentProject, id: String(Date.now()) },
-    ]);
+    // If we're editing an existing project, update it instead of adding a new one
+    if (currentProject.id !== "new") {
+      updateProject();
+      return;
+    }
+
+    const newProjectId = String(Date.now());
+    const newProject = { ...currentProject, id: newProjectId };
+    const updatedProjects = [...projects, newProject];
+
+    // Save the image URLs for immediate display
+    if (currentProject.imageUrls.length > 0) {
+      setSavedProjectImages((prev) => ({
+        ...prev,
+        [newProjectId]: [...currentProject.imageUrls],
+      }));
+    }
+
+    // Update projects state first
+    setProjects(updatedProjects);
+
+    // Then update formData
+    setFormData({
+      ...formData,
+      projects: updatedProjects,
+    });
+
+    // Reset current project
+    setCurrentProject({
+      id: "new",
+      title: "",
+      description: "",
+      projectLink: "",
+      technologies: [],
+      images: [],
+      imageUrls: [],
+      activeImageIndex: -1,
+    });
+  };
+
+  const updateProject = () => {
+    const updatedProjects = projects.map((project) =>
+      project.id === currentProject.id ? currentProject : project
+    );
+
+    // Update projects state
+    setProjects(updatedProjects);
+
+    // Update formData
+    setFormData({
+      ...formData,
+      projects: updatedProjects,
+    });
+
+    // Reset current project
     setCurrentProject({
       id: "new",
       title: "",
@@ -124,7 +186,21 @@ export function ProjectsSection({
   };
 
   const removeProject = (projectId: string) => {
-    setProjects((prev) => prev.filter((project) => project.id !== projectId));
+    const updatedProjects = projects.filter(
+      (project) => project.id !== projectId
+    );
+    setProjects(updatedProjects);
+
+    // Also remove from savedProjectImages
+    const updatedSavedImages = { ...savedProjectImages };
+    delete updatedSavedImages[projectId];
+    setSavedProjectImages(updatedSavedImages);
+
+    // Update formData
+    setFormData({
+      ...formData,
+      projects: updatedProjects,
+    });
   };
 
   const updateCurrentProject = (
@@ -132,6 +208,12 @@ export function ProjectsSection({
     value: string | string[]
   ) => {
     setCurrentProject((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleEditProject = (projectToEdit: Project) => {
+    setCurrentProject(projectToEdit);
+    // setIsEditing(true); // This state is not defined in the original file
+    // setOpen(true); // This state is not defined in the original file
   };
 
   const rightContent = (
@@ -172,7 +254,7 @@ export function ProjectsSection({
       rightContent={rightContent}
     >
       <motion.div
-        className="space-y-2"
+        className="space-y-4"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -340,7 +422,7 @@ export function ProjectsSection({
                       <input
                         type="file"
                         className="hidden"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml"
                         multiple
                         onChange={(e) => handleImageUpload(e.target.files)}
                       />
@@ -374,55 +456,24 @@ export function ProjectsSection({
         </motion.div>
 
         {/* Projects List - Now Scrollable */}
-        <motion.div className="space-y-4" variants={itemVariants}>
-          <motion.div className="overflow-x-auto pb-2" variants={itemVariants}>
+        <motion.div className="" variants={itemVariants}>
+          <motion.div className="overflow-x-auto" variants={itemVariants}>
             <div className="flex gap-3 min-w-max">
-              <AnimatePresence>
+              <AnimatePresence mode="popLayout">
                 {projects.map((project, index) => (
                   <motion.div
                     key={project.id}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    transition={{
-                      duration: 0.5,
-                      ease: "easeOut",
-                      delay: index * 0.1,
-                    }}
-                    className="bg-white/[0.02] rounded-lg relative group/card border border-white/5 hover:border-purple-500/30 transition-all duration-300 w-[200px] flex-shrink-0"
+                    transition={{ duration: 0.2 }}
+                    className="w-60 group/card"
                   >
-                    {project.imageUrls.length > 0 ? (
-                      <motion.div
-                        variants={itemVariants}
-                        className="aspect-[3/2] rounded-md overflow-hidden relative"
-                      >
-                        <img
-                          src={project.imageUrls[0]}
-                          alt={project.title}
-                          className="w-full h-full object-cover"
-                        />
-                        <motion.div className="absolute inset-0 bg-black/20 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                          <span className="text-white font-medium text-sm text-center px-2">
-                            {project.title}
-                          </span>
-                        </motion.div>
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        variants={itemVariants}
-                        className="aspect-[3/2] rounded-md relative flex items-center justify-center bg-white/5"
-                      >
-                        <span className="text-white font-medium text-sm text-center px-2">
-                          {project.title}
-                        </span>
-                      </motion.div>
-                    )}
-                    <button
-                      onClick={() => removeProject(project.id)}
-                      className="absolute top-2 right-2 bg-black/50 p-1.5 rounded-full opacity-0 group-hover/card:opacity-100 transition-opacity hover:bg-black/70"
-                    >
-                      <Trash className="h-4 w-4 text-white" />
-                    </button>
+                    <ProjectCard
+                      project={project}
+                      onDelete={removeProject}
+                      onEdit={handleEditProject}
+                    />
                   </motion.div>
                 ))}
               </AnimatePresence>

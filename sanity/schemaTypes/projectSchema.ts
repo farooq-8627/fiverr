@@ -145,6 +145,25 @@ export const agentProjectSchema = defineType({
       type: "datetime",
     }),
   ],
+  preview: {
+    select: {
+      title: "title",
+      media: "images.0.image",
+      subtitle: "description",
+    },
+    prepare(selection) {
+      const { title, media, subtitle } = selection;
+      return {
+        title: title || "Untitled Project",
+        media: media,
+        subtitle: subtitle
+          ? subtitle.length > 50
+            ? subtitle.substring(0, 50) + "..."
+            : subtitle
+          : "",
+      };
+    },
+  },
 });
 
 // Client Project Schema
