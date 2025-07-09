@@ -13,6 +13,7 @@ interface FormSectionLayoutProps {
   onSubmit?: () => void;
   onFirstSection?: () => void;
   isSubmitting?: boolean;
+  canProceed?: boolean;
 }
 
 export function FormSectionLayout({
@@ -26,6 +27,7 @@ export function FormSectionLayout({
   onSubmit,
   onFirstSection,
   isSubmitting = false,
+  canProceed = true,
 }: FormSectionLayoutProps) {
   return (
     <div className="grid grid-cols-2 h-[82vh]">
@@ -101,7 +103,7 @@ export function FormSectionLayout({
               >
                 <Button
                   onClick={onNext}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !canProceed}
                   className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-2"
                 >
                   Next
@@ -111,7 +113,7 @@ export function FormSectionLayout({
             {onSubmit && (
               <Button
                 onClick={onSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !canProceed}
                 className="bg-purple-600 hover:bg-purple-700 text-white px-12 py-2"
               >
                 {isSubmitting ? (

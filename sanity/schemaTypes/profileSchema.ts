@@ -520,6 +520,21 @@ export const agentProfileSchema = defineType({
       type: "datetime",
     }),
   ],
+  preview: {
+    select: {
+      title: "coreIdentity.fullName",
+      subtitle: "userId",
+      media: "personalDetails.profilePicture",
+    },
+    prepare(selection) {
+      const { title, subtitle, media } = selection;
+      return {
+        title: title || "Unnamed Agent",
+        subtitle: subtitle || "No User ID",
+        media: media,
+      };
+    },
+  },
 });
 
 // Client Profile Schema
@@ -580,4 +595,19 @@ export const clientProfileSchema = defineType({
       type: "datetime",
     }),
   ],
+  preview: {
+    select: {
+      title: "coreIdentity.fullName",
+      subtitle: "userId",
+      media: "personalDetails.profilePicture",
+    },
+    prepare(selection) {
+      const { title, subtitle, media } = selection;
+      return {
+        title: title || "Unnamed Client",
+        subtitle: subtitle || "No User ID",
+        media: media,
+      };
+    },
+  },
 });

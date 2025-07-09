@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { OnboardingCard } from "@/components/Onboarding/Forms/OnboardingCard";
 import { PersonalDetailsSection } from "@/components/Onboarding/SharedProfile/Onboarding/PersonalDetailsSection";
 import { CoreIdentitySection } from "@/components/Onboarding/SharedProfile/Onboarding/CoreIdentitySection";
@@ -12,90 +12,7 @@ import { ConclusionSection } from "@/components/Onboarding/SharedProfile/Onboard
 import { AnimatePresence, motion, Variants } from "framer-motion";
 import { Toaster, toast } from "sonner";
 import { useUser } from "@clerk/nextjs";
-
-// Function to log form data in a structured way
-const logFormData = (formData: any, userId: string | undefined) => {
-  console.group("Client Profile Form Submission");
-  console.log("Submission Time:", new Date().toISOString());
-  console.log("User ID:", userId || "Not available");
-
-  // Personal details
-  console.group("Personal Details");
-  console.log("Email:", formData.email);
-  console.log("Phone:", formData.phone);
-  console.log("Username:", formData.username);
-  console.log("Website:", formData.website);
-  console.log(
-    "Social Links:",
-    formData.socialLinks.filter(
-      (link: { platform: string; url: string }) => link.url.trim() !== ""
-    )
-  );
-  console.log(
-    "Profile Picture:",
-    formData.profilePicture ? "Provided" : "Not provided"
-  );
-  console.log(
-    "Banner Image:",
-    formData.bannerImage ? "Provided" : "Not provided"
-  );
-  console.groupEnd();
-
-  // Core identity
-  console.group("Core Identity");
-  console.log("Full Name:", formData.fullName);
-  console.log("Has Company:", formData.hasCompany);
-  if (formData.hasCompany) {
-    console.group("Company Details");
-    console.log("Company Name:", formData.companyDetails.name);
-    console.log("Team Size:", formData.companyDetails.teamSize);
-    console.log("Bio:", formData.companyDetails.bio);
-    console.log("Website:", formData.companyDetails.website);
-    console.log(
-      "Logo:",
-      formData.companyDetails.logo ? "Provided" : "Not provided"
-    );
-    console.log(
-      "Banner:",
-      formData.companyDetails.banner ? "Provided" : "Not provided"
-    );
-    console.groupEnd();
-  }
-  console.groupEnd();
-
-  // Automation needs
-  console.group("Automation Needs");
-  console.log("Automation Needs:", formData.automationNeeds);
-  console.log("Current Tools:", formData.currentTools);
-  console.groupEnd();
-
-  // Project details
-  console.group("Project Details");
-  console.log("Project Title:", formData.projectTitle);
-  console.log("Business Domain:", formData.businessDomain);
-  console.log("Project Description:", formData.projectDescription);
-  console.log("Current Challenges:", formData.painPoints);
-  console.groupEnd();
-
-  // Project scope
-  console.group("Project Scope");
-  console.log("Budget Range:", formData.budgetRange);
-  console.log("Timeline:", formData.timeline);
-  console.log("Priority:", formData.priority);
-  console.log("Team Size Required:", formData.teamSizeRequired);
-  console.log("Engagement Type:", formData.engagementType);
-  console.log("Experience Level:", formData.experienceLevel);
-  console.groupEnd();
-
-  // Final section
-  console.group("Agreements");
-  console.log("Accepted Terms:", formData.acceptedTerms);
-  console.log("Accepted Privacy:", formData.acceptedPrivacy);
-  console.log("Accepted Communications:", formData.acceptedCommunications);
-  console.groupEnd();
-
-  console.groupEnd(); // End of main group
-};
+import { saveClientProfile, FormState } from "./actions";
 
 // Create initial form state
 const createInitialFormState = () => ({
@@ -111,7 +28,7 @@ const createInitialFormState = () => ({
   // Core identity
   fullName: "",
   hasCompany: false,
-  companyDetails: {
+  company: {
     name: "",
     teamSize: "",
     bio: "",
@@ -134,6 +51,7 @@ const createInitialFormState = () => ({
   budgetRange: "",
   timeline: "",
   priority: "",
+  complexity: "",
   teamSizeRequired: "",
   engagementType: "",
   experienceLevel: "",
@@ -154,8 +72,8 @@ const saveFormToLocalStorage = (formData: any, userId: string | undefined) => {
         // Remove non-serializable data before saving
         profilePicture: null,
         bannerImage: null,
-        companyDetails: {
-          ...formData.companyDetails,
+        company: {
+          ...formData.company,
           logo: null,
           banner: null,
         },
@@ -259,13 +177,11 @@ export default function ClientProfileForm() {
   const validateCurrentSection = () => {
     switch (currentSection) {
       case 0: // Personal details
-        // Email, phone, username come from Clerk and are required
         return true;
       case 1: // Core identity
         return formData.fullName?.trim() !== "";
       case 2: // Automation needs
-        // Only require automation needs to be selected
-        return formData.automationNeeds && formData.automationNeeds.length > 0;
+        return true;
       case 3: // Project details (optional)
         return true;
       case 4: // Project scope (optional)
@@ -286,21 +202,106 @@ export default function ClientProfileForm() {
 
       setLoading(true);
 
-      // Log all form data before submission
-      logFormData(formData, user?.id);
+      // Create FormData object to send to server
+      const submitData = new FormData();
 
-      // Success message
-      toast.success("Profile data logged successfully!");
+      // Personal details
+      submitData.append("email", formData.email);
+      submitData.append("phone", formData.phone || "");
+      submitData.append("username", formData.username);
+      submitData.append("website", formData.website || "");
 
-      // Clear saved form data after successful submission
-      if (user?.id) {
-        localStorage.removeItem(`client_profile_form_${user.id}`);
+      // Handle social links
+      if (formData.socialLinks && formData.socialLinks.length > 0) {
+        submitData.append("socialLinks", JSON.stringify(formData.socialLinks));
       }
 
-      // Redirect to dashboard after a short delay
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 1500);
+      // Handle file uploads
+      if (formData.profilePicture) {
+        submitData.append("profilePicture", formData.profilePicture);
+      }
+
+      if (formData.bannerImage) {
+        submitData.append("bannerImage", formData.bannerImage);
+      }
+
+      // Core identity
+      submitData.append("fullName", formData.fullName);
+      submitData.append("hasCompany", formData.hasCompany ? "true" : "false");
+
+      // Company details
+      if (formData.hasCompany) {
+        submitData.append("company.name", formData.company.name || "");
+        submitData.append("company.teamSize", formData.company.teamSize || "");
+        submitData.append("company.bio", formData.company.bio || "");
+        submitData.append("company.website", formData.company.website || "");
+
+        if (formData.company.logo) {
+          submitData.append("company.logo", formData.company.logo);
+        }
+
+        if (formData.company.banner) {
+          submitData.append("company.banner", formData.company.banner);
+        }
+      }
+
+      // Automation needs
+      formData.automationNeeds.forEach((need) => {
+        submitData.append("automationNeeds", need);
+      });
+
+      formData.currentTools.forEach((tool) => {
+        submitData.append("currentTools", tool);
+      });
+
+      // Project details (if provided)
+      if (formData.projectTitle) {
+        submitData.append("projectTitle", formData.projectTitle);
+        submitData.append("businessDomain", formData.businessDomain || "");
+        submitData.append(
+          "projectDescription",
+          formData.projectDescription || ""
+        );
+        submitData.append("painPoints", formData.painPoints || "");
+
+        // Project scope details
+        if (formData.budgetRange)
+          submitData.append("budgetRange", formData.budgetRange);
+        if (formData.timeline) submitData.append("timeline", formData.timeline);
+        if (formData.priority) submitData.append("priority", formData.priority);
+        if (formData.complexity)
+          submitData.append("complexity", formData.complexity);
+        if (formData.teamSizeRequired)
+          submitData.append("teamSizeRequired", formData.teamSizeRequired);
+        if (formData.engagementType)
+          submitData.append("engagementType", formData.engagementType);
+        if (formData.experienceLevel)
+          submitData.append("experienceLevel", formData.experienceLevel);
+      }
+
+      const initialState: FormState = {
+        success: false,
+        message: "",
+      };
+
+      // Submit the form to the server action
+      const result = await saveClientProfile(initialState, submitData);
+
+      if (result.success) {
+        toast.success(result.message || "Profile created successfully!");
+
+        // Clear saved form data after successful submission
+        if (user?.id) {
+          localStorage.removeItem(`client_profile_form_${user.id}`);
+        }
+
+        // Redirect to dashboard after a short delay
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1500);
+      } else {
+        toast.error(result.message || "An error occurred. Please try again.");
+      }
     } catch (error) {
       console.error("Error submitting form:", error);
       toast.error("An error occurred. Please try again.");

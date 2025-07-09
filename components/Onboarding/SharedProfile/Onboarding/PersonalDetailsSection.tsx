@@ -6,75 +6,68 @@ import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayo
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
 import { motion } from "framer-motion";
 import { useUser } from "@clerk/nextjs";
+import {
+  useAgentProfileForm,
+  useAgentProfileFormFields,
+} from "@/components/Onboarding/AgentProfile/context/AgentProfileFormContext";
+import { Loader2 } from "lucide-react";
 
-interface PersonalDetailsSectionProps {
-  onNext: () => void;
-  onPrev?: () => void;
-  onSkip?: () => void;
-  onFirstSection?: () => void;
-  formData?: any;
-  setFormData?: (data: any) => void;
-}
-
-export function PersonalDetailsSection({
-  onNext,
-  onPrev,
-  onSkip,
-  onFirstSection,
-  formData,
-  setFormData,
-}: PersonalDetailsSectionProps) {
+export function PersonalDetailsSection() {
+  const { handleNext, goToFirstSection, canProceed } = useAgentProfileForm();
+  const {
+    register,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useAgentProfileFormFields();
   const { user, isLoaded } = useUser();
 
-  // Initialize local state from formData or empty values
-  const [socialLinks, setSocialLinks] = useState<
-    { platform: string; url: string }[]
-  >(formData?.socialLinks || []);
+  // Get form data
+  const formData = watch();
 
-  const [profilePicture, setProfilePicture] = useState<File | null>(
+  // Initialize state with form data or Clerk data
+  const [socialLinks, setSocialLinks] = useState(formData?.socialLinks || []);
+  const [profilePicture, setProfilePicture] = useState(
     formData?.profilePicture || null
   );
+  const [bannerImage, setBannerImage] = useState(formData?.bannerImage || null);
 
-  const [bannerImage, setBannerImage] = useState<File | null>(
-    formData?.bannerImage || null
-  );
-
-  const [userData, setUserData] = useState({
-    email: formData?.email || "",
-    phone: formData?.phone || "",
-    username: formData?.username || "",
-    website: formData?.website || "",
-  });
-
-  // Update local state when formData changes (e.g., from parent component)
+  // Use Clerk data when available
   useEffect(() => {
-    if (formData) {
-      setUserData({
-        email: formData.email || "",
-        phone: formData.phone || "",
-        username: formData.username || "",
-        website: formData.website || "",
-      });
-      setSocialLinks(formData.socialLinks || []);
-      setProfilePicture(formData.profilePicture || null);
-      setBannerImage(formData.bannerImage || null);
+    if (isLoaded && user) {
+      // Get user data from Clerk
+      const email = user.emailAddresses[0]?.emailAddress || "";
+      const phone = user.phoneNumbers[0]?.phoneNumber || "";
+      const username = user.username || "";
+
+      // Set form values from Clerk data
+      setValue("email", email);
+      setValue("phone", phone);
+      setValue("username", username);
     }
-  }, [formData]);
+  }, [isLoaded, user, setValue]);
 
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    setUserData({
-      ...userData,
-      [id]: value,
-    });
+    setValue(id as keyof typeof formData, value, { shouldValidate: true });
+  };
 
-    if (setFormData && formData) {
-      setFormData({
-        ...formData,
-        [id]: value,
-      });
-    }
+  const handleSocialLinksChange = (
+    links: { platform: string; url: string }[]
+  ) => {
+    setSocialLinks(links);
+    setValue("socialLinks", links, { shouldValidate: true });
+  };
+
+  const handleProfilePictureChange = (file: File | null) => {
+    setProfilePicture(file);
+    setValue("profilePicture", file, { shouldValidate: true });
+  };
+
+  const handleBannerImageChange = (file: File | null) => {
+    setBannerImage(file);
+    setValue("bannerImage", file, { shouldValidate: true });
   };
 
   // Animation variants
@@ -106,37 +99,14 @@ export function PersonalDetailsSection({
     },
   };
 
-  const handleSocialLinksChange = (
-    links: { platform: string; url: string }[]
-  ) => {
-    setSocialLinks(links);
-    if (setFormData && formData) {
-      setFormData({
-        ...formData,
-        socialLinks: links,
-      });
-    }
-  };
-
-  const handleProfilePictureChange = (file: File | null) => {
-    setProfilePicture(file);
-    if (setFormData && formData) {
-      setFormData({
-        ...formData,
-        profilePicture: file,
-      });
-    }
-  };
-
-  const handleBannerImageChange = (file: File | null) => {
-    setBannerImage(file);
-    if (setFormData && formData) {
-      setFormData({
-        ...formData,
-        bannerImage: file,
-      });
-    }
-  };
+  // If Clerk data is still loading, show a loading state
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-4 h-4 animate-spin" />
+      </div>
+    );
+  }
 
   const rightContent = (
     <RightContentLayout
@@ -168,10 +138,8 @@ export function PersonalDetailsSection({
     <FormSectionLayout
       title="Contact Details"
       description="Let's get your essential information"
-      onNext={onNext}
-      onPrev={onPrev}
-      onSkip={onSkip}
-      onFirstSection={onFirstSection}
+      onNext={handleNext}
+      onFirstSection={goToFirstSection}
       rightContent={rightContent}
     >
       <motion.div
@@ -192,7 +160,9 @@ export function PersonalDetailsSection({
               type="email"
               required
               disabled={true}
-              value={userData.email}
+              value={
+                formData?.email || user?.emailAddresses[0]?.emailAddress || ""
+              }
               placeholder="Email Address"
               className="bg-white/5 text-white pl-10 opacity-70"
             />
@@ -208,7 +178,9 @@ export function PersonalDetailsSection({
               type="tel"
               required
               disabled={true}
-              value={userData.phone}
+              value={
+                formData?.phone || user?.phoneNumbers[0]?.phoneNumber || ""
+              }
               placeholder="Phone Number"
               className="bg-white/5 text-white pl-10 opacity-70"
             />
@@ -223,7 +195,7 @@ export function PersonalDetailsSection({
               type="text"
               required
               disabled={true}
-              value={userData.username}
+              value={formData?.username || user?.username || ""}
               placeholder="Username"
               className="bg-white/5 text-white pl-10 opacity-70"
             />
@@ -237,7 +209,7 @@ export function PersonalDetailsSection({
             <Input
               id="website"
               type="url"
-              value={userData.website}
+              value={formData?.website || ""}
               onChange={handleInputChange}
               placeholder="Website URL"
               className="bg-white/5 text-white pl-10"
@@ -267,7 +239,9 @@ export function PersonalDetailsSection({
             <div className="flex-grow pl-6">
               <h3 className="text-white font-medium mb-1">Profile Picture</h3>
               <p className="text-white/60 text-sm">
-                Add a professional photo to help others recognize you
+                {profilePicture
+                  ? "Edit or replace your profile photo"
+                  : "Add a professional photo to help others recognize you"}
               </p>
             </div>
           </motion.div>

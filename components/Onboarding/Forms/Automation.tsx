@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Input } from "@/components/UI/input";
 import { FormSectionLayout } from "./FormSectionLayout";
 import { MultiSelect } from "@/components/UI/MultiSelect";
@@ -26,8 +26,13 @@ interface AutomationProps {
   initialTools?: string[];
   customServices?: string[];
   customTools?: string[];
-  setCustomServices?: (value: string[]) => void;
-  setCustomTools?: (value: string[]) => void;
+  onServicesChange: (services: string[]) => void;
+  onToolsChange: (tools: string[]) => void;
+  errors?: {
+    services?: string;
+    tools?: string;
+  };
+  canProceed?: boolean;
 }
 
 const containerVariants: Variants = {
@@ -76,36 +81,15 @@ export function Automation({
   toolsPlaceholder = "Other tools or platforms...",
   initialServices = [],
   initialTools = [],
+  onServicesChange,
+  onToolsChange,
+  errors = {},
+  canProceed = false,
 }: AutomationProps) {
-  const [selectedServices, setSelectedServices] =
-    useState<string[]>(initialServices);
-  const [selectedTools, setSelectedTools] = useState<string[]>(initialTools);
-
-  // Custom handler for next button to ensure validation
+  // Handle next button click
   const handleNext = () => {
-    // Create hidden input fields to store custom values
-    const form = document.querySelector("form");
-    if (form) {
-      // Remove any existing hidden fields
-      const existingFields = form.querySelectorAll(".custom-field");
-      existingFields.forEach((field) => field.remove());
-    }
-
-    // Only allow proceeding if at least one service is selected
-    if (selectedServices.length > 0) {
+    if (canProceed) {
       onNext();
-    } else {
-      // Add visual indication that selection is required
-      document
-        .querySelector(".automation-services")
-        ?.classList.add("border-red-500");
-
-      // Show error message
-      const errorMessage = document.querySelector(".error-message");
-      if (errorMessage) {
-        errorMessage.textContent = "Please select at least one service";
-        errorMessage.classList.remove("hidden");
-      }
     }
   };
 
@@ -117,6 +101,7 @@ export function Automation({
       onPrev={onPrev}
       onSkip={onSkip}
       rightContent={rightContent}
+      canProceed={canProceed}
     >
       <motion.div
         className="space-y-8"
@@ -137,12 +122,14 @@ export function Automation({
           <motion.div variants={itemVariants} className="automation-services">
             <MultiSelect
               options={servicesOptions}
-              selectedValues={selectedServices}
-              onChange={setSelectedServices}
+              selectedValues={initialServices}
+              onChange={onServicesChange}
               className="pt-1"
             />
+            {errors.services && (
+              <p className="text-red-500 text-sm mt-2">{errors.services}</p>
+            )}
           </motion.div>
-          <p className="text-red-500 text-sm hidden error-message"></p>
         </motion.div>
 
         {/* Tools/Platforms Expertise */}
@@ -156,10 +143,13 @@ export function Automation({
           <motion.div variants={itemVariants} className="tools-expertise">
             <MultiSelect
               options={toolsOptions}
-              selectedValues={selectedTools}
-              onChange={setSelectedTools}
+              selectedValues={initialTools}
+              onChange={onToolsChange}
               className="pt-1"
             />
+            {errors.tools && (
+              <p className="text-red-500 text-sm mt-2">{errors.tools}</p>
+            )}
           </motion.div>
         </motion.div>
       </motion.div>

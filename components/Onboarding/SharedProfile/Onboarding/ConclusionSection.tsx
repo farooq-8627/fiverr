@@ -1,45 +1,44 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Checkbox } from "@/components/UI/checkbox";
 import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
 import Link from "next/link";
 import { motion, Variants } from "framer-motion";
+import { useAgentProfileForm } from "@/components/Onboarding/AgentProfile/context/AgentProfileFormContext";
+import { toast } from "sonner";
 
 interface ConclusionSectionProps {
-  onSubmit: () => void;
-  onPrev: () => void;
   userType: "agent" | "client";
-  formData?: any;
-  setFormData?: (data: any) => void;
-  isLoading?: boolean;
 }
 
-export function ConclusionSection({
-  onSubmit,
-  onPrev,
-  userType,
-  formData,
-  setFormData,
-  isLoading = false,
-}: ConclusionSectionProps) {
-  // Use form data if provided, otherwise use local state
+export function ConclusionSection({ userType }: ConclusionSectionProps) {
+  const { handlePrev, handleSubmit } = useAgentProfileForm();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [localState, setLocalState] = useState({
     acceptedTerms: false,
     acceptedPrivacy: false,
     acceptedCommunications: false,
   });
 
-  const acceptedTerms = formData?.acceptedTerms ?? localState.acceptedTerms;
-  const acceptedPrivacy =
-    formData?.acceptedPrivacy ?? localState.acceptedPrivacy;
-  const acceptedCommunications =
-    formData?.acceptedCommunications ?? localState.acceptedCommunications;
-
   const handleCheckboxChange = (field: string, checked: boolean) => {
-    if (setFormData && formData) {
-      setFormData({ ...formData, [field]: checked });
-    } else {
-      setLocalState((prev) => ({ ...prev, [field]: checked }));
+    setLocalState((prev) => ({ ...prev, [field]: checked }));
+  };
+
+  // Check if all required checkboxes are checked
+  const canSubmit = localState.acceptedTerms && localState.acceptedPrivacy;
+
+  // Custom submit handler that shows loading state
+  const handleFormSubmit = () => {
+    console.log("Submit button clicked, canSubmit:", canSubmit);
+
+    if (canSubmit) {
+      toast.info("Submitting your profile...");
+      setIsSubmitting(true);
+
+      // Call the context's submit handler
+      console.log("Calling handleSubmit from context");
+      handleSubmit();
     }
   };
 
@@ -100,19 +99,21 @@ export function ConclusionSection({
           description: "Complete your profile to start your journey",
         },
       ]}
-      currentStep={5}
+      currentStep={6}
       totalSteps={6}
     />
   );
 
+  // This is the key part - we're explicitly NOT providing onNext
   return (
     <FormSectionLayout
       title="Complete Your Profile"
       description="Review and accept our terms to start your journey"
-      onSubmit={onSubmit}
-      onPrev={onPrev}
+      onSubmit={handleFormSubmit} // Only providing onSubmit, not onNext
+      onPrev={handlePrev}
       rightContent={rightContent}
-      isSubmitting={isLoading}
+      canProceed={canSubmit}
+      isSubmitting={isSubmitting}
     >
       <motion.div
         variants={containerVariants}
@@ -125,11 +126,12 @@ export function ConclusionSection({
           <div className="flex items-start space-x-3">
             <Checkbox
               id="terms"
-              checked={acceptedTerms}
+              checked={localState.acceptedTerms}
               onCheckedChange={(checked) =>
                 handleCheckboxChange("acceptedTerms", checked as boolean)
               }
               className="mt-1"
+              disabled={isSubmitting}
             />
             <label htmlFor="terms" className="text-sm text-white/80">
               I accept the{" "}
@@ -147,11 +149,12 @@ export function ConclusionSection({
           <div className="flex items-start space-x-3">
             <Checkbox
               id="privacy"
-              checked={acceptedPrivacy}
+              checked={localState.acceptedPrivacy}
               onCheckedChange={(checked) =>
                 handleCheckboxChange("acceptedPrivacy", checked as boolean)
               }
               className="mt-1"
+              disabled={isSubmitting}
             />
             <label htmlFor="privacy" className="text-sm text-white/80">
               I have read and agree to the{" "}
@@ -169,7 +172,7 @@ export function ConclusionSection({
           <div className="flex items-start space-x-3">
             <Checkbox
               id="communications"
-              checked={acceptedCommunications}
+              checked={localState.acceptedCommunications}
               onCheckedChange={(checked) =>
                 handleCheckboxChange(
                   "acceptedCommunications",
@@ -177,6 +180,7 @@ export function ConclusionSection({
                 )
               }
               className="mt-1"
+              disabled={isSubmitting}
             />
             <label htmlFor="communications" className="text-sm text-white/80">
               I agree to receive important updates, new opportunities, and

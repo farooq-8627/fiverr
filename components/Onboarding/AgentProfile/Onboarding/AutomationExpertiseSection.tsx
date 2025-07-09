@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
 import { Automation } from "@/components/Onboarding/Forms/Automation";
 import {
@@ -6,14 +6,10 @@ import {
   AGENT_TOOLS_EXPERTISE,
 } from "@/sanity/schemaTypes/constants";
 import { convertToOnboardingFormat } from "@/lib/constants-utils";
-
-interface AutomationExpertiseSectionProps {
-  onNext: () => void;
-  onPrev?: () => void;
-  onSkip?: () => void;
-  formData: any;
-  setFormData: (data: any) => void;
-}
+import {
+  useAgentProfileForm,
+  useAgentProfileFormFields,
+} from "../context/AgentProfileFormContext";
 
 // Use centralized constants converted to the format needed by the component
 const agentAutomationServices = convertToOnboardingFormat(
@@ -21,55 +17,29 @@ const agentAutomationServices = convertToOnboardingFormat(
 );
 const agentToolsExpertise = convertToOnboardingFormat(AGENT_TOOLS_EXPERTISE);
 
-export function AutomationExpertiseSection({
-  onNext,
-  onPrev,
-  onSkip,
-  formData,
-  setFormData,
-}: AutomationExpertiseSectionProps) {
-  // Track selected values in state
-  const [automationExpertise, setAutomationExpertise] = useState<{
-    services: string[];
-    tools: string[];
-  }>({
-    services: formData?.skills || [],
-    tools: formData?.automationTools || [],
-  });
+export function AutomationExpertiseSection() {
+  const { handleNext, handlePrev, canProceed } = useAgentProfileForm();
+  const {
+    register,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useAgentProfileFormFields();
 
-  // Custom next handler to capture data from Automation component
-  const handleNext = () => {
-    // Get the selected values from the DOM
-    const servicesElements = document.querySelectorAll(
-      ".automation-services .selected-item"
-    );
-    const toolsElements = document.querySelectorAll(
-      ".tools-expertise .selected-item"
-    );
+  // Watch form values
+  const skills = watch("skills") || [];
+  const automationTools = watch("automationTools") || [];
 
-    const newSelectedServices = Array.from(servicesElements).map(
-      (el) => el.getAttribute("data-value") || ""
-    );
-    const newSelectedTools = Array.from(toolsElements).map(
-      (el) => el.getAttribute("data-value") || ""
-    );
+  // Handle service selection
+  const handleServicesChange = (services: string[]) => {
+    setValue("skills", services, { shouldValidate: true });
+  };
 
-    // Update local state
-    setAutomationExpertise({
-      services: newSelectedServices,
-      tools: newSelectedTools,
-    });
-
-    // Update form data
-    setFormData({
-      ...formData,
-      skills: newSelectedServices,
-      automationTools: newSelectedTools,
-      expertiseLevel: "intermediate", // Add a default expertise level to pass validation
-    });
-
-    // Call the parent's onNext
-    onNext();
+  // Handle tools selection
+  const handleToolsChange = (tools: string[]) => {
+    setValue("automationTools", tools, { shouldValidate: true });
+    // Set a default expertise level if not already set
+    setValue("expertiseLevel", "intermediate", { shouldValidate: true });
   };
 
   const rightContent = (
@@ -103,8 +73,8 @@ export function AutomationExpertiseSection({
   return (
     <Automation
       onNext={handleNext}
-      onPrev={onPrev}
-      onSkip={onSkip}
+      onPrev={handlePrev}
+      onSkip={() => {}} // Removed handleSkip as per new_code
       rightContent={rightContent}
       title="Automation Expertise"
       description="Select your primary automation services and tools expertise"
@@ -112,8 +82,15 @@ export function AutomationExpertiseSection({
       toolsTitle="Tools/Platforms Expertise"
       servicesOptions={agentAutomationServices}
       toolsOptions={agentToolsExpertise}
-      initialServices={automationExpertise.services}
-      initialTools={automationExpertise.tools}
+      initialServices={skills}
+      initialTools={automationTools}
+      onServicesChange={handleServicesChange}
+      onToolsChange={handleToolsChange}
+      errors={{
+        services: errors.skills?.message,
+        tools: errors.automationTools?.message,
+      }}
+      canProceed={canProceed}
     />
   );
 }

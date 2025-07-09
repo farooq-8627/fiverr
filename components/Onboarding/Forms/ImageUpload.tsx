@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FileUpload } from "./file-upload";
 import { Button } from "../../UI/button";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 // Supported image formats
 const SUPPORTED_FORMATS = [
@@ -28,6 +29,38 @@ export function ImageUpload({
 }: ImageUploadProps) {
   const isProfile = type === "profile" || type === "logo";
   const [error, setError] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Create object URL when image changes
+  useEffect(() => {
+    // Clean up previous URL to avoid memory leaks
+    if (imageUrl) {
+      URL.revokeObjectURL(imageUrl);
+      setImageUrl(null);
+    }
+
+    // Only create a URL if we have a valid File object
+    if (image instanceof File) {
+      setIsLoading(true);
+      try {
+        const url = URL.createObjectURL(image);
+        setImageUrl(url);
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Error creating object URL:", err);
+        setError("Failed to load image preview");
+        setIsLoading(false);
+      }
+    }
+
+    // Clean up function to revoke URL when component unmounts or image changes
+    return () => {
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
+    };
+  }, [image]);
 
   const validateImage = (file: File | null): boolean => {
     if (!file) return true;
@@ -59,6 +92,13 @@ export function ImageUpload({
   const handleRemove = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Clean up URL before removing the image
+    if (imageUrl) {
+      URL.revokeObjectURL(imageUrl);
+      setImageUrl(null);
+    }
+
     onImageChange(null);
     setError(null);
   };
@@ -96,10 +136,10 @@ export function ImageUpload({
             : "h-24 rounded-lg bg-white/5 border border-white/20"
         } overflow-hidden`}
       >
-        {image ? (
+        {imageUrl && image ? (
           <div className="relative w-full h-full group/image">
             <img
-              src={URL.createObjectURL(image)}
+              src={imageUrl}
               alt={
                 type === "profile"
                   ? "Profile"
@@ -124,6 +164,10 @@ export function ImageUpload({
                 <i className="fas fa-trash text-sm" />
               </Button>
             </div>
+          </div>
+        ) : isLoading ? (
+          <div className="w-full h-full flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-white/50" />
           </div>
         ) : (
           <div

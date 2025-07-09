@@ -10,14 +10,10 @@ import { cn } from "@/lib/utils";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
 import { Project } from "@/types/profile";
 import { ProjectCard } from "../../Forms/ProjectCard";
-
-interface ProjectsSectionProps {
-  onNext: () => void;
-  onPrev?: () => void;
-  onSkip?: () => void;
-  formData: any;
-  setFormData: (data: any) => void;
-}
+import {
+  useAgentProfileForm,
+  useAgentProfileFormFields,
+} from "../context/AgentProfileFormContext";
 
 const containerVariants: Variants = {
   hidden: {
@@ -52,15 +48,20 @@ const itemVariants: Variants = {
   },
 };
 
-export function ProjectsSection({
-  onNext,
-  onPrev,
-  onSkip,
-  formData,
-  setFormData,
-}: ProjectsSectionProps) {
+export function ProjectsSection() {
+  const { handleNext, handlePrev, handleSkip } = useAgentProfileForm();
+  const { watch, setValue } = useAgentProfileFormFields();
+  const formData = watch();
+
   // Initialize state from formData if available
-  const [projects, setProjects] = useState<Project[]>(formData?.projects || []);
+  const [projects, setProjects] = useState<Project[]>(
+    (formData?.projects || []).map((project) => ({
+      ...project,
+      activeImageIndex: -1,
+      images: project.images || [],
+      imageUrls: project.imageUrls || [],
+    }))
+  );
   const [currentProject, setCurrentProject] = useState<Project>({
     id: "new",
     title: "",
@@ -140,10 +141,7 @@ export function ProjectsSection({
     setProjects(updatedProjects);
 
     // Then update formData
-    setFormData({
-      ...formData,
-      projects: updatedProjects,
-    });
+    setValue("projects", updatedProjects, { shouldValidate: true });
 
     // Reset current project
     setCurrentProject({
@@ -167,10 +165,7 @@ export function ProjectsSection({
     setProjects(updatedProjects);
 
     // Update formData
-    setFormData({
-      ...formData,
-      projects: updatedProjects,
-    });
+    setValue("projects", updatedProjects, { shouldValidate: true });
 
     // Reset current project
     setCurrentProject({
@@ -197,10 +192,7 @@ export function ProjectsSection({
     setSavedProjectImages(updatedSavedImages);
 
     // Update formData
-    setFormData({
-      ...formData,
-      projects: updatedProjects,
-    });
+    setValue("projects", updatedProjects, { shouldValidate: true });
   };
 
   const updateCurrentProject = (
@@ -248,9 +240,9 @@ export function ProjectsSection({
     <FormSectionLayout
       title="Project Portfolio"
       description="Showcase your best automation projects"
-      onNext={onNext}
-      onPrev={onPrev}
-      onSkip={onSkip}
+      onNext={handleNext}
+      onPrev={handlePrev}
+      onSkip={handleSkip}
       rightContent={rightContent}
     >
       <motion.div

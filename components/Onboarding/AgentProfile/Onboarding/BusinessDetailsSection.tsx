@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { motion, Variants } from "framer-motion";
 import {
   Select,
@@ -21,14 +21,10 @@ import {
   convertToOnboardingFormat,
   convertToSelectFormat,
 } from "@/lib/constants-utils";
-
-interface BusinessDetailsSectionProps {
-  onNext: () => void;
-  onPrev?: () => void;
-  onSkip?: () => void;
-  formData: any;
-  setFormData: (data: any) => void;
-}
+import {
+  useAgentProfileForm,
+  useAgentProfileFormFields,
+} from "../context/AgentProfileFormContext";
 
 const containerVariants: Variants = {
   hidden: {
@@ -68,65 +64,39 @@ const teamSizes = convertToSelectFormat(TEAM_SIZES);
 const availabilityOptions = convertToSelectFormat(AVAILABILITY_OPTIONS);
 const workTypeOptions = convertToSelectFormat(WORKING_HOURS_PREFERENCES);
 
-export function BusinessDetailsSection({
-  onNext,
-  onPrev,
-  onSkip,
-  formData,
-  setFormData,
-}: BusinessDetailsSectionProps) {
-  // Initialize state from formData if available
-  const [pricingModel, setPricingModel] = useState(
-    formData?.pricingModel || ""
-  );
-  const [selectedProjectSizes, setSelectedProjectSizes] = useState<string[]>(
-    formData?.projectSizePreference || []
-  );
-  const [teamSize, setTeamSize] = useState(formData?.teamSize || "");
-  const [availability, setAvailability] = useState(
-    formData?.availability || ""
-  );
-  const [workType, setWorkType] = useState(formData?.workType || "");
+export function BusinessDetailsSection() {
+  const { handleNext, handlePrev, handleSkip } = useAgentProfileForm();
+  const { watch, setValue } = useAgentProfileFormFields();
 
-  // Custom handlers to update both local state and formData
+  // Get form data
+  const formData = watch();
+
+  // Get values from form data
+  const pricingModel = formData?.pricingModel || "";
+  const selectedProjectSizes = formData?.projectSizePreference || [];
+  const teamSize = formData?.teamSize || "";
+  const availability = formData?.availability || "";
+  const workType = formData?.workType || "";
+
+  // Custom handlers to update form data
   const handlePricingChange = (value: string) => {
-    setPricingModel(value);
-    setFormData({
-      ...formData,
-      pricingModel: value,
-    });
+    setValue("pricingModel", value, { shouldValidate: true });
   };
 
   const handleProjectSizesChange = (sizes: string[]) => {
-    setSelectedProjectSizes(sizes);
-    setFormData({
-      ...formData,
-      projectSizePreference: sizes, // Store as an array
-    });
+    setValue("projectSizePreference", sizes, { shouldValidate: true });
   };
 
   const handleTeamSizeChange = (value: string) => {
-    setTeamSize(value);
-    setFormData({
-      ...formData,
-      teamSize: value,
-    });
+    setValue("teamSize", value, { shouldValidate: true });
   };
 
   const handleAvailabilityChange = (value: string) => {
-    setAvailability(value);
-    setFormData({
-      ...formData,
-      availability: value,
-    });
+    setValue("availability", value, { shouldValidate: true });
   };
 
   const handleWorkTypeChange = (value: string) => {
-    setWorkType(value);
-    setFormData({
-      ...formData,
-      workType: value,
-    });
+    setValue("workType", value, { shouldValidate: true });
   };
 
   const rightContent = (
@@ -153,34 +123,18 @@ export function BusinessDetailsSection({
             "Set clear expectations about your working hours and commitment",
         },
       ]}
-      currentStep={4}
+      currentStep={5}
       totalSteps={6}
     />
   );
-
-  // Custom next handler to ensure all form data is captured before proceeding
-  const handleNext = () => {
-    // Make sure all current values are in formData before proceeding
-    setFormData({
-      ...formData,
-      pricingModel: pricingModel,
-      projectSizePreference: selectedProjectSizes, // Keep as an array
-      teamSize: teamSize,
-      availability: availability,
-      workType: workType,
-    });
-
-    // Then call the parent's onNext
-    onNext();
-  };
 
   return (
     <FormSectionLayout
       title="Business Details"
       description="Set your business structure and project preferences"
       onNext={handleNext}
-      onPrev={onPrev}
-      onSkip={onSkip}
+      onPrev={handlePrev}
+      onSkip={handleSkip}
       rightContent={rightContent}
     >
       <motion.div

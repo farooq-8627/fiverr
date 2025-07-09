@@ -268,7 +268,15 @@ export const clientProjectSchema = defineType({
       name: "assignedAgents",
       title: "Assigned Agents",
       type: "array",
-      of: [{ type: "reference", to: [{ type: "agentProfile" }] }],
+      of: [
+        {
+          type: "reference",
+          to: [{ type: "agentProfile" }],
+          options: {
+            disableNew: true,
+          },
+        },
+      ],
     }),
     defineField({
       name: "status",

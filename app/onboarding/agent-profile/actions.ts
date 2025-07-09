@@ -351,7 +351,7 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
       interface CompanyData {
         _type: string;
         name: string;
-        companySize: string;
+        teamSize: string;
         bio: string;
         website: string;
         companyType: string;
@@ -364,10 +364,10 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
 
       const companyData: CompanyData = {
         _type: "company", // Use the base company type
-        name: formData.get("companyDetails.name") as string,
-        companySize: formData.get("companyDetails.teamSize") as string, // Match the field name in the schema
-        bio: formData.get("companyDetails.bio") as string,
-        website: formData.get("companyDetails.website") as string,
+        name: formData.get("company.name") as string,
+        teamSize: formData.get("company.teamSize") as string, // Match the field name in the schema
+        bio: formData.get("company.bio") as string,
+        website: formData.get("company.website") as string,
         companyType: "agent", // Specify this is an agent company
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -375,31 +375,27 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
 
       // Add service offerings if available
       const serviceOfferings = formData.getAll(
-        "companyDetails.serviceOfferings"
+        "company.serviceOfferings"
       ) as string[];
       if (serviceOfferings && serviceOfferings.length > 0) {
         companyData.serviceOfferings = serviceOfferings;
       }
 
       // Add industries if available
-      const industries = formData.getAll(
-        "companyDetails.industries"
-      ) as string[];
+      const industries = formData.getAll("company.industries") as string[];
       if (industries && industries.length > 0) {
         companyData.industries = industries;
       }
 
       // Add years in business if available
-      const yearsInBusiness = formData.get(
-        "companyDetails.yearsInBusiness"
-      ) as string;
+      const yearsInBusiness = formData.get("company.yearsInBusiness") as string;
       if (yearsInBusiness) {
         companyData.yearsInBusiness = parseInt(yearsInBusiness, 10);
       }
 
       // Queue company logo and banner for async upload
-      const companyLogo = formData.get("companyDetails.logo") as File;
-      const companyBanner = formData.get("companyDetails.banner") as File;
+      const companyLogo = formData.get("company.logo") as File;
+      const companyBanner = formData.get("company.banner") as File;
 
       try {
         // Create the company document first (without images)

@@ -1,5 +1,5 @@
 import { defineField, defineType } from "sanity";
-import { INDUSTRY_DOMAINS, COMPANY_SIZES } from "./constants";
+import { INDUSTRY_DOMAINS, TEAM_SIZES } from "./constants";
 
 // Shared Base Company Schema
 export const companySchema = defineType({
@@ -14,11 +14,11 @@ export const companySchema = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
-      name: "companySize",
-      title: "Company Size",
+      name: "teamSize",
+      title: "Team Size",
       type: "string",
       options: {
-        list: COMPANY_SIZES,
+        list: TEAM_SIZES,
       },
     }),
     defineField({
@@ -92,4 +92,11 @@ export const companySchema = defineType({
       type: "datetime",
     }),
   ],
+  preview: {
+    select: {
+      title: "name",
+      subtitle: "bio",
+      media: "logo",
+    },
+  },
 });

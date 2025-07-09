@@ -85,7 +85,7 @@ export function ProjectScopeDetails({
     if (formData) {
       setBudgetRange(formData.budgetRange || "");
       setTimeline(formData.timeline || "");
-      setComplexity(formData.priority || ""); // Using complexity for priority
+      setComplexity(formData.complexity || ""); // Fix: Use complexity instead of priority
       setEngagementType(formData.engagementType || "");
       setTeamSize(formData.teamSizeRequired || "");
       setExperience(formData.experienceLevel || "");
@@ -115,7 +115,7 @@ export function ProjectScopeDetails({
 
   const handleComplexityChange = (value: string) => {
     setComplexity(value);
-    updateFormData("priority", value);
+    updateFormData("complexity", value); // Fix: Update complexity instead of priority
   };
 
   const handleEngagementChange = (value: string) => {
@@ -141,7 +141,7 @@ export function ProjectScopeDetails({
         ...formData,
         budgetRange,
         timeline,
-        priority: complexity,
+        complexity, // Fix: Use complexity instead of priority
         engagementType,
         teamSizeRequired: teamSize,
         experienceLevel: experience,
