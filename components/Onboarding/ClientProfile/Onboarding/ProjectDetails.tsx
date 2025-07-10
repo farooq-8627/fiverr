@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+"use client";
+import React from "react";
 import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
 import { Input } from "@/components/UI/input";
 import { Textarea } from "@/components/UI/textarea";
@@ -13,15 +14,11 @@ import { motion, Variants } from "framer-motion";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
 import { INDUSTRY_DOMAINS } from "@/sanity/schemaTypes/constants";
 import { convertToSelectFormat } from "@/lib/constants-utils";
-import { ProjectRequirements } from "@/types/profile";
-
-interface ProjectDetailsProps {
-  onNext: () => void;
-  onPrev?: () => void;
-  onSkip?: () => void;
-  formData?: any;
-  setFormData?: (data: any) => void;
-}
+import {
+  useClientProfileForm,
+  useClientProfileFormFields,
+} from "../context/ClientProfileFormContext";
+import { toast } from "sonner";
 
 const containerVariants: Variants = {
   hidden: {
@@ -59,73 +56,46 @@ const itemVariants: Variants = {
 // Use centralized constants converted to the format needed by the component
 const businessDomains = convertToSelectFormat(INDUSTRY_DOMAINS);
 
-export function ProjectDetails({
-  onNext,
-  onPrev,
-  onSkip,
-  formData,
-  setFormData,
-}: ProjectDetailsProps) {
-  const [projectRequirements, setProjectRequirements] =
-    useState<ProjectRequirements>({
-      title: "",
-      description: "",
-      businessDomain: "",
-      painPoints: "",
-    });
+export function ProjectDetails() {
+  const { handleNext, handlePrev, handleSkip } = useClientProfileForm();
+  const {
+    watch,
+    setValue,
+    formState: { errors },
+  } = useClientProfileFormFields();
 
-  // Initialize from formData if available
-  useEffect(() => {
-    if (formData) {
-      setProjectRequirements({
-        title: formData.projectTitle || "",
-        description: formData.projectDescription || "",
-        businessDomain: formData.businessDomain || "",
-        painPoints: formData.painPoints || "",
-      });
+  // Get form data
+  const formData = watch();
+
+  // Project requirements fields
+  const projectTitle = formData?.projectTitle || "";
+  const businessDomain = formData?.businessDomain || "";
+  const projectDescription = formData?.projectDescription || "";
+  const painPoints = formData?.painPoints || "";
+
+  // Validate and proceed to next step
+  const validateAndProceed = () => {
+    const values = watch();
+    const errors = [];
+
+    if (!values.projectTitle?.trim()) {
+      errors.push("Please enter a project title");
     }
-  }, [formData]);
 
-  const updateField = (field: keyof ProjectRequirements, value: string) => {
-    setProjectRequirements((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    // Update parent form data if available
-    if (setFormData) {
-      const updatedData: any = {};
-      switch (field) {
-        case "title":
-          updatedData.projectTitle = value;
-          break;
-        case "description":
-          updatedData.projectDescription = value;
-          break;
-        case "businessDomain":
-          updatedData.businessDomain = value;
-          break;
-        case "painPoints":
-          updatedData.painPoints = value;
-          break;
-      }
-      setFormData({ ...formData, ...updatedData });
+    if (!values.businessDomain?.trim()) {
+      errors.push("Please select a business domain");
     }
-  };
 
-  // Custom next handler
-  const handleNext = () => {
-    // Save all data to parent form before proceeding
-    if (setFormData && formData) {
-      setFormData({
-        ...formData,
-        projectTitle: projectRequirements.title,
-        businessDomain: projectRequirements.businessDomain,
-        projectDescription: projectRequirements.description,
-        painPoints: projectRequirements.painPoints,
-      });
+    if (!values.projectDescription?.trim()) {
+      errors.push("Please provide a project description");
     }
-    onNext();
+
+    if (errors.length > 0) {
+      errors.forEach((error) => toast.error(error));
+      return;
+    }
+
+    handleNext();
   };
 
   const rightContent = (
@@ -158,9 +128,9 @@ export function ProjectDetails({
     <FormSectionLayout
       title="Project Details"
       description="Tell us about your automation project"
-      onNext={handleNext}
-      onPrev={onPrev}
-      onSkip={onSkip}
+      onNext={validateAndProceed}
+      onPrev={handlePrev}
+      onSkip={handleSkip}
       rightContent={rightContent}
     >
       <motion.div
@@ -170,26 +140,29 @@ export function ProjectDetails({
         animate="visible"
       >
         <motion.div variants={itemVariants} className="space-y-2">
-          {/* <label className="text-sm font-medium text-white/60">
-            Project Title
-          </label> */}
           <Input
             placeholder="Enter your project title"
-            value={projectRequirements.title}
-            onChange={(e) => updateField("title", e.target.value)}
+            value={projectTitle}
+            onChange={(e) =>
+              setValue("projectTitle", e.target.value, { shouldValidate: true })
+            }
             className="bg-white/5 text-white placeholder:text-white/40"
           />
+          {errors.projectTitle && (
+            <p className="text-red-500 text-sm">
+              {errors.projectTitle.message as string}
+            </p>
+          )}
         </motion.div>
 
         <motion.div variants={itemVariants} className="space-y-2">
-          {/* <label className="text-sm font-medium text-white/60">
-            Business Domain
-          </label> */}
           <Select
-            value={projectRequirements.businessDomain}
-            onValueChange={(value) => updateField("businessDomain", value)}
+            value={businessDomain}
+            onValueChange={(value) =>
+              setValue("businessDomain", value, { shouldValidate: true })
+            }
           >
-            <SelectTrigger className="bg-white/5  text-white">
+            <SelectTrigger className="bg-white/5 text-white">
               <SelectValue placeholder="Select your business domain" />
             </SelectTrigger>
             <SelectContent>
@@ -200,6 +173,11 @@ export function ProjectDetails({
               ))}
             </SelectContent>
           </Select>
+          {errors.businessDomain && (
+            <p className="text-red-500 text-sm">
+              {errors.businessDomain.message as string}
+            </p>
+          )}
         </motion.div>
 
         <motion.div variants={itemVariants} className="space-y-2">
@@ -208,9 +186,13 @@ export function ProjectDetails({
           </label>
           <Textarea
             placeholder="Describe your project in detail. What are you trying to achieve?"
-            value={projectRequirements.description}
-            onChange={(e) => updateField("description", e.target.value)}
-            className="bg-white/5  text-white placeholder:text-white/40 min-h-[100px]"
+            value={projectDescription}
+            onChange={(e) =>
+              setValue("projectDescription", e.target.value, {
+                shouldValidate: true,
+              })
+            }
+            className="bg-white/5 text-white placeholder:text-white/40 min-h-[100px]"
           />
         </motion.div>
 
@@ -220,8 +202,10 @@ export function ProjectDetails({
           </label>
           <Textarea
             placeholder="What challenges or pain points are you currently facing that you want to solve with automation?"
-            value={projectRequirements.painPoints}
-            onChange={(e) => updateField("painPoints", e.target.value)}
+            value={painPoints}
+            onChange={(e) =>
+              setValue("painPoints", e.target.value, { shouldValidate: true })
+            }
             className="bg-white/5 text-white placeholder:text-white/40 min-h-[100px]"
           />
         </motion.div>

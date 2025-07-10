@@ -1,74 +1,58 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Input } from "@/components/UI/input";
 import { SocialMediaIcons } from "@/components/Onboarding/Forms/SocialMediaIcons";
 import { ImageUpload } from "@/components/Onboarding/Forms/ImageUpload";
 import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
 import { motion } from "framer-motion";
-import { useUser } from "@clerk/nextjs";
-import {
-  useAgentProfileForm,
-  useAgentProfileFormFields,
-} from "@/components/Onboarding/AgentProfile/context/AgentProfileFormContext";
 import { Loader2 } from "lucide-react";
+import { useUser } from "@clerk/nextjs";
 
-export function PersonalDetailsSection() {
-  const { handleNext, goToFirstSection, canProceed } = useAgentProfileForm();
-  const {
-    register,
-    watch,
-    setValue,
-    formState: { errors },
-  } = useAgentProfileFormFields();
+export interface PersonalDetailsSectionUIProps {
+  // Form control props
+  handleNext: () => void;
+  goToFirstSection: () => void;
+  canProceed?: boolean;
+
+  // Form data props
+  email: string;
+  phone: string;
+  username: string;
+  website: string;
+  socialLinks: { platform: string; url: string }[];
+  profilePicture: File | null;
+  bannerImage: File | null;
+
+  // Form handlers
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleSocialLinksChange: (links: { platform: string; url: string }[]) => void;
+  handleProfilePictureChange: (file: File | null) => void;
+  handleBannerImageChange: (file: File | null) => void;
+
+  // Right content customization
+  subtitle?: string;
+  userType: "agent" | "client";
+}
+
+export function PersonalDetailsSectionUI({
+  handleNext,
+  goToFirstSection,
+  canProceed,
+  email,
+  phone,
+  username,
+  website,
+  socialLinks,
+  profilePicture,
+  bannerImage,
+  handleInputChange,
+  handleSocialLinksChange,
+  handleProfilePictureChange,
+  handleBannerImageChange,
+  subtitle = "Let's start with the basics. Tell us about yourself.",
+  userType,
+}: PersonalDetailsSectionUIProps) {
   const { user, isLoaded } = useUser();
-
-  // Get form data
-  const formData = watch();
-
-  // Initialize state with form data or Clerk data
-  const [socialLinks, setSocialLinks] = useState(formData?.socialLinks || []);
-  const [profilePicture, setProfilePicture] = useState(
-    formData?.profilePicture || null
-  );
-  const [bannerImage, setBannerImage] = useState(formData?.bannerImage || null);
-
-  // Use Clerk data when available
-  useEffect(() => {
-    if (isLoaded && user) {
-      // Get user data from Clerk
-      const email = user.emailAddresses[0]?.emailAddress || "";
-      const phone = user.phoneNumbers[0]?.phoneNumber || "";
-      const username = user.username || "";
-
-      // Set form values from Clerk data
-      setValue("email", email);
-      setValue("phone", phone);
-      setValue("username", username);
-    }
-  }, [isLoaded, user, setValue]);
-
-  // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setValue(id as keyof typeof formData, value, { shouldValidate: true });
-  };
-
-  const handleSocialLinksChange = (
-    links: { platform: string; url: string }[]
-  ) => {
-    setSocialLinks(links);
-    setValue("socialLinks", links, { shouldValidate: true });
-  };
-
-  const handleProfilePictureChange = (file: File | null) => {
-    setProfilePicture(file);
-    setValue("profilePicture", file, { shouldValidate: true });
-  };
-
-  const handleBannerImageChange = (file: File | null) => {
-    setBannerImage(file);
-    setValue("bannerImage", file, { shouldValidate: true });
-  };
 
   // Animation variants
   const containerVariants = {
@@ -111,7 +95,7 @@ export function PersonalDetailsSection() {
   const rightContent = (
     <RightContentLayout
       title="Personal Details"
-      subtitle="Let's start with the basics. Tell us about yourself."
+      subtitle={subtitle}
       features={[
         {
           icon: "fa-user",
@@ -160,9 +144,7 @@ export function PersonalDetailsSection() {
               type="email"
               required
               disabled={true}
-              value={
-                formData?.email || user?.emailAddresses[0]?.emailAddress || ""
-              }
+              value={email || user?.emailAddresses[0]?.emailAddress || ""}
               placeholder="Email Address"
               className="bg-white/5 text-white pl-10 opacity-70"
             />
@@ -178,9 +160,7 @@ export function PersonalDetailsSection() {
               type="tel"
               required
               disabled={true}
-              value={
-                formData?.phone || user?.phoneNumbers[0]?.phoneNumber || ""
-              }
+              value={phone || user?.phoneNumbers[0]?.phoneNumber || ""}
               placeholder="Phone Number"
               className="bg-white/5 text-white pl-10 opacity-70"
             />
@@ -195,7 +175,7 @@ export function PersonalDetailsSection() {
               type="text"
               required
               disabled={true}
-              value={formData?.username || user?.username || ""}
+              value={username || user?.username || ""}
               placeholder="Username"
               className="bg-white/5 text-white pl-10 opacity-70"
             />
@@ -209,7 +189,7 @@ export function PersonalDetailsSection() {
             <Input
               id="website"
               type="url"
-              value={formData?.website || ""}
+              value={website || ""}
               onChange={handleInputChange}
               placeholder="Website URL"
               className="bg-white/5 text-white pl-10"
@@ -241,7 +221,9 @@ export function PersonalDetailsSection() {
               <p className="text-white/60 text-sm">
                 {profilePicture
                   ? "Edit or replace your profile photo"
-                  : "Add a professional photo to help others recognize you"}
+                  : `Add a professional photo to help ${
+                      userType === "agent" ? "clients" : "agents"
+                    } recognize you`}
               </p>
             </div>
           </motion.div>

@@ -1,18 +1,25 @@
-import React, { useState, useEffect } from "react";
+"use client";
+
+import React, { useState } from "react";
 import { Checkbox } from "@/components/UI/checkbox";
 import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
 import Link from "next/link";
 import { motion, Variants } from "framer-motion";
-import { useAgentProfileForm } from "@/components/Onboarding/AgentProfile/context/AgentProfileFormContext";
 import { toast } from "sonner";
 
-interface ConclusionSectionProps {
+export interface ConclusionSectionUIProps {
+  // Form control props
+  handlePrev: () => void;
+  handleSubmit: () => void;
   userType: "agent" | "client";
 }
 
-export function ConclusionSection({ userType }: ConclusionSectionProps) {
-  const { handlePrev, handleSubmit } = useAgentProfileForm();
+export function ConclusionSectionUI({
+  handlePrev,
+  handleSubmit,
+  userType,
+}: ConclusionSectionUIProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [localState, setLocalState] = useState({
@@ -30,14 +37,10 @@ export function ConclusionSection({ userType }: ConclusionSectionProps) {
 
   // Custom submit handler that shows loading state
   const handleFormSubmit = () => {
-    console.log("Submit button clicked, canSubmit:", canSubmit);
-
     if (canSubmit) {
-      toast.info("Submitting your profile...");
       setIsSubmitting(true);
 
       // Call the context's submit handler
-      console.log("Calling handleSubmit from context");
       handleSubmit();
     }
   };
@@ -99,7 +102,7 @@ export function ConclusionSection({ userType }: ConclusionSectionProps) {
           description: "Complete your profile to start your journey",
         },
       ]}
-      currentStep={6}
+      currentStep={5}
       totalSteps={6}
     />
   );
@@ -109,7 +112,7 @@ export function ConclusionSection({ userType }: ConclusionSectionProps) {
     <FormSectionLayout
       title="Complete Your Profile"
       description="Review and accept our terms to start your journey"
-      onSubmit={handleFormSubmit} // Only providing onSubmit, not onNext
+      onSubmit={handleFormSubmit}
       onPrev={handlePrev}
       rightContent={rightContent}
       canProceed={canSubmit}
@@ -130,7 +133,7 @@ export function ConclusionSection({ userType }: ConclusionSectionProps) {
               onCheckedChange={(checked) =>
                 handleCheckboxChange("acceptedTerms", checked as boolean)
               }
-              className="mt-1"
+              className="mt-1 border-white/30"
               disabled={isSubmitting}
             />
             <label htmlFor="terms" className="text-sm text-white/80">
@@ -153,11 +156,11 @@ export function ConclusionSection({ userType }: ConclusionSectionProps) {
               onCheckedChange={(checked) =>
                 handleCheckboxChange("acceptedPrivacy", checked as boolean)
               }
-              className="mt-1"
+              className="mt-1 border-white/30"
               disabled={isSubmitting}
             />
             <label htmlFor="privacy" className="text-sm text-white/80">
-              I have read and agree to the{" "}
+              I have read and understood the{" "}
               <Link
                 href="/privacy"
                 className="text-purple-400 hover:text-purple-300"
@@ -168,10 +171,10 @@ export function ConclusionSection({ userType }: ConclusionSectionProps) {
             </label>
           </div>
 
-          {/* Communication Preferences */}
+          {/* Marketing Communications */}
           <div className="flex items-start space-x-3">
             <Checkbox
-              id="communications"
+              id="marketing"
               checked={localState.acceptedCommunications}
               onCheckedChange={(checked) =>
                 handleCheckboxChange(
@@ -179,12 +182,12 @@ export function ConclusionSection({ userType }: ConclusionSectionProps) {
                   checked as boolean
                 )
               }
-              className="mt-1"
+              className="mt-1 border-white/30"
               disabled={isSubmitting}
             />
-            <label htmlFor="communications" className="text-sm text-white/80">
-              I agree to receive important updates, new opportunities, and
-              occasional newsletters. (Optional)
+            <label htmlFor="marketing" className="text-sm text-white/80">
+              I would like to receive updates about new features, opportunities,
+              and tips for automation success (optional).
             </label>
           </div>
         </motion.div>

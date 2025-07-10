@@ -268,18 +268,23 @@ async function processProjectImagesAsync(profileId: string, projects: any[]) {
 
 // Main function to save agent profile to Sanity
 export async function saveAgentProfile(formData: FormData): Promise<FormState> {
+  console.log("Starting saveAgentProfile server action");
   try {
     // Get authenticated user ID
+    console.log("Checking authentication...");
     const { userId } = await auth();
 
     if (!userId) {
+      console.error("No userId found in auth context");
       return {
         success: false,
         message: "Authentication required. Please sign in.",
       };
     }
+    console.log("User authenticated:", userId);
 
     // Extract essential form fields
+    console.log("Extracting form fields...");
     const email = formData.get("email") as string;
     const username = formData.get("username") as string;
     const phone = formData.get("phone") as string;
@@ -289,7 +294,18 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
     const socialLinksJSON = formData.get("socialLinks") as string;
     const socialLinks = socialLinksJSON ? JSON.parse(socialLinksJSON) : [];
 
+    console.log("Extracted basic fields:", {
+      email,
+      username,
+      phone,
+      website,
+      fullName,
+      hasCompany,
+      socialLinks,
+    });
+
     // Create agent profile document
+    console.log("Creating agent profile document structure...");
     const agentProfile: any = {
       _type: "agentProfile",
       userId: userId,
@@ -315,7 +331,10 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
       updatedAt: new Date().toISOString(),
     };
 
+    console.log("Created agent profile structure:", agentProfile);
+
     // Track files to upload asynchronously
+    console.log("Setting up image upload tracking...");
     const imagesToUpload: {
       type: string;
       file: File;
@@ -327,6 +346,7 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
     // Queue profile picture for async upload if provided
     const profilePicture = formData.get("profilePicture") as File;
     if (profilePicture && profilePicture.size > 0) {
+      console.log("Found profile picture:", profilePicture.name);
       imagesToUpload.push({
         type: "object",
         file: profilePicture,
@@ -337,6 +357,7 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
     // Queue banner image for async upload if provided
     const bannerImage = formData.get("bannerImage") as File;
     if (bannerImage && bannerImage.size > 0) {
+      console.log("Found banner image:", bannerImage.name);
       imagesToUpload.push({
         type: "object",
         file: bannerImage,
@@ -347,6 +368,7 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
     // Add company details if applicable
     let companyId: string | undefined;
     if (hasCompany) {
+      console.log("Processing company details...");
       // Create a proper company reference instead of embedding company details
       interface CompanyData {
         _type: string;
@@ -363,33 +385,38 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
       }
 
       const companyData: CompanyData = {
-        _type: "company", // Use the base company type
+        _type: "company",
         name: formData.get("company.name") as string,
-        teamSize: formData.get("company.teamSize") as string, // Match the field name in the schema
+        teamSize: formData.get("company.teamSize") as string,
         bio: formData.get("company.bio") as string,
         website: formData.get("company.website") as string,
-        companyType: "agent", // Specify this is an agent company
+        companyType: "agent",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
+
+      console.log("Company data structure:", companyData);
 
       // Add service offerings if available
       const serviceOfferings = formData.getAll(
         "company.serviceOfferings"
       ) as string[];
       if (serviceOfferings && serviceOfferings.length > 0) {
+        console.log("Adding service offerings:", serviceOfferings);
         companyData.serviceOfferings = serviceOfferings;
       }
 
       // Add industries if available
       const industries = formData.getAll("company.industries") as string[];
       if (industries && industries.length > 0) {
+        console.log("Adding industries:", industries);
         companyData.industries = industries;
       }
 
       // Add years in business if available
       const yearsInBusiness = formData.get("company.yearsInBusiness") as string;
       if (yearsInBusiness) {
+        console.log("Adding years in business:", yearsInBusiness);
         companyData.yearsInBusiness = parseInt(yearsInBusiness, 10);
       }
 
@@ -399,9 +426,10 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
 
       try {
         // Create the company document first (without images)
-        console.log("Creating company document:", companyData);
+        console.log("Creating company document in Sanity...");
         const companyDoc = await backendClient.create(companyData);
         companyId = companyDoc._id;
+        console.log("Company document created:", companyDoc._id);
 
         // Then reference it in the agent profile
         agentProfile.coreIdentity.companyId = {
@@ -411,6 +439,7 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
 
         // Queue company logo for async upload if provided
         if (companyLogo && companyLogo.size > 0) {
+          console.log("Queueing company logo for upload:", companyLogo.name);
           imagesToUpload.push({
             type: "object",
             file: companyLogo,
@@ -421,6 +450,10 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
 
         // Queue company banner for async upload if provided
         if (companyBanner && companyBanner.size > 0) {
+          console.log(
+            "Queueing company banner for upload:",
+            companyBanner.name
+          );
           imagesToUpload.push({
             type: "object",
             file: companyBanner,
@@ -430,15 +463,20 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
         }
       } catch (error) {
         console.error("Error creating company document:", error);
+        throw error;
       }
     }
 
     // Add automation expertise
+    console.log("Processing automation expertise...");
     const skills = formData.getAll("skills") as string[];
     const expertiseLevel = formData.get("expertiseLevel") as string;
     const automationTools = formData.getAll("automationTools") as string[];
-    const yearsOfExperience = formData.get("yearsOfExperience") as string;
-    const industries = formData.getAll("industries") as string[];
+    console.log("Skills and tools:", {
+      skills,
+      expertiseLevel,
+      automationTools,
+    });
 
     agentProfile.automationExpertise = {
       _type: "automationExpertise",
@@ -447,20 +485,23 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
     };
 
     // Add business details
+    console.log("Processing business details...");
+    const pricingModel = formData.get("pricingModel") as string;
+    const availability = formData.get("availability") as string;
+    console.log("Business details:", { pricingModel, availability });
+
     agentProfile.businessDetails = {
       _type: "agentBusinessDetails",
-      pricingModel: formData.get("pricingModel") as string,
-      availability: formData.get("availability") as string,
+      pricingModel,
+      availability,
     };
-
-    // Log the pricing model value to debug
-    console.log("Pricing Model Value:", formData.get("pricingModel"));
 
     // Add project size preferences if provided
     const projectSizePreference = formData.getAll(
       "projectSizePreference"
     ) as string[];
     if (projectSizePreference && projectSizePreference.length > 0) {
+      console.log("Adding project size preferences:", projectSizePreference);
       agentProfile.businessDetails.projectSizePreferences =
         projectSizePreference;
     }
@@ -468,17 +509,22 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
     // Add team size if provided
     const teamSize = formData.get("teamSize") as string;
     if (teamSize) {
+      console.log("Adding team size:", teamSize);
       agentProfile.businessDetails.teamSize = teamSize;
     }
 
-    // Process projects data first (without images)
+    // Process projects data
+    console.log("Processing projects data...");
     const createdProjects: any[] = [];
     const projectsJSON = formData.get("projects") as string;
     if (projectsJSON) {
       const projects = JSON.parse(projectsJSON);
+      console.log("Found projects:", projects);
 
       for (let i = 0; i < projects.length; i++) {
         const project = projects[i];
+        console.log(`Processing project ${i}:`, project);
+
         const projectKey = `project_${i}_${Date.now()}`;
 
         // Collect project image files for later async processing
@@ -487,37 +533,28 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
           const imageKey = `projectImages[${i}][${j}]`;
           const image = formData.get(imageKey) as File;
           if (image && image.size > 0) {
+            console.log(`Found image ${j} for project ${i}:`, image.name);
             projectImageFiles.push(image);
           }
         }
 
-        // Create a proper agent project document (without images initially)
-        const agentProjectData: {
-          _type: string;
-          title: string;
-          description: string;
-          projectLink: string;
-          technologies: string[];
-          status: string;
-          isPortfolioProject: boolean;
-          createdAt: string;
-          updatedAt: string;
-        } = {
-          _type: "agentProject",
-          title: project.title,
-          description: project.description,
-          projectLink: project.projectLink || "",
-          technologies: project.technologies || [],
-          status: "completed", // Default status
-          isPortfolioProject: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
-        // Create the agent project document
+        // Create project document
         try {
+          const agentProjectData = {
+            _type: "agentProject",
+            title: project.title,
+            description: project.description,
+            projectLink: project.projectLink || "",
+            technologies: project.technologies || [],
+            status: "completed",
+            isPortfolioProject: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+
+          console.log("Creating project document:", agentProjectData);
           const projectDoc = await backendClient.create(agentProjectData);
-          console.log(`Created project document: ${projectDoc._id}`);
+          console.log(`Project document created: ${projectDoc._id}`);
 
           createdProjects.push({
             _id: projectDoc._id,
@@ -534,15 +571,14 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
           });
         } catch (error) {
           console.error(`Error creating project document:`, error);
+          throw error;
         }
       }
     }
 
     // Check if token is available
     if (!process.env.SANITY_API_TOKEN) {
-      console.error(
-        "Error: SANITY_API_TOKEN is not set in environment variables"
-      );
+      console.error("SANITY_API_TOKEN not found in environment variables");
       return {
         success: false,
         message:
@@ -550,21 +586,29 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
       };
     }
 
-    console.log("Attempting to save agent profile to Sanity...");
-    console.log("Profile data:", JSON.stringify(agentProfile, null, 2));
+    console.log(
+      "Final agent profile structure:",
+      JSON.stringify(agentProfile, null, 2)
+    );
 
     try {
       // Save the main profile to Sanity
+      console.log("Saving agent profile to Sanity...");
       const result = await backendClient.create(agentProfile);
       const profileId = result._id;
       console.log("Profile saved successfully:", profileId);
 
       // Revalidate cached data immediately
+      console.log("Revalidating paths...");
       revalidatePath("/dashboard");
       revalidatePath("/profile");
 
       // Start async image uploads in the background
       if (imagesToUpload.length > 0 || createdProjects.length > 0) {
+        console.log("Starting background image processing...");
+        console.log("Images to upload:", imagesToUpload.length);
+        console.log("Projects with images:", createdProjects.length);
+
         // Don't await this - let it run in the background
         Promise.all([
           handleAsyncImageUploads(profileId, imagesToUpload),

@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect } from "react";
 import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
@@ -18,14 +19,11 @@ import {
   EXPERIENCE_LEVELS,
 } from "@/sanity/schemaTypes/constants";
 import { convertToSelectFormat } from "@/lib/constants-utils";
-
-interface ProjectScopeDetailsProps {
-  onNext: () => void;
-  onPrev?: () => void;
-  onSkip?: () => void;
-  formData?: any;
-  setFormData?: (data: any) => void;
-}
+import {
+  useClientProfileForm,
+  useClientProfileFormFields,
+} from "../context/ClientProfileFormContext";
+import { toast } from "sonner";
 
 const containerVariants: Variants = {
   hidden: {
@@ -66,88 +64,46 @@ const engagementTypes = convertToSelectFormat(ENGAGEMENT_TYPES);
 const teamSizes = convertToSelectFormat(TEAM_SIZES);
 const experienceLevels = convertToSelectFormat(EXPERIENCE_LEVELS);
 
-export function ProjectScopeDetails({
-  onNext,
-  onPrev,
-  onSkip,
-  formData,
-  setFormData,
-}: ProjectScopeDetailsProps) {
-  const [budgetRange, setBudgetRange] = useState("");
-  const [timeline, setTimeline] = useState("");
-  const [complexity, setComplexity] = useState("");
-  const [engagementType, setEngagementType] = useState("");
-  const [teamSize, setTeamSize] = useState("");
-  const [experience, setExperience] = useState("");
+export function ProjectScopeDetails() {
+  const { handleNext, handlePrev, handleSkip } = useClientProfileForm();
+  const {
+    watch,
+    setValue,
+    formState: { errors },
+  } = useClientProfileFormFields();
 
-  // Initialize from formData if available
-  useEffect(() => {
-    if (formData) {
-      setBudgetRange(formData.budgetRange || "");
-      setTimeline(formData.timeline || "");
-      setComplexity(formData.complexity || ""); // Fix: Use complexity instead of priority
-      setEngagementType(formData.engagementType || "");
-      setTeamSize(formData.teamSizeRequired || "");
-      setExperience(formData.experienceLevel || "");
+  // Get form data
+  const formData = watch();
+  const budgetRange = formData?.budgetRange || "";
+  const timeline = formData?.timeline || "";
+  const complexity = formData?.complexity || "";
+  const engagementType = formData?.engagementType || "";
+  const teamSizeRequired = formData?.teamSizeRequired || "";
+  const experienceLevel = formData?.experienceLevel || "";
+
+  // Validate and proceed to next step
+  const validateAndProceed = () => {
+    if (!budgetRange) {
+      toast.error("Please select a budget range");
+      return;
     }
-  }, [formData]);
 
-  // Update parent form data when local state changes
-  const updateFormData = (field: string, value: string) => {
-    if (setFormData && formData) {
-      setFormData({
-        ...formData,
-        [field]: value,
-      });
+    if (!timeline) {
+      toast.error("Please select a timeline");
+      return;
     }
-  };
 
-  // Custom handlers for each field
-  const handleBudgetChange = (value: string) => {
-    setBudgetRange(value);
-    updateFormData("budgetRange", value);
-  };
-
-  const handleTimelineChange = (value: string) => {
-    setTimeline(value);
-    updateFormData("timeline", value);
-  };
-
-  const handleComplexityChange = (value: string) => {
-    setComplexity(value);
-    updateFormData("complexity", value); // Fix: Update complexity instead of priority
-  };
-
-  const handleEngagementChange = (value: string) => {
-    setEngagementType(value);
-    updateFormData("engagementType", value);
-  };
-
-  const handleTeamSizeChange = (value: string) => {
-    setTeamSize(value);
-    updateFormData("teamSizeRequired", value);
-  };
-
-  const handleExperienceChange = (value: string) => {
-    setExperience(value);
-    updateFormData("experienceLevel", value);
-  };
-
-  // Custom next handler
-  const handleNext = () => {
-    // Save all data to parent form before proceeding
-    if (setFormData && formData) {
-      setFormData({
-        ...formData,
-        budgetRange,
-        timeline,
-        complexity, // Fix: Use complexity instead of priority
-        engagementType,
-        teamSizeRequired: teamSize,
-        experienceLevel: experience,
-      });
+    if (!complexity) {
+      toast.error("Please select project complexity");
+      return;
     }
-    onNext();
+
+    if (!engagementType) {
+      toast.error("Please select an engagement type");
+      return;
+    }
+
+    handleNext();
   };
 
   const rightContent = (
@@ -181,9 +137,9 @@ export function ProjectScopeDetails({
     <FormSectionLayout
       title="Project Scope"
       description="Define the scale and requirements of your automation project"
-      onNext={handleNext}
-      onPrev={onPrev}
-      onSkip={onSkip}
+      onNext={validateAndProceed}
+      onPrev={handlePrev}
+      onSkip={handleSkip}
       rightContent={rightContent}
     >
       <motion.div
@@ -194,8 +150,13 @@ export function ProjectScopeDetails({
       >
         {/* Budget Range */}
         <motion.div variants={itemVariants}>
-          <Select value={budgetRange} onValueChange={handleBudgetChange}>
-            <SelectTrigger className="w-full bg-white/5  text-white">
+          <Select
+            value={budgetRange}
+            onValueChange={(value) =>
+              setValue("budgetRange", value, { shouldValidate: true })
+            }
+          >
+            <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="Select your budget range" />
             </SelectTrigger>
             <SelectContent>
@@ -206,11 +167,21 @@ export function ProjectScopeDetails({
               ))}
             </SelectContent>
           </Select>
+          {errors.budgetRange && (
+            <p className="text-red-500 text-sm">
+              {errors.budgetRange.message as string}
+            </p>
+          )}
         </motion.div>
 
         {/* Timeline */}
         <motion.div variants={itemVariants}>
-          <Select value={timeline} onValueChange={handleTimelineChange}>
+          <Select
+            value={timeline}
+            onValueChange={(value) =>
+              setValue("timeline", value, { shouldValidate: true })
+            }
+          >
             <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="Select your preferred timeline" />
             </SelectTrigger>
@@ -222,11 +193,21 @@ export function ProjectScopeDetails({
               ))}
             </SelectContent>
           </Select>
+          {errors.timeline && (
+            <p className="text-red-500 text-sm">
+              {errors.timeline.message as string}
+            </p>
+          )}
         </motion.div>
 
         {/* Project Complexity */}
         <motion.div variants={itemVariants}>
-          <Select value={complexity} onValueChange={handleComplexityChange}>
+          <Select
+            value={complexity}
+            onValueChange={(value) =>
+              setValue("complexity", value, { shouldValidate: true })
+            }
+          >
             <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="Select the project complexity" />
             </SelectTrigger>
@@ -238,12 +219,22 @@ export function ProjectScopeDetails({
               ))}
             </SelectContent>
           </Select>
+          {errors.complexity && (
+            <p className="text-red-500 text-sm">
+              {errors.complexity.message as string}
+            </p>
+          )}
         </motion.div>
 
         {/* Type of Engagement */}
         <motion.div variants={itemVariants}>
-          <Select value={engagementType} onValueChange={handleEngagementChange}>
-            <SelectTrigger className="w-full bg-white/5  text-white">
+          <Select
+            value={engagementType}
+            onValueChange={(value) =>
+              setValue("engagementType", value, { shouldValidate: true })
+            }
+          >
+            <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="Select the type of engagement" />
             </SelectTrigger>
             <SelectContent>
@@ -254,11 +245,21 @@ export function ProjectScopeDetails({
               ))}
             </SelectContent>
           </Select>
+          {errors.engagementType && (
+            <p className="text-red-500 text-sm">
+              {errors.engagementType.message as string}
+            </p>
+          )}
         </motion.div>
 
         {/* Team Size */}
         <motion.div variants={itemVariants}>
-          <Select value={teamSize} onValueChange={handleTeamSizeChange}>
+          <Select
+            value={teamSizeRequired}
+            onValueChange={(value) =>
+              setValue("teamSizeRequired", value, { shouldValidate: true })
+            }
+          >
             <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="Select your team size" />
             </SelectTrigger>
@@ -274,7 +275,12 @@ export function ProjectScopeDetails({
 
         {/* Automation Experience */}
         <motion.div variants={itemVariants}>
-          <Select value={experience} onValueChange={handleExperienceChange}>
+          <Select
+            value={experienceLevel}
+            onValueChange={(value) =>
+              setValue("experienceLevel", value, { shouldValidate: true })
+            }
+          >
             <SelectTrigger className="w-full bg-white/5 text-white">
               <SelectValue placeholder="Select your automation experience" />
             </SelectTrigger>

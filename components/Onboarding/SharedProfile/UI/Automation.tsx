@@ -1,6 +1,6 @@
 import React from "react";
 import { Input } from "@/components/UI/input";
-import { FormSectionLayout } from "./FormSectionLayout";
+import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
 import { MultiSelect } from "@/components/UI/MultiSelect";
 import { motion, Variants } from "framer-motion";
 
@@ -69,7 +69,6 @@ const itemVariants: Variants = {
 export function Automation({
   onNext,
   onPrev,
-  onSkip,
   rightContent,
   title = "Automation Expertise",
   description = "Select your primary automation services and tools expertise",
@@ -99,7 +98,6 @@ export function Automation({
       description={description}
       onNext={handleNext}
       onPrev={onPrev}
-      onSkip={onSkip}
       rightContent={rightContent}
       canProceed={canProceed}
     >
@@ -126,9 +124,6 @@ export function Automation({
               onChange={onServicesChange}
               className="pt-1"
             />
-            {errors.services && (
-              <p className="text-red-500 text-sm mt-2">{errors.services}</p>
-            )}
           </motion.div>
         </motion.div>
 
@@ -147,9 +142,6 @@ export function Automation({
               onChange={onToolsChange}
               className="pt-1"
             />
-            {errors.tools && (
-              <p className="text-red-500 text-sm mt-2">{errors.tools}</p>
-            )}
           </motion.div>
         </motion.div>
       </motion.div>

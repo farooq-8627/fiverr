@@ -1,14 +1,11 @@
 "use client";
-
-import { useEffect } from "react";
 import { OnboardingCard } from "@/components/Onboarding/Forms/OnboardingCard";
-import { PersonalDetailsSection } from "@/components/Onboarding/SharedProfile/Onboarding/PersonalDetailsSection";
-import { CoreIdentitySection } from "@/components/Onboarding/SharedProfile/Onboarding/CoreIdentitySection";
+import { PersonalDetailsSection } from "@/components/Onboarding/AgentProfile/Onboarding/PersonalDetailsSection";
+import { CoreIdentitySection } from "@/components/Onboarding/AgentProfile/Onboarding/CoreIdentitySection";
 import { AutomationExpertiseSection } from "@/components/Onboarding/AgentProfile/Onboarding/AutomationExpertiseSection";
-import { useRouter } from "next/navigation";
 import { ProjectsSection } from "@/components/Onboarding/AgentProfile/Onboarding/ProjectsSection";
 import { BusinessDetailsSection } from "@/components/Onboarding/AgentProfile/Onboarding/BusinessDetailsSection";
-import { ConclusionSection } from "@/components/Onboarding/SharedProfile/Onboarding/ConclusionSection";
+import { ConclusionSection } from "@/components/Onboarding/AgentProfile/Onboarding/ConclusionSection";
 import { AnimatePresence, motion } from "framer-motion";
 import { Toaster } from "sonner";
 import { useUser } from "@clerk/nextjs";
@@ -16,6 +13,7 @@ import {
   AgentProfileFormProvider,
   useAgentProfileForm,
 } from "@/components/Onboarding/AgentProfile/context/AgentProfileFormContext";
+import { Loader2 } from "lucide-react";
 
 // Animation variants for page transitions
 const variants = {
@@ -125,7 +123,7 @@ function FormContent() {
             exit="exit"
             custom={1}
           >
-            {renderContent(<ConclusionSection userType="agent" />)}
+            {renderContent(<ConclusionSection />)}
           </OnboardingCard>
         );
       default:
@@ -148,7 +146,11 @@ export default function AgentProfileForm() {
 
   // Wait for user data to be loaded
   if (!isLoaded) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="animate-spin" />
+      </div>
+    );
   }
 
   // Redirect if no user

@@ -1,6 +1,6 @@
 import React from "react";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
-import { Automation } from "@/components/Onboarding/Forms/Automation";
+import { Automation } from "@/components/Onboarding/SharedProfile/UI/Automation";
 import {
   AGENT_AUTOMATION_SERVICES,
   AGENT_TOOLS_EXPERTISE,

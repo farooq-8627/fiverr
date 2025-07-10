@@ -1,20 +1,17 @@
-import React from "react";
+"use client";
+import React, { useState, useEffect } from "react";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
-import { Automation } from "@/components/Onboarding/Forms/Automation";
+import { Automation } from "@/components/Onboarding/SharedProfile/UI/Automation";
 import {
   CLIENT_AUTOMATION_NEEDS,
   CLIENT_CURRENT_TOOLS,
 } from "@/sanity/schemaTypes/constants";
 import { convertToOnboardingFormat } from "@/lib/constants-utils";
 import { toast } from "sonner";
-
-interface AutomationNeedsSectionProps {
-  onNext: () => void;
-  onPrev?: () => void;
-  onSkip?: () => void;
-  formData?: any;
-  setFormData?: (data: any) => void;
-}
+import {
+  useClientProfileForm,
+  useClientProfileFormFields,
+} from "../context/ClientProfileFormContext";
 
 // Use centralized constants converted to the format needed by the component
 const clientAutomationNeeds = convertToOnboardingFormat(
@@ -22,41 +19,58 @@ const clientAutomationNeeds = convertToOnboardingFormat(
 );
 const clientCurrentTools = convertToOnboardingFormat(CLIENT_CURRENT_TOOLS);
 
-export function AutomationNeedsSection({
-  onNext,
-  onPrev,
-  onSkip,
-  formData,
-  setFormData,
-}: AutomationNeedsSectionProps) {
-  // Custom next handler to capture data from Automation component
-  const handleNext = () => {
-    if (formData && setFormData) {
-      // Get the selected values from the DOM
-      const servicesElements = document.querySelectorAll(
-        ".automation-services .selected-item"
-      );
-      const toolsElements = document.querySelectorAll(
-        ".tools-expertise .selected-item"
-      );
+export function AutomationNeedsSection() {
+  const { handleNext, handlePrev, handleSkip } = useClientProfileForm();
+  const { watch, setValue } = useClientProfileFormFields();
 
-      const selectedNeeds = Array.from(servicesElements).map(
-        (el) => el.getAttribute("data-value") || ""
-      );
-      const selectedTools = Array.from(toolsElements).map(
-        (el) => el.getAttribute("data-value") || ""
-      );
+  // Get form data
+  const formData = watch();
+  const [selectedNeeds, setSelectedNeeds] = useState(
+    formData?.automationNeeds || []
+  );
+  const [selectedTools, setSelectedTools] = useState(
+    formData?.currentTools || []
+  );
 
-      // Update form data
-      setFormData({
-        ...formData,
-        automationNeeds: selectedNeeds,
-        currentTools: selectedTools,
-      });
+  // Handlers for services and tools changes
+  const handleServicesChange = (services: string[]) => {
+    console.log("Setting automation needs:", services);
+    setSelectedNeeds(services);
+    // Format the needs as individual strings
+    const formattedNeeds = services.map((need) => need.trim());
+    setValue("automationNeeds", formattedNeeds, { shouldValidate: true });
+  };
+
+  const handleToolsChange = (tools: string[]) => {
+    console.log("Setting current tools:", tools);
+    setSelectedTools(tools);
+    // Format the tools as individual strings
+    const formattedTools = tools.map((tool) => tool.trim());
+    setValue("currentTools", formattedTools, { shouldValidate: true });
+  };
+
+  // Custom next handler
+  const handleCustomNext = () => {
+    console.log("Current selected needs:", selectedNeeds);
+    if (selectedNeeds.length === 0) {
+      toast.error("Please select at least one automation need");
+      return;
     }
 
+    // Format the data before proceeding
+    const formattedNeeds = selectedNeeds.map((need) => need.trim());
+    const formattedTools = selectedTools.map((tool) => tool.trim());
+
+    console.log("Setting final form values:", {
+      automationNeeds: formattedNeeds,
+      currentTools: formattedTools,
+    });
+
+    setValue("automationNeeds", formattedNeeds, { shouldValidate: true });
+    setValue("currentTools", formattedTools, { shouldValidate: true });
+
     // Call the parent's onNext
-    onNext();
+    handleNext();
   };
 
   const rightContent = (
@@ -82,16 +96,16 @@ export function AutomationNeedsSection({
             "Get tailored automation solutions that fit your business goals",
         },
       ]}
-      currentStep={2}
+      currentStep={3}
       totalSteps={6}
     />
   );
 
   return (
     <Automation
-      onNext={handleNext}
-      onPrev={onPrev}
-      onSkip={onSkip}
+      onNext={handleCustomNext}
+      onPrev={handlePrev}
+      onSkip={handleSkip}
       rightContent={rightContent}
       title="Automation Needs"
       description="Tell us what you need automated and what tools you currently use"
@@ -101,8 +115,17 @@ export function AutomationNeedsSection({
       toolsOptions={clientCurrentTools}
       servicesPlaceholder="Other automation needs..."
       toolsPlaceholder="Other tools you use..."
-      initialServices={formData?.automationNeeds || []}
-      initialTools={formData?.currentTools || []}
+      initialServices={selectedNeeds}
+      initialTools={selectedTools}
+      onServicesChange={handleServicesChange}
+      onToolsChange={handleToolsChange}
+      canProceed={selectedNeeds.length > 0}
+      errors={{
+        services:
+          selectedNeeds.length === 0
+            ? "Please select at least one automation need"
+            : undefined,
+      }}
     />
   );
 }
