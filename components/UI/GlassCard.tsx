@@ -174,7 +174,7 @@ export function GlassCard({
           <div className="absolute -inset-[0.5px] rounded-2xl bg-gradient-to-r from-white/3 via-white/7 to-white/3 opacity-0 group-hover:opacity-70 transition-opacity duration-500" />
 
           {/* Glass card background */}
-          <div className="relative bg-black/70 backdrop-blur-xl rounded-2xl p-6 border border-white/[0.05] shadow-2xl overflow-hidden">
+          <div className="relative bg-black/60 backdrop-blur-xl rounded-2xl p-6 border border-white/[0.05] shadow-2xl overflow-hidden">
             {/* Subtle card inner patterns */}
             <div
               className="absolute inset-0 opacity-[0.03]"

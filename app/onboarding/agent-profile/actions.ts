@@ -327,6 +327,10 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
         fullName,
         hasCompany,
       },
+      profileId: {
+        _type: "slug",
+        current: `${fullName.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
+      },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

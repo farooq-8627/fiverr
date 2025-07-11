@@ -17,11 +17,28 @@ export const ProjectSchema = z.object({
 // Company schema
 export const CompanySchema = z.object({
   name: z.string().min(1, "Company name is required"),
-  teamSize: z.string().min(1, "Team size is required"),
-  bio: z.string().min(10, "Company bio must be at least 10 characters"),
+  teamSize: z.string().min(1, "Team size is required").optional(),
+  bio: z
+    .string()
+    .min(10, "Company bio must be at least 10 characters")
+    .optional(),
   website: z.string().url("Invalid website URL").optional(),
-  logo: z.instanceof(File).optional().nullable(),
-  banner: z.instanceof(File).optional().nullable(),
+  logo: z
+    .object({
+      asset: z.object({
+        url: z.string(),
+      }),
+    })
+    .optional()
+    .nullable(),
+  banner: z
+    .object({
+      asset: z.object({
+        url: z.string(),
+      }),
+    })
+    .optional()
+    .nullable(),
 });
 
 // Social link schema
@@ -37,8 +54,22 @@ export const ClientProfileSchema = z.object({
   phone: z.string().optional(),
   username: z.string().min(3, "Username must be at least 3 characters"),
   website: z.string().url("Invalid website URL").optional(),
-  profilePicture: z.instanceof(File).optional().nullable(),
-  bannerImage: z.instanceof(File).optional().nullable(),
+  profilePicture: z
+    .object({
+      asset: z.object({
+        url: z.string(),
+      }),
+    })
+    .optional()
+    .nullable(),
+  bannerImage: z
+    .object({
+      asset: z.object({
+        url: z.string(),
+      }),
+    })
+    .optional()
+    .nullable(),
   socialLinks: z.array(SocialLinkSchema),
 
   // Core Identity Section

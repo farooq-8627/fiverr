@@ -3,11 +3,28 @@ import { motion, AnimatePresence } from "framer-motion";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Input } from "../../UI/input";
 import { cn } from "@/lib/utils";
+import {
+  FaLinkedin,
+  FaGithub,
+  FaStackOverflow,
+  FaDev,
+  FaMedium,
+  FaHashtag,
+  FaDiscord,
+  FaSlack,
+  FaTelegram,
+  FaBehance,
+  FaDribbble,
+  FaKaggle,
+  FaTwitter,
+  FaYoutube,
+  FaInstagram,
+} from "react-icons/fa";
 
 export type SocialPlatform = {
   id: string;
   name: string;
-  icon: string;
+  icon: React.ReactNode;
   placeholder: string;
   urlPrefix?: string; // Optional URL prefix for standard formats
   color: string;
@@ -18,7 +35,7 @@ export const socialPlatforms: SocialPlatform[] = [
   {
     id: "linkedin",
     name: "LinkedIn",
-    icon: "linkedin",
+    icon: <FaLinkedin className="w-6 h-6" />,
     placeholder: "https://linkedin.com/in/username",
     urlPrefix: "https://linkedin.com/in/",
     color: "#0077B5",
@@ -26,7 +43,7 @@ export const socialPlatforms: SocialPlatform[] = [
   {
     id: "github",
     name: "GitHub",
-    icon: "github",
+    icon: <FaGithub className="w-6 h-6" />,
     placeholder: "https://github.com/username",
     urlPrefix: "https://github.com/",
     color: "#333",
@@ -34,7 +51,7 @@ export const socialPlatforms: SocialPlatform[] = [
   {
     id: "stackoverflow",
     name: "Stack Overflow",
-    icon: "stack-overflow",
+    icon: <FaStackOverflow className="w-6 h-6" />,
     placeholder: "https://stackoverflow.com/users/username",
     urlPrefix: "https://stackoverflow.com/",
     color: "#F48024",
@@ -44,7 +61,7 @@ export const socialPlatforms: SocialPlatform[] = [
   {
     id: "dev",
     name: "Dev.to",
-    icon: "dev",
+    icon: <FaDev className="w-6 h-6" />,
     placeholder: "https://dev.to/username",
     urlPrefix: "https://dev.to/",
     color: "#0A0A0A",
@@ -52,7 +69,7 @@ export const socialPlatforms: SocialPlatform[] = [
   {
     id: "medium",
     name: "Medium",
-    icon: "medium",
+    icon: <FaMedium className="w-6 h-6" />,
     placeholder: "https://medium.com/@username",
     urlPrefix: "https://medium.com/",
     color: "#12100E",
@@ -60,7 +77,7 @@ export const socialPlatforms: SocialPlatform[] = [
   {
     id: "hashnode",
     name: "Hashnode",
-    icon: "hashnode",
+    icon: <FaHashtag className="w-6 h-6" />,
     placeholder: "https://hashnode.com/@username",
     urlPrefix: "https://hashnode.com/",
     color: "#2962FF",
@@ -70,21 +87,21 @@ export const socialPlatforms: SocialPlatform[] = [
   {
     id: "discord",
     name: "Discord",
-    icon: "discord",
+    icon: <FaDiscord className="w-6 h-6" />,
     placeholder: "Discord Username",
     color: "#7289DA",
   },
   {
     id: "slack",
     name: "Slack",
-    icon: "slack",
+    icon: <FaSlack className="w-6 h-6" />,
     placeholder: "Slack Workspace URL",
     color: "#4A154B",
   },
   {
     id: "telegram",
     name: "Telegram",
-    icon: "telegram",
+    icon: <FaTelegram className="w-6 h-6" />,
     placeholder: "https://t.me/username",
     urlPrefix: "https://t.me/",
     color: "#0088CC",
@@ -94,7 +111,7 @@ export const socialPlatforms: SocialPlatform[] = [
   {
     id: "behance",
     name: "Behance",
-    icon: "behance",
+    icon: <FaBehance className="w-6 h-6" />,
     placeholder: "https://behance.net/username",
     urlPrefix: "https://behance.net/",
     color: "#1769FF",
@@ -102,7 +119,7 @@ export const socialPlatforms: SocialPlatform[] = [
   {
     id: "dribbble",
     name: "Dribbble",
-    icon: "dribbble",
+    icon: <FaDribbble className="w-6 h-6" />,
     placeholder: "https://dribbble.com/username",
     urlPrefix: "https://dribbble.com/",
     color: "#EA4C89",
@@ -110,7 +127,7 @@ export const socialPlatforms: SocialPlatform[] = [
   {
     id: "kaggle",
     name: "Kaggle",
-    icon: "kaggle",
+    icon: <FaKaggle className="w-6 h-6" />,
     placeholder: "https://kaggle.com/username",
     urlPrefix: "https://kaggle.com/",
     color: "#20BEFF",
@@ -120,7 +137,7 @@ export const socialPlatforms: SocialPlatform[] = [
   {
     id: "twitter",
     name: "X (Twitter)",
-    icon: "x-twitter",
+    icon: <FaTwitter className="w-6 h-6" />,
     placeholder: "https://x.com/username",
     urlPrefix: "https://x.com/",
     color: "#000000",
@@ -128,7 +145,7 @@ export const socialPlatforms: SocialPlatform[] = [
   {
     id: "youtube",
     name: "YouTube",
-    icon: "youtube",
+    icon: <FaYoutube className="w-6 h-6" />,
     placeholder: "https://youtube.com/@channel-name",
     urlPrefix: "https://youtube.com/@",
     color: "#FF0000",
@@ -136,7 +153,7 @@ export const socialPlatforms: SocialPlatform[] = [
   {
     id: "instagram",
     name: "Instagram",
-    icon: "instagram",
+    icon: <FaInstagram className="w-6 h-6" />,
     placeholder: "https://instagram.com/username",
     urlPrefix: "https://instagram.com/",
     color: "#E1306C",
@@ -266,8 +283,8 @@ export function SocialMediaIcons({
                             : "none",
                       }}
                     >
-                      <i
-                        className={`fab fa-${platform.icon} text-xl`}
+                      <div
+                        className="text-xl"
                         style={{
                           color:
                             activeIcon === platform.id ||
@@ -275,7 +292,9 @@ export function SocialMediaIcons({
                               ? "#fff"
                               : "rgba(255,255,255,0.5)",
                         }}
-                      />
+                      >
+                        {platform.icon}
+                      </div>
                     </button>
                     {isLinkSaved(platform.id) && (
                       <motion.div
@@ -317,12 +336,9 @@ export function SocialMediaIcons({
                 className="relative flex items-center"
               >
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <i
-                    className={`fab fa-${
-                      socialPlatforms.find((p) => p.id === activeIcon)?.icon ||
-                      ""
-                    } text-white/40`}
-                  />
+                  <div className="text-white/40">
+                    {socialPlatforms.find((p) => p.id === activeIcon)?.icon}
+                  </div>
                 </div>
                 <Input
                   type="url"

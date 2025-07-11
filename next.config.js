@@ -6,7 +6,7 @@ const nextConfig = {
     },
   },
   images: {
-    domains: ["cdn.sanity.io"],
+    domains: ["cdn.sanity.io", "unsplash.com", "images.unsplash.com"],
   },
 };
 

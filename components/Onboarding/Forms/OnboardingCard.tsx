@@ -19,7 +19,11 @@ export function OnboardingCard({
       <div className={cn("relative w-full max-w-7xl mx-auto", className)}>
         <div className="relative">
           {/* Glass card background */}
-          <GlassCard theme="dark" className="w-full h-full" {...props}>
+          <GlassCard
+            theme="dark"
+            className="w-full h-full bg-black/70 "
+            {...props}
+          >
             {children}
           </GlassCard>
         </div>

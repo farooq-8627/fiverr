@@ -1,14 +1,17 @@
-import { LandingHero } from "./_template/components/landing-hero";
-import { LearnMore } from "./_template/components/learn-more";
-import { Footer } from "./_template/components/footer";
-import { CARDS } from "./_template/content/cards";
+import { Navbar } from "@/components/Root/Navbar";
+import LandingSparkles from "@/components/Root/LandingSparkles";
+import { SplineSceneBasic } from "@/components/LandingComponents/SplineScene";
+import { AgentProfileExample } from "@/components/LandingComponents/AgentProfileExample";
+import { ClientCardExample } from "@/components/LandingComponents/ClientCardExample";
+import PostCardExample from "@/components/LandingComponents/PostCard";
 
 export default function Home() {
   return (
-    <>
-      <LandingHero />
-      <LearnMore cards={CARDS} />
-      <Footer />
-    </>
+    <main className="relative">
+      {/* <SplineSceneBasic />
+      <AgentProfileExample />
+      <ClientCardExample /> */}
+      <PostCardExample />
+    </main>
   );
 }

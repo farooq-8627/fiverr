@@ -1,5 +1,6 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
+import "@fortawesome/fontawesome-free/css/all.min.css";
 import Script from "next/script";
 import localFont from "next/font/local";
 import type { Metadata } from "next";
@@ -45,27 +46,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${inter.className}`}
-    >
-      <head>
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-        />
-      </head>
-      <ClerkProvider appearance={clerkAppearanceObject}>
+    <ClerkProvider>
+      <html lang="en" className="[color-scheme:dark]" suppressHydrationWarning>
         <body
-          className={`min-h-screen flex flex-col antialiased`}
-          suppressHydrationWarning={true}
+          className={`${inter.className} ${geistSans.variable} ${geistMono.variable} min-h-screen bg-black text-white bg-gradient-to-b from-black to-violet-900`}
         >
           {children}
         </body>
-      </ClerkProvider>
-
-      <Script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-core.min.js" />
-      <Script src="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/autoloader/prism-autoloader.min.js" />
-    </html>
+      </html>
+    </ClerkProvider>
   );
 }

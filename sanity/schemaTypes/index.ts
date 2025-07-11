@@ -24,6 +24,14 @@ import {
 
 import { companySchema } from "./companySchema";
 
+// Import the new social feed schemas
+import {
+  FeedPostSchema,
+  FeedMediaSchema,
+  FeedCommentSchema,
+  FeedLikeSchema,
+} from "./socialFeedSchema";
+
 export const schema: { types: SchemaTypeDefinition[] } = {
   types: [
     // Base types
@@ -36,6 +44,12 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     // Project schemas
     agentProjectSchema,
     clientProjectSchema,
+
+    // Social Feed schemas
+    FeedPostSchema,
+    FeedMediaSchema,
+    FeedCommentSchema,
+    FeedLikeSchema,
 
     // Component schemas
     personalDetailsSchema,
@@ -56,3 +70,6 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     clientProfileSchema,
   ],
 };
+
+// Remove this as we've added user to the main schema types array
+export const schemaTypes = [];

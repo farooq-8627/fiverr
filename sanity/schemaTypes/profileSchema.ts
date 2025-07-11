@@ -1,4 +1,4 @@
-import { defineField, defineType } from "sanity";
+import { defineField, defineType, SanityDocument } from "sanity";
 import {
   INDUSTRY_DOMAINS,
   PRICING_MODELS,
@@ -459,6 +459,26 @@ export const agentProfileSchema = defineType({
   type: "document",
   fields: [
     defineField({
+      name: "profileId",
+      title: "Profile ID",
+      type: "slug",
+      description: "A unique identifier for this agent profile",
+      validation: (Rule) => Rule.required(),
+      options: {
+        source: (
+          doc: SanityDocument & { coreIdentity?: { fullName?: string } }
+        ) => {
+          const timestamp = new Date().getTime();
+          return `${doc.coreIdentity?.fullName || "agent"}-${timestamp}`;
+        },
+        slugify: (input) =>
+          input
+            .toLowerCase()
+            .replace(/\s+/g, "-")
+            .replace(/[^\w-]+/g, ""),
+      },
+    }),
+    defineField({
       name: "userId",
       title: "User ID",
       type: "string",
@@ -543,6 +563,26 @@ export const clientProfileSchema = defineType({
   title: "Client Profile",
   type: "document",
   fields: [
+    defineField({
+      name: "profileId",
+      title: "Profile ID",
+      type: "slug",
+      description: "A unique identifier for this client profile",
+      validation: (Rule) => Rule.required(),
+      options: {
+        source: (
+          doc: SanityDocument & { coreIdentity?: { fullName?: string } }
+        ) => {
+          const timestamp = new Date().getTime();
+          return `${doc.coreIdentity?.fullName || "client"}-${timestamp}`;
+        },
+        slugify: (input) =>
+          input
+            .toLowerCase()
+            .replace(/\s+/g, "-")
+            .replace(/[^\w-]+/g, ""),
+      },
+    }),
     defineField({
       name: "userId",
       title: "User ID",

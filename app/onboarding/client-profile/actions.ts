@@ -313,6 +313,10 @@ export async function saveClientProfile(
         fullName,
         hasCompany,
       },
+      profileId: {
+        _type: "slug",
+        current: `${fullName.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
+      },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
