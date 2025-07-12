@@ -137,6 +137,7 @@ export interface AgentProfile {
   availability?: AgentAvailability;
   pricing?: AgentPricing;
   communicationPreferences?: CommunicationPreferences;
+  mustHaveRequirements?: MustHaveRequirements;
   createdAt: string;
   updatedAt: string;
 }
@@ -147,9 +148,13 @@ export interface AutomationNeeds {
 }
 
 export interface MustHaveRequirements {
+  tagline: string;
+  bio: string;
+  experience: string;
   dealBreakers: string[];
   industryDomain: string[];
   customIndustry?: string[];
+  requirements?: string[];
 }
 
 export interface ClientProfile {
@@ -247,6 +252,7 @@ export function useUserProfile(username: string) {
             availability,
             pricing,
             communicationPreferences,
+            mustHaveRequirements,
             createdAt,
             updatedAt
           }
@@ -347,8 +353,17 @@ export function useUserProfile(username: string) {
   // Helper function to determine if this is the user's own profile
   const isOwnProfile = user?.username === username;
 
+  // Add isAgentProfile and isClientProfile to the returned profile
+  const enrichedProfile = profile
+    ? {
+        ...profile,
+        isAgentProfile: isAgentProfile(profile),
+        isClientProfile: isClientProfile(profile),
+      }
+    : null;
+
   return {
-    profile,
+    profile: enrichedProfile,
     isLoading,
     error,
     isAgentProfile,

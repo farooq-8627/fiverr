@@ -191,14 +191,13 @@ export const FeedPostSchema = defineType({
       hidden: ({ parent }) => !parent?.isAchievement,
     }),
     defineField({
-      name: "industryTags",
-      title: "Industry Tags",
+      name: "tags",
+      title: "Tags",
       type: "array",
       of: [{ type: "string" }],
-      options: {
-        list: INDUSTRY_DOMAINS,
-      },
-      description: "Select relevant industries for this post",
+      description:
+        "Add tags to categorize your post. You can use industry tags, skills, technologies, or any relevant keywords to help others find your content.",
+      validation: (Rule) => Rule.unique(),
     }),
     defineField({
       name: "likes",

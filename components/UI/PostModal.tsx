@@ -243,76 +243,83 @@ export function PostModal({
               <p className="whitespace-pre-wrap text-xs text-gray-200">
                 {post.content}
               </p>
+
+              {/* Tags Section */}
               {post.tags && post.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {post.tags.map((tag, index) => (
                     <span
-                      key={index}
-                      className="text-xs text-blue-300 hover:text-blue-200 cursor-pointer"
+                      key={`tag-${index}`}
+                      className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full cursor-pointer hover:bg-blue-500/20"
                     >
                       #{tag}
                     </span>
                   ))}
                 </div>
               )}
-              <div className="mt-4 text-xs text-gray-400 flex items-center gap-2">
-                <Globe className="h-3 w-3" />
-                {formatPostTime(post.createdAt)}
+
+              <div className="flex items-center gap-6 mt-4 text-sm text-gray-400">
+                <div className="flex items-center gap-1">
+                  <span>{post.likes}</span>
+                  <span>likes</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span>{post.comments}</span>
+                  <span>comments</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span>{post.reposts}</span>
+                  <span>reposts</span>
+                </div>
               </div>
             </div>
 
-            {/* Engagement stats */}
-            <div className="p-6 border-b border-white/10">
-              <div className="flex items-center gap-6">
-                <Button className="text-white/80 hover:text-white">
-                  <Heart className="h-5 w-5 mr-2" />
-                  {post.likes}
-                </Button>
-                <Button className="text-white/80 hover:text-white">
-                  <MessageCircle className="h-5 w-5 mr-2" />
-                  {post.comments}
-                </Button>
-                <Button className="text-white/80 hover:text-white">
-                  <Repeat2 className="h-5 w-5 mr-2" />
-                  {post.reposts}
-                </Button>
-                <Button className="text-white/80 hover:text-white">
-                  <Send className="h-5 w-5" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Comments */}
+            {/* Comments section */}
             <div className="flex-1 overflow-y-auto">
-              {comments.map((comment) => (
-                <div key={comment.id} className="p-6 border-b border-white/10">
-                  <div className="flex items-start gap-3">
+              <div className="p-6 space-y-6">
+                {comments.map((comment) => (
+                  <div key={comment.id} className="flex gap-3">
                     <Avatar className="h-8 w-8">
                       <AvatarImage
                         src={comment.author.profilePicture.asset.url}
                       />
                       <AvatarFallback>{comment.author.name[0]}</AvatarFallback>
                     </Avatar>
-                    <div>
+                    <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold">
+                        <span className="font-medium text-sm">
                           {comment.author.name}
                         </span>
                         {comment.author.verified && (
-                          <BadgeCheck className="h-4 w-4 text-blue-400" />
+                          <ShieldCheck className="h-3 w-3 text-blue-400" />
                         )}
-                        <span className="text-sm text-gray-400">
-                          @{comment.author.username}
+                        <span className="text-xs text-gray-400">
+                          {formatPostTime(comment.createdAt)}
                         </span>
                       </div>
-                      <p className="mt-1">{comment.content}</p>
-                      <p className="mt-1 text-xs text-gray-400">
-                        {formatPostTime(comment.createdAt)}
+                      <p className="text-sm text-gray-200 mt-1">
+                        {comment.content}
                       </p>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            </div>
+
+            {/* Comment input */}
+            <div className="p-4 border-t border-white/10">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={post.author.profilePicture.asset.url} />
+                  <AvatarFallback>{post.author.name[0]}</AvatarFallback>
+                </Avatar>
+                <input
+                  type="text"
+                  placeholder="Write a comment..."
+                  className="flex-1 bg-white/5 rounded-full px-4 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <Button className="rounded-full px-4 py-2 text-sm">Post</Button>
+              </div>
             </div>
           </div>
         </div>

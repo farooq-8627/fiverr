@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   ShieldCheck,
 } from "lucide-react";
+import { Heart as HeartFilled } from "@phosphor-icons/react";
 import { PostModal } from "@/components/UI/PostModal";
 import { formatDistanceToNow } from "date-fns";
 import { formatPostTime } from "@/lib/formatPostTime";
@@ -63,7 +64,7 @@ interface Post {
     };
     title?: string;
     verified?: boolean;
-    roles?: string[]; // Add roles property
+    roles?: string[];
   };
 }
 
@@ -514,8 +515,8 @@ export function PostCard({ post, className }: PostCardProps) {
             <div className="flex flex-wrap gap-1.5 mt-2">
               {post.tags.map((tag, index) => (
                 <span
-                  key={index}
-                  className="text-xs text-blue-300 hover:text-blue-200 cursor-pointer"
+                  key={`tag-${index}`}
+                  className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full cursor-pointer hover:bg-blue-500/20"
                 >
                   #{tag}
                 </span>
@@ -590,10 +591,17 @@ export function PostCard({ post, className }: PostCardProps) {
             }`}
             onClick={() => setIsLiked(!isLiked)}
           >
-            <Heart className="h-5 w-5" />
-            Like
+            {isLiked ? (
+              <HeartFilled weight="fill" className="h-5 w-5" />
+            ) : (
+              <Heart className="h-5 w-5" />
+            )}
+            {isLiked ? "Liked" : "Like"}
           </Button>
-          <Button className="flex items-center gap-2 text-gray-400 hover:text-white">
+          <Button
+            className="flex items-center gap-2 text-gray-400 hover:text-white"
+            onClick={() => setIsModalOpen(true)}
+          >
             <MessageCircle className="h-5 w-5" />
             Comment
           </Button>

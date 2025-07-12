@@ -1,7 +1,7 @@
 "use client";
 
 import { AgentCard } from "@/components/cards/AgentCard";
-import type { AgentProfile } from "@/hooks/useUseProfile";
+import type { AgentProfile } from "@/hooks/useUserProfile";
 
 export function AgentProfileExample() {
   // Example agent profile data

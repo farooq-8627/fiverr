@@ -6,7 +6,7 @@ import { GlassCard } from "@/components/UI/GlassCard";
 import { Badge } from "@/components/UI/badge";
 import { Button } from "@/components/UI/button";
 import { ExternalLink, MessageSquare } from "lucide-react";
-import type { AgentProfile } from "@/hooks/useUseProfile";
+import type { AgentProfile } from "@/hooks/useUserProfile";
 import Image from "next/image";
 
 interface AgentCardProps {

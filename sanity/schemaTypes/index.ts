@@ -1,4 +1,4 @@
-import { type SchemaTypeDefinition } from "sanity";
+import { SchemaTypeDefinition } from "sanity";
 import {
   socialLinkSchema,
   personalDetailsSchema,
@@ -6,14 +6,12 @@ import {
   automationExpertiseSchema,
   agentBusinessDetailsSchema,
   automationNeedsSchema,
-  agentProfileSchema,
-  clientProfileSchema,
-  // Additional schema types
   agentAvailabilitySchema,
   agentPricingSchema,
   agentCommunicationPreferencesSchema,
   clientCommunicationPreferencesSchema,
-  clientMustHaveRequirementsSchema,
+  agentProfileSchema,
+  clientProfileSchema,
 } from "./profileSchema";
 
 import {
@@ -66,10 +64,21 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     // Client-specific schemas
     automationNeedsSchema,
     clientCommunicationPreferencesSchema,
-    clientMustHaveRequirementsSchema,
     clientProfileSchema,
   ],
 };
 
-// Remove this as we've added user to the main schema types array
-export const schemaTypes = [];
+export const schemaTypes = [
+  socialLinkSchema,
+  personalDetailsSchema,
+  coreIdentitySchema,
+  automationExpertiseSchema,
+  agentBusinessDetailsSchema,
+  automationNeedsSchema,
+  agentAvailabilitySchema,
+  agentPricingSchema,
+  agentCommunicationPreferencesSchema,
+  clientCommunicationPreferencesSchema,
+  agentProfileSchema,
+  clientProfileSchema,
+];

@@ -121,7 +121,7 @@ const POST_FIELDS = `
     title,
     description
   },
-  industryTags,
+  tags,
   likes[] {
     profile-> {
       _id,

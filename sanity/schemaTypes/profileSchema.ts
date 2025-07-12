@@ -452,7 +452,61 @@ export const clientMustHaveRequirementsSchema = defineType({
   ],
 });
 
-// Agent Profile Schema
+// Must Have Requirements Schema
+export const mustHaveRequirementsSchema = defineType({
+  name: "mustHaveRequirements",
+  title: "Must Have Requirements",
+  type: "object",
+  fields: [
+    defineField({
+      name: "bio",
+      title: "Bio",
+      type: "text",
+      description: "A detailed biography or description of yourself/your work",
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: "experience",
+      title: "Experience",
+      type: "text",
+      description: "Describe your relevant experience in your field",
+      validation: (Rule) => Rule.required(),
+    }),
+    defineField({
+      name: "dealBreakers",
+      title: "Deal Breakers",
+      type: "array",
+      of: [{ type: "string" }],
+      description: "List of absolute requirements or deal breakers",
+    }),
+    defineField({
+      name: "industryDomain",
+      title: "Industry Domain",
+      type: "array",
+      of: [{ type: "string" }],
+      options: {
+        list: INDUSTRY_DOMAINS,
+      },
+      description: "Industries you specialize in or prefer to work with",
+    }),
+    defineField({
+      name: "customIndustry",
+      title: "Custom Industry",
+      type: "array",
+      of: [{ type: "string" }],
+      description: "Add any custom industries not listed above",
+    }),
+    defineField({
+      name: "requirements",
+      title: "Requirements",
+      type: "array",
+      of: [{ type: "string" }],
+      description: "List of specific requirements or preferences",
+    }),
+  ],
+});
+
+// Update Agent Profile Schema
 export const agentProfileSchema = defineType({
   name: "agentProfile",
   title: "Agent Profile",
@@ -515,12 +569,12 @@ export const agentProfileSchema = defineType({
     // Simplified fields for agent profile
     defineField({
       name: "availability",
-      title: "Availability & Working Hours",
+      title: "Availability",
       type: "agentAvailability",
     }),
     defineField({
       name: "pricing",
-      title: "Pricing & Rates",
+      title: "Pricing",
       type: "agentPricing",
     }),
     defineField({
@@ -529,30 +583,83 @@ export const agentProfileSchema = defineType({
       type: "agentCommunicationPreferences",
     }),
     defineField({
+      name: "mustHaveRequirements",
+      title: "Must Have Requirements",
+      type: "object",
+      fields: [
+        defineField({
+          name: "tagline",
+          title: "Tagline",
+          type: "string",
+          description: "A single line that best describes what you do",
+          validation: (Rule) => Rule.required().max(100),
+        }),
+        defineField({
+          name: "bio",
+          title: "Bio",
+          type: "text",
+          description:
+            "A detailed biography or description of yourself/your work",
+          validation: (Rule) => Rule.required(),
+        }),
+        defineField({
+          name: "experience",
+          title: "Experience",
+          type: "text",
+          description: "Describe your relevant experience in your field",
+          validation: (Rule) => Rule.required(),
+        }),
+        defineField({
+          name: "dealBreakers",
+          title: "Deal Breakers",
+          type: "array",
+          of: [{ type: "string" }],
+          description: "List of absolute requirements or deal breakers",
+        }),
+        defineField({
+          name: "industryDomain",
+          title: "Industry Domain",
+          type: "array",
+          of: [{ type: "string" }],
+          options: {
+            list: INDUSTRY_DOMAINS,
+          },
+          description: "Industries you specialize in or prefer to work with",
+        }),
+        defineField({
+          name: "customIndustry",
+          title: "Custom Industry",
+          type: "array",
+          of: [{ type: "string" }],
+          description: "Add any custom industries not listed above",
+        }),
+        defineField({
+          name: "requirements",
+          title: "Requirements",
+          type: "array",
+          of: [{ type: "string" }],
+          description: "List of specific requirements or preferences",
+        }),
+      ],
+    }),
+    defineField({
       name: "createdAt",
       title: "Created At",
       type: "datetime",
-      readOnly: true,
+      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: "updatedAt",
       title: "Updated At",
       type: "datetime",
+      validation: (Rule) => Rule.required(),
     }),
   ],
   preview: {
     select: {
-      title: "coreIdentity.fullName",
-      subtitle: "userId",
+      title: "personalDetails.username",
+      subtitle: "coreIdentity.fullName",
       media: "personalDetails.profilePicture",
-    },
-    prepare(selection) {
-      const { title, subtitle, media } = selection;
-      return {
-        title: title || "Unnamed Agent",
-        subtitle: subtitle || "No User ID",
-        media: media,
-      };
     },
   },
 });
@@ -620,25 +727,82 @@ export const clientProfileSchema = defineType({
     }),
     defineField({
       name: "mustHaveRequirements",
-      title: "Must-have Requirements",
-      type: "clientMustHaveRequirements",
+      title: "Must Have Requirements",
+      type: "object",
+      fields: [
+        defineField({
+          name: "tagline",
+          title: "Tagline",
+          type: "string",
+          description:
+            "A single line that best describes what you're looking for",
+          validation: (Rule) => Rule.required().max(100),
+        }),
+        defineField({
+          name: "bio",
+          title: "Bio",
+          type: "text",
+          description:
+            "A detailed biography or description of yourself/your work",
+          validation: (Rule) => Rule.required(),
+        }),
+        defineField({
+          name: "experience",
+          title: "Experience",
+          type: "text",
+          description: "Describe your relevant experience in your field",
+          validation: (Rule) => Rule.required(),
+        }),
+        defineField({
+          name: "dealBreakers",
+          title: "Deal Breakers",
+          type: "array",
+          of: [{ type: "string" }],
+          description: "List of absolute requirements or deal breakers",
+        }),
+        defineField({
+          name: "industryDomain",
+          title: "Industry Domain",
+          type: "array",
+          of: [{ type: "string" }],
+          options: {
+            list: INDUSTRY_DOMAINS,
+          },
+          description: "Industries you specialize in or prefer to work with",
+        }),
+        defineField({
+          name: "customIndustry",
+          title: "Custom Industry",
+          type: "array",
+          of: [{ type: "string" }],
+          description: "Add any custom industries not listed above",
+        }),
+        defineField({
+          name: "requirements",
+          title: "Requirements",
+          type: "array",
+          of: [{ type: "string" }],
+          description: "List of specific requirements or preferences",
+        }),
+      ],
     }),
     defineField({
       name: "createdAt",
       title: "Created At",
       type: "datetime",
-      readOnly: true,
+      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: "updatedAt",
       title: "Updated At",
       type: "datetime",
+      validation: (Rule) => Rule.required(),
     }),
   ],
   preview: {
     select: {
-      title: "coreIdentity.fullName",
-      subtitle: "userId",
+      title: "personalDetails.username",
+      subtitle: "coreIdentity.fullName",
       media: "personalDetails.profilePicture",
     },
     prepare(selection) {
