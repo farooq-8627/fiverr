@@ -27,6 +27,11 @@ export const companySchema = defineType({
       type: "text",
     }),
     defineField({
+      name: "tagline",
+      title: "Company Tagline",
+      type: "string",
+    }),
+    defineField({
       name: "website",
       title: "Website",
       type: "url",
@@ -78,7 +83,6 @@ export const companySchema = defineType({
           { title: "Client Company", value: "client" },
         ],
       },
-      validation: (Rule) => Rule.required(),
     }),
     defineField({
       name: "createdAt",

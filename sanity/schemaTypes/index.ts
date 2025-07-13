@@ -1,84 +1,18 @@
 import { SchemaTypeDefinition } from "sanity";
-import {
-  socialLinkSchema,
-  personalDetailsSchema,
-  coreIdentitySchema,
-  automationExpertiseSchema,
-  agentBusinessDetailsSchema,
-  automationNeedsSchema,
-  agentAvailabilitySchema,
-  agentPricingSchema,
-  agentCommunicationPreferencesSchema,
-  clientCommunicationPreferencesSchema,
-  agentProfileSchema,
-  clientProfileSchema,
-} from "./profileSchema";
-
-import {
-  projectImageSchema,
-  agentProjectSchema,
-  clientProjectSchema,
-} from "./projectSchema";
-
+import { userSchema } from "./userSchema";
+import { agentProfileSchema } from "./agentProfileSchema";
+import { clientProfileSchema } from "./clientProfileSchema";
+import { agentProjectSchema } from "./agentProjectSchema";
+import { clientProjectSchema } from "./clientProjectSchema";
 import { companySchema } from "./companySchema";
-
-// Import the new social feed schemas
-import {
-  FeedPostSchema,
-  FeedMediaSchema,
-  FeedCommentSchema,
-  FeedLikeSchema,
-} from "./socialFeedSchema";
 
 export const schema: { types: SchemaTypeDefinition[] } = {
   types: [
-    // Base types
-    socialLinkSchema,
-    projectImageSchema,
-
-    // Company schemas
-    companySchema,
-
-    // Project schemas
+    userSchema,
+    agentProfileSchema,
+    clientProfileSchema,
     agentProjectSchema,
     clientProjectSchema,
-
-    // Social Feed schemas
-    FeedPostSchema,
-    FeedMediaSchema,
-    FeedCommentSchema,
-    FeedLikeSchema,
-
-    // Component schemas
-    personalDetailsSchema,
-    coreIdentitySchema,
-
-    // Agent-specific schemas
-    automationExpertiseSchema,
-    agentBusinessDetailsSchema,
-    agentAvailabilitySchema,
-    agentPricingSchema,
-    agentCommunicationPreferencesSchema,
-    agentProfileSchema,
-
-    // Client-specific schemas
-    automationNeedsSchema,
-    clientCommunicationPreferencesSchema,
-    clientProfileSchema,
+    companySchema,
   ],
 };
-
-export const schemaTypes = [
-  socialLinkSchema,
-  personalDetailsSchema,
-  coreIdentitySchema,
-  automationExpertiseSchema,
-  agentBusinessDetailsSchema,
-  automationNeedsSchema,
-  agentAvailabilitySchema,
-  agentPricingSchema,
-  agentCommunicationPreferencesSchema,
-  clientCommunicationPreferencesSchema,
-  agentProfileSchema,
-  clientProfileSchema,
-];

@@ -72,31 +72,34 @@ export function BusinessDetailsSection() {
   const formData = watch();
 
   // Get values from form data
-  const pricingModel = formData?.pricingModel || "";
-  const selectedProjectSizes = formData?.projectSizePreference || [];
-  const teamSize = formData?.teamSize || "";
-  const availability = formData?.availability || "";
-  const workType = formData?.workType || "";
+  const pricingModel = formData?.businessDetails?.pricingModel || "";
+  const selectedProjectSizes =
+    formData?.businessDetails?.projectSizePreferences || [];
+  const teamSize = formData?.businessDetails?.teamSize || "";
+  const availability = formData?.businessDetails?.availability || "";
+  const workType = formData?.businessDetails?.workType || "";
 
   // Custom handlers to update form data
   const handlePricingChange = (value: string) => {
-    setValue("pricingModel", value, { shouldValidate: true });
+    setValue("businessDetails.pricingModel", value, { shouldValidate: true });
   };
 
   const handleProjectSizesChange = (sizes: string[]) => {
-    setValue("projectSizePreference", sizes, { shouldValidate: true });
+    setValue("businessDetails.projectSizePreferences", sizes, {
+      shouldValidate: true,
+    });
   };
 
   const handleTeamSizeChange = (value: string) => {
-    setValue("teamSize", value, { shouldValidate: true });
+    setValue("businessDetails.teamSize", value, { shouldValidate: true });
   };
 
   const handleAvailabilityChange = (value: string) => {
-    setValue("availability", value, { shouldValidate: true });
+    setValue("businessDetails.availability", value, { shouldValidate: true });
   };
 
   const handleWorkTypeChange = (value: string) => {
-    setValue("workType", value, { shouldValidate: true });
+    setValue("businessDetails.workType", value, { shouldValidate: true });
   };
 
   const rightContent = (

@@ -1,16 +1,15 @@
 "use client";
 import { OnboardingCard } from "@/components/Onboarding/Forms/OnboardingCard";
-import { AutomationExpertiseSection } from "@/components/Onboarding/AgentProfile/Onboarding/AutomationExpertiseSection";
-import { ProjectsSection } from "@/components/Onboarding/AgentProfile/Onboarding/ProjectsSection";
-import { BusinessDetailsSection } from "@/components/Onboarding/AgentProfile/Onboarding/BusinessDetailsSection";
-import { ConclusionSection } from "@/components/Onboarding/AgentProfile/Onboarding/ConclusionSection";
+import { PersonalDetailsSection } from "@/components/Onboarding/UserProfile/PersonalDetailsSection";
+import { CoreIdentitySection } from "@/components/Onboarding/UserProfile/CoreIdentitySection";
+import { CompanyDetailsSection } from "@/components/Onboarding/UserProfile/CompanyDetailsSection";
 import { AnimatePresence, motion } from "framer-motion";
 import { Toaster } from "sonner";
 import { useUser } from "@clerk/nextjs";
 import {
-  AgentProfileFormProvider,
-  useAgentProfileForm,
-} from "@/components/Onboarding/AgentProfile/context/AgentProfileFormContext";
+  UserProfileFormProvider,
+  useUserProfileForm,
+} from "@/components/Onboarding/UserProfile/context/UserProfileFormContext";
 import { Loader2 } from "lucide-react";
 
 // Animation variants for page transitions
@@ -32,7 +31,7 @@ const variants = {
 };
 
 function FormContent() {
-  const { currentStep } = useAgentProfileForm();
+  const { currentStep } = useUserProfileForm();
 
   const renderSection = () => {
     const renderContent = (content: React.ReactNode) => (
@@ -56,7 +55,7 @@ function FormContent() {
             exit="exit"
             custom={1}
           >
-            {renderContent(<AutomationExpertiseSection />)}
+            {renderContent(<PersonalDetailsSection />)}
           </OnboardingCard>
         );
       case 2:
@@ -69,35 +68,23 @@ function FormContent() {
             exit="exit"
             custom={1}
           >
-            {renderContent(<ProjectsSection />)}
+            {renderContent(<CoreIdentitySection />)}
           </OnboardingCard>
         );
       case 3:
         return (
           <OnboardingCard
-            key="skills"
+            key="projects"
             variants={variants}
             initial="enter"
             animate="center"
             exit="exit"
             custom={1}
           >
-            {renderContent(<BusinessDetailsSection />)}
+            {renderContent(<CompanyDetailsSection />)}
           </OnboardingCard>
         );
       case 4:
-        return (
-          <OnboardingCard
-            key="portfolio"
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            custom={1}
-          >
-            {renderContent(<ConclusionSection />)}
-          </OnboardingCard>
-        );
       default:
         return null;
     }
@@ -113,7 +100,7 @@ function FormContent() {
   );
 }
 
-export default function AgentProfileForm() {
+export default function UserProfileForm() {
   const { user, isLoaded } = useUser();
 
   // Wait for user data to be loaded
@@ -131,8 +118,8 @@ export default function AgentProfileForm() {
   }
 
   return (
-    <AgentProfileFormProvider>
+    <UserProfileFormProvider>
       <FormContent />
-    </AgentProfileFormProvider>
+    </UserProfileFormProvider>
   );
 }

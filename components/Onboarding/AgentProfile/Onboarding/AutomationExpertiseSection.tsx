@@ -1,6 +1,6 @@
 import React from "react";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
-import { Automation } from "@/components/Onboarding/SharedProfile/UI/Automation";
+import { Automation } from "@/components/Onboarding/SharedProfile/Onboarding/Automation";
 import {
   AGENT_AUTOMATION_SERVICES,
   AGENT_TOOLS_EXPERTISE,
@@ -27,19 +27,22 @@ export function AutomationExpertiseSection() {
   } = useAgentProfileFormFields();
 
   // Watch form values
-  const skills = watch("skills") || [];
-  const automationTools = watch("automationTools") || [];
+  const automationServices =
+    watch("automationExpertise.automationServices") || [];
+  const toolsExpertise = watch("automationExpertise.toolsExpertise") || [];
 
   // Handle service selection
   const handleServicesChange = (services: string[]) => {
-    setValue("skills", services, { shouldValidate: true });
+    setValue("automationExpertise.automationServices", services, {
+      shouldValidate: true,
+    });
   };
 
   // Handle tools selection
   const handleToolsChange = (tools: string[]) => {
-    setValue("automationTools", tools, { shouldValidate: true });
-    // Set a default expertise level if not already set
-    setValue("expertiseLevel", "intermediate", { shouldValidate: true });
+    setValue("automationExpertise.toolsExpertise", tools, {
+      shouldValidate: true,
+    });
   };
 
   const rightContent = (
@@ -65,8 +68,8 @@ export function AutomationExpertiseSection() {
             "Receive personalized recommendations for high-value projects",
         },
       ]}
-      currentStep={2}
-      totalSteps={6}
+      currentStep={1}
+      totalSteps={4}
     />
   );
 
@@ -74,7 +77,6 @@ export function AutomationExpertiseSection() {
     <Automation
       onNext={handleNext}
       onPrev={handlePrev}
-      onSkip={() => {}} // Removed handleSkip as per new_code
       rightContent={rightContent}
       title="Automation Expertise"
       description="Select your primary automation services and tools expertise"
@@ -82,13 +84,13 @@ export function AutomationExpertiseSection() {
       toolsTitle="Tools/Platforms Expertise"
       servicesOptions={agentAutomationServices}
       toolsOptions={agentToolsExpertise}
-      initialServices={skills}
-      initialTools={automationTools}
+      initialServices={automationServices}
+      initialTools={toolsExpertise}
       onServicesChange={handleServicesChange}
       onToolsChange={handleToolsChange}
       errors={{
-        services: errors.skills?.message,
-        tools: errors.automationTools?.message,
+        services: errors.automationExpertise?.automationServices?.message,
+        tools: errors.automationExpertise?.toolsExpertise?.message,
       }}
       canProceed={canProceed}
     />

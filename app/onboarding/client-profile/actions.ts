@@ -1,34 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { auth } from "@clerk/nextjs/server";
 import { backendClient } from "@/sanity/lib/backendClinet";
-
-// Validation schema matching your Sanity schema
-const clientProfileSchema = z.object({
-  title: z.string().min(1, "Professional title is required"),
-  bio: z.string().min(50, "Bio must be at least 50 characters long"),
-  skills: z
-    .array(z.string())
-    .min(1, "At least one skill is required")
-    .max(10, "Maximum 10 skills allowed"),
-  pricingModel: z.string().min(1, "Pricing model is required"),
-  availability: z.string().min(1, "Availability status is required"),
-  languages: z.array(z.string()).min(1, "At least one language is required"),
-  timezone: z.string().min(1, "Timezone is required"),
-  portfolio: z
-    .array(
-      z.object({
-        title: z.string().min(1, "Project title is required"),
-        description: z
-          .string()
-          .min(10, "Project description must be at least 10 characters"),
-        url: z.string().url("Invalid URL").optional(),
-      })
-    )
-    .optional(),
-});
+import { randomUUID } from "crypto";
+import { ClientProjectSchema } from "@/types/project";
+import { z } from "zod";
 
 export interface FormState {
   success: boolean;
@@ -36,237 +13,40 @@ export interface FormState {
   errors?: Record<string, string>;
 }
 
-// Helper function to upload an image to Sanity's asset store
-async function uploadImageToSanity(file: File) {
-  try {
-    // Convert File to ArrayBuffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Log file details for debugging
-    console.log(
-      `Uploading image: ${file.name}, size: ${file.size} bytes, type: ${file.type}`
-    );
-
-    // Upload to Sanity with retry logic
-    let attempts = 0;
-    const maxAttempts = 3;
-
-    while (attempts < maxAttempts) {
-      try {
-        const result = await backendClient.assets.upload("image", buffer, {
-          filename: file.name,
-          contentType: file.type,
-        });
-
-        console.log(
-          `Successfully uploaded image: ${file.name}, id: ${result._id}`
-        );
-        return result;
-      } catch (error) {
-        attempts++;
-        console.error(
-          `Upload attempt ${attempts} failed for ${file.name}:`,
-          error
-        );
-
-        if (attempts >= maxAttempts) {
-          throw error;
-        }
-
-        // Wait before retrying
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-    }
-  } catch (error) {
-    console.error(`Failed to upload image ${file.name}:`, error);
-    throw error;
-  }
-}
-
-// Async function to handle image uploads with retries
-async function handleAsyncImageUploads(
-  profileId: string,
-  files: {
-    type: string;
-    file: File;
-    path: string;
-    additionalData?: any;
-    documentId?: string;
-  }[]
-) {
-  for (const { type, file, path, additionalData, documentId } of files) {
-    if (!file || file.size === 0) continue;
-
-    // Add retry logic for image uploads
-    let retries = 0;
-    const maxRetries = 3;
-    let success = false;
-
-    while (!success && retries < maxRetries) {
-      try {
-        console.log(
-          `Uploading image ${file.name} (attempt ${retries + 1}/${maxRetries})...`
-        );
-        const imageAsset = await uploadImageToSanity(file);
-
-        if (imageAsset) {
-          // Create image reference
-          const imageRef = {
-            _type: "image",
-            asset: {
-              _type: "reference",
-              _ref: imageAsset._id,
-            },
-          };
-
-          // Determine which document to patch
-          const targetDocId = documentId || profileId;
-          console.log(
-            `Updating document ${targetDocId} with image at path: ${path}`
-          );
-
-          // Patch the document with the new image
-          if (type === "array") {
-            // For array types, we need to get the current array and append to it
-            try {
-              // First get the current document to see what's already in the array
-              const doc = await backendClient.getDocument(targetDocId);
-
-              if (doc) {
-                // Create a new array with existing items + new item
-                const currentArray = doc[path] || [];
-
-                // Check if this is a projectImage type (from additionalData._type)
-                let newItem;
-                if (additionalData && additionalData._type === "projectImage") {
-                  // For projectImage type, we need to structure it according to the schema
-                  newItem = {
-                    _type: "projectImage",
-                    _key: additionalData._key,
-                    alt: additionalData.alt || "Project image",
-                    image: imageRef, // Nest the image reference inside the 'image' field
-                  };
-                } else {
-                  // For regular images, just add the imageRef with additionalData
-                  newItem = { ...imageRef, ...additionalData };
-                }
-
-                const updatedArray = [...currentArray, newItem];
-
-                // Update with the new array
-                await backendClient
-                  .patch(targetDocId)
-                  .set({ [path]: updatedArray })
-                  .commit();
-              } else {
-                console.error(`Document not found for ID: ${targetDocId}`);
-                throw new Error(`Document not found for ID: ${targetDocId}`);
-              }
-            } catch (error) {
-              console.error(`Error updating array at path ${path}:`, error);
-              throw error; // Rethrow to trigger retry
-            }
-          } else {
-            // For simple object types
-            await backendClient
-              .patch(targetDocId)
-              .set({ [path]: imageRef })
-              .commit();
-          }
-
-          console.log(
-            `Successfully added ${file.name} to document ${targetDocId} at path: ${path}`
-          );
-          success = true; // Mark as successful to exit retry loop
-        } else {
-          throw new Error("Image asset upload failed");
-        }
-      } catch (error) {
-        retries++;
-        console.error(
-          `Attempt ${retries}/${maxRetries} failed for ${file.name}:`,
-          error
-        );
-
-        if (retries >= maxRetries) {
-          console.error(
-            `Failed to upload and attach image ${file.name} after ${maxRetries} attempts:`,
-            error
-          );
-        } else {
-          // Wait before retrying (exponential backoff)
-          const delay = Math.min(1000 * Math.pow(2, retries), 10000);
-          console.log(`Retrying in ${delay}ms...`);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-        }
-      }
-    }
-  }
-}
-
 // Process project images asynchronously
-async function processProjectImagesAsync(profileId: string, projects: any[]) {
-  // For each project that's been created
-  for (let i = 0; i < projects.length; i++) {
-    const project = projects[i];
-    if (
-      !project._id ||
-      !project.imageFiles ||
-      project.imageFiles.length === 0
-    ) {
-      console.log(
-        `Skipping project with no images or invalid ID: ${project.title}`
-      );
-      continue;
+async function processProjectImages(projectId: string, imageFiles: File[]) {
+  const imagePromises = imageFiles.map(async (file, index) => {
+    try {
+      const imageAsset = await backendClient.assets.upload("image", file);
+      return {
+        _type: "projectImage",
+        _key: `image_${index}_${Date.now()}`,
+        image: {
+          _type: "image",
+          asset: {
+            _type: "reference",
+            _ref: imageAsset._id,
+          },
+        },
+        alt: "Project image",
+        order: index,
+        isFeatured: index === 0,
+      };
+    } catch (error) {
+      console.error(`Error uploading image ${index}:`, error);
+      throw error;
     }
+  });
 
-    console.log(
-      `Processing ${project.imageFiles.length} images for project: ${project.title} (${project._id})`
-    );
+  const images = await Promise.all(imagePromises);
 
-    // Collect all images for this project
-    const imagesToUpload = [];
-    for (let j = 0; j < project.imageFiles.length; j++) {
-      const imageFile = project.imageFiles[j];
+  // Update project with images
+  await backendClient.patch(projectId).set({ images }).commit();
 
-      if (imageFile && imageFile.size > 0) {
-        try {
-          imagesToUpload.push({
-            type: "array",
-            file: imageFile,
-            path: "images",
-            documentId: project._id,
-            additionalData: {
-              _type: "projectImage", // Changed from "image" to "projectImage"
-              _key: `image_${j}_${Date.now()}`,
-              alt: project.title || "Project image",
-            },
-          });
-        } catch (error) {
-          console.error(
-            `Error preparing image ${j} for project ${project._id}:`,
-            error
-          );
-        }
-      }
-    }
-
-    // Upload images for this project if there are any
-    if (imagesToUpload.length > 0) {
-      try {
-        await handleAsyncImageUploads(project._id, imagesToUpload);
-      } catch (error) {
-        console.error(
-          `Failed to process images for project ${project._id}:`,
-          error
-        );
-      }
-    }
-  }
+  return images;
 }
 
-// Main function to save agent profile to Sanity
+// Main function to save client profile to Sanity
 export async function saveClientProfile(
   formData: FormData
 ): Promise<FormState> {
@@ -321,124 +101,6 @@ export async function saveClientProfile(
       updatedAt: new Date().toISOString(),
     };
 
-    // Track files to upload asynchronously
-    const imagesToUpload: {
-      type: string;
-      file: File;
-      path: string;
-      additionalData?: any;
-      documentId?: string;
-    }[] = [];
-
-    // Queue profile picture for async upload if provided
-    const profilePicture = formData.get("profilePicture") as File;
-    if (profilePicture && profilePicture.size > 0) {
-      imagesToUpload.push({
-        type: "object",
-        file: profilePicture,
-        path: "personalDetails.profilePicture",
-      });
-    }
-
-    // Queue banner image for async upload if provided
-    const bannerImage = formData.get("bannerImage") as File;
-    if (bannerImage && bannerImage.size > 0) {
-      imagesToUpload.push({
-        type: "object",
-        file: bannerImage,
-        path: "personalDetails.bannerImage",
-      });
-    }
-
-    // Add company details if applicable
-    let companyId: string | undefined;
-    if (hasCompany) {
-      // Create a proper company reference instead of embedding company details
-      interface CompanyData {
-        _type: string;
-        name: string;
-        teamSize: string;
-        bio: string;
-        website: string;
-        companyType: string;
-        serviceOfferings?: string[];
-        industries?: string[];
-        yearsInBusiness?: number;
-        createdAt: string;
-        updatedAt: string;
-      }
-
-      const companyData: CompanyData = {
-        _type: "company", // Use the base company type
-        name: formData.get("company.name") as string,
-        teamSize: formData.get("company.teamSize") as string, // Match the field name in the schema
-        bio: formData.get("company.bio") as string,
-        website: formData.get("company.website") as string,
-        companyType: "agent", // Specify this is an agent company
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      // Add service offerings if available
-      const serviceOfferings = formData.getAll(
-        "company.serviceOfferings"
-      ) as string[];
-      if (serviceOfferings && serviceOfferings.length > 0) {
-        companyData.serviceOfferings = serviceOfferings;
-      }
-
-      // Add industries if available
-      const industries = formData.getAll("company.industries") as string[];
-      if (industries && industries.length > 0) {
-        companyData.industries = industries;
-      }
-
-      // Add years in business if available
-      const yearsInBusiness = formData.get("company.yearsInBusiness") as string;
-      if (yearsInBusiness) {
-        companyData.yearsInBusiness = parseInt(yearsInBusiness, 10);
-      }
-
-      // Queue company logo and banner for async upload
-      const companyLogo = formData.get("company.logo") as File;
-      const companyBanner = formData.get("company.banner") as File;
-
-      try {
-        // Create the company document first (without images)
-        console.log("Creating company document:", companyData);
-        const companyDoc = await backendClient.create(companyData);
-        companyId = companyDoc._id;
-
-        // Then reference it in the agent profile
-        clientProfile.coreIdentity.companyId = {
-          _type: "reference",
-          _ref: companyDoc._id,
-        };
-
-        // Queue company logo for async upload if provided
-        if (companyLogo && companyLogo.size > 0) {
-          imagesToUpload.push({
-            type: "object",
-            file: companyLogo,
-            path: "logo",
-            documentId: companyDoc._id,
-          });
-        }
-
-        // Queue company banner for async upload if provided
-        if (companyBanner && companyBanner.size > 0) {
-          imagesToUpload.push({
-            type: "object",
-            file: companyBanner,
-            path: "banner",
-            documentId: companyDoc._id,
-          });
-        }
-      } catch (error) {
-        console.error("Error creating company document:", error);
-      }
-    }
-
     // Add automation needs and tools
     const automationNeeds = formData.getAll("automationNeeds");
     const currentTools = formData.getAll("currentTools");
@@ -450,12 +112,17 @@ export async function saveClientProfile(
       currentTools: currentTools,
     };
 
-    // Create a separate client project document
-    const projectData: any = {
+    // Create a client project document
+    const projectDoc = {
       _type: "clientProject",
+      _id: `project_${randomUUID()}`,
       title: formData.get("projectTitle") as string,
-      businessDomain: formData.get("businessDomain") as string,
+      slug: {
+        _type: "slug",
+        current: `${(formData.get("projectTitle") as string).toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
+      },
       description: formData.get("projectDescription") as string,
+      businessDomain: formData.get("businessDomain") as string,
       painPoints: formData.get("painPoints") as string,
       budgetRange: formData.get("budgetRange") as string,
       timeline: formData.get("timeline") as string,
@@ -468,187 +135,174 @@ export async function saveClientProfile(
       updatedAt: new Date().toISOString(),
     };
 
-    // Remove any undefined or empty fields
-    Object.keys(projectData).forEach((key) => {
-      if (!projectData[key]) {
-        delete projectData[key];
-      }
-    });
+    // Validate project data
+    ClientProjectSchema.parse(projectDoc);
 
-    // Only create project document if key details are provided
+    // Create project document
     try {
-      const projectTitle = projectData.title?.trim();
-      const businessDomain = projectData.businessDomain?.trim();
-      const projectDescription = projectData.description?.trim();
+      console.log("Creating client project document:", projectDoc);
+      const createdProject = await backendClient.create(projectDoc);
+      console.log("Created project document:", createdProject._id);
 
-      if (projectTitle && businessDomain && projectDescription) {
-        console.log("Creating client project document:", projectData);
-        const projectDoc = await backendClient.create(projectData);
-        console.log("Created project document:", projectDoc._id);
-
-        // Add the project reference to the client profile
-        clientProfile.projects = [
-          {
-            _type: "reference",
-            _key: `project_${Date.now()}`,
-            _ref: projectDoc._id,
-          },
-        ];
+      // Process project images if any
+      const projectImages: File[] = [];
+      for (let i = 0; ; i++) {
+        const imageFile = formData.get(`projectImages[${i}]`) as File;
+        if (!imageFile) break;
+        projectImages.push(imageFile);
       }
+
+      if (projectImages.length > 0) {
+        await processProjectImages(createdProject._id, projectImages);
+      }
+
+      // Add the project reference to the client profile
+      clientProfile.projects = [
+        {
+          _type: "reference",
+          _key: `project_${Date.now()}`,
+          _ref: createdProject._id,
+        },
+      ];
     } catch (error) {
       console.error("Error creating project document:", error);
+      throw error;
     }
 
-    // Debug log for project scope details
-    console.log("Project Scope Details:", {
-      budgetRange: formData.get("budgetRange"),
-      timeline: formData.get("timeline"),
-      complexity: formData.get("complexity"),
-      engagementType: formData.get("engagementType"),
-      teamSizeRequired: formData.get("teamSizeRequired"),
-      experienceLevel: formData.get("experienceLevel"),
-    });
+    // Add company details if applicable
+    if (hasCompany) {
+      const companyData = {
+        _type: "company",
+        name: formData.get("company.name") as string,
+        teamSize: formData.get("company.teamSize") as string,
+        bio: formData.get("company.bio") as string,
+        website: formData.get("company.website") as string,
+        companyType: "client",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
 
-    // Add project size preferences if provided
-    const projectSizePreference = formData.getAll(
-      "projectSizePreference"
-    ) as string[];
-    if (projectSizePreference && projectSizePreference.length > 0) {
-      clientProfile.projectDetails.projectSizePreferences =
-        projectSizePreference;
-    }
-
-    // Add team size if provided
-    const teamSize = formData.get("teamSize") as string;
-    if (teamSize) {
-      clientProfile.projectDetails.teamSize = teamSize;
-    }
-
-    // Process projects data first (without images)
-    const createdProjects: any[] = [];
-    const projectsJSON = formData.get("projects") as string;
-    if (projectsJSON) {
-      const projects = JSON.parse(projectsJSON);
-
-      for (let i = 0; i < projects.length; i++) {
-        const project = projects[i];
-        const projectKey = `project_${i}_${Date.now()}`;
-
-        // Create a proper client project document (without images initially)
-        const clientProjectData: {
-          _type: string;
-          title: string;
-          description: string;
-          painPoints: string;
-          createdAt: string;
-          updatedAt: string;
-        } = {
-          _type: "project",
-          title: project.title,
-          description: project.description,
-          painPoints: project.painPoints || "",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+      try {
+        const companyDoc = await backendClient.create(companyData);
+        clientProfile.coreIdentity.companyId = {
+          _type: "reference",
+          _ref: companyDoc._id,
         };
 
-        // Create the agent project document
-        try {
-          const projectDoc = await backendClient.create(clientProjectData);
-          console.log(`Created project document: ${projectDoc._id}`);
+        // Handle company images
+        const companyLogo = formData.get("company.logo") as File;
+        const companyBanner = formData.get("company.banner") as File;
 
-          createdProjects.push({
-            _id: projectDoc._id,
-            title: project.title,
-          });
-
-          // Add the project reference to the agent profile
-          clientProfile.projects = clientProfile.projects || [];
-          clientProfile.projects.push({
-            _type: "reference",
-            _key: projectKey,
-            _ref: projectDoc._id,
-          });
-        } catch (error) {
-          console.error(`Error creating project document:`, error);
+        if (companyLogo?.size > 0) {
+          const logoAsset = await backendClient.assets.upload(
+            "image",
+            companyLogo
+          );
+          await backendClient
+            .patch(companyDoc._id)
+            .set({
+              logo: {
+                _type: "image",
+                asset: {
+                  _type: "reference",
+                  _ref: logoAsset._id,
+                },
+              },
+            })
+            .commit();
         }
+
+        if (companyBanner?.size > 0) {
+          const bannerAsset = await backendClient.assets.upload(
+            "image",
+            companyBanner
+          );
+          await backendClient
+            .patch(companyDoc._id)
+            .set({
+              banner: {
+                _type: "image",
+                asset: {
+                  _type: "reference",
+                  _ref: bannerAsset._id,
+                },
+              },
+            })
+            .commit();
+        }
+      } catch (error) {
+        console.error("Error creating company document:", error);
+        throw error;
       }
     }
 
-    // Check if token is available
-    if (!process.env.SANITY_API_TOKEN) {
-      console.error(
-        "Error: SANITY_API_TOKEN is not set in environment variables"
-      );
-      return {
-        success: false,
-        message:
-          "Server configuration error: Missing API token. Please contact support.",
-      };
-    }
-
-    console.log("Attempting to save agent profile to Sanity...");
-    console.log("Profile data:", JSON.stringify(clientProfile, null, 2));
-
+    // Save the main profile to Sanity
     try {
-      // Save the main profile to Sanity
       const result = await backendClient.create(clientProfile);
-      const profileId = result._id;
-      console.log("Profile saved successfully:", profileId);
+      console.log("Profile saved successfully:", result._id);
 
-      // Revalidate cached data immediately
+      // Handle profile images
+      const profilePicture = formData.get("profilePicture") as File;
+      const bannerImage = formData.get("bannerImage") as File;
+
+      if (profilePicture?.size > 0) {
+        const profilePictureAsset = await backendClient.assets.upload(
+          "image",
+          profilePicture
+        );
+        await backendClient
+          .patch(result._id)
+          .set({
+            "personalDetails.profilePicture": {
+              _type: "image",
+              asset: {
+                _type: "reference",
+                _ref: profilePictureAsset._id,
+              },
+            },
+          })
+          .commit();
+      }
+
+      if (bannerImage?.size > 0) {
+        const bannerImageAsset = await backendClient.assets.upload(
+          "image",
+          bannerImage
+        );
+        await backendClient
+          .patch(result._id)
+          .set({
+            "personalDetails.bannerImage": {
+              _type: "image",
+              asset: {
+                _type: "reference",
+                _ref: bannerImageAsset._id,
+              },
+            },
+          })
+          .commit();
+      }
+
+      // Revalidate cached data
       revalidatePath("/dashboard");
       revalidatePath("/profile");
 
-      // Start async image uploads in the background
-      if (imagesToUpload.length > 0 || createdProjects.length > 0) {
-        // Don't await this - let it run in the background
-        Promise.all([
-          handleAsyncImageUploads(profileId, imagesToUpload),
-          processProjectImagesAsync(profileId, createdProjects),
-        ]).catch((error) => {
-          console.error("Error in background image processing:", error);
-        });
-      }
-
-      // Return success immediately without waiting for image uploads
       return {
         success: true,
-        message:
-          "Client profile created successfully! Images are still uploading in the background.",
+        message: "Client profile created successfully!",
       };
-    } catch (sanityError: any) {
-      // Handle specific Sanity errors
-      console.error("Sanity error details:", {
-        message: sanityError.message,
-        statusCode: sanityError.statusCode,
-        responseBody: sanityError.responseBody,
-      });
-
-      // Return user-friendly error based on status code
-      if (sanityError.statusCode === 401) {
-        return {
-          success: false,
-          message:
-            "Authentication error with content database. Please contact support with error code: SIO-401-AWH",
-        };
-      } else if (sanityError.statusCode === 403) {
-        return {
-          success: false,
-          message:
-            "Permission denied. Your account doesn't have write access to the database.",
-        };
-      } else {
-        return {
-          success: false,
-          message: `Database error: ${sanityError.message || "Unknown error"}`,
-        };
-      }
+    } catch (error: any) {
+      console.error("Error saving client profile:", error);
+      return {
+        success: false,
+        message: `Failed to save profile: ${error.message || "Unknown error"}`,
+      };
     }
   } catch (error: any) {
-    console.error("Error saving client profile to Sanity:", error);
+    console.error("Error in saveClientProfile:", error);
     return {
       success: false,
-      message: `Failed to save your profile: ${error.message || "Unknown error"}`,
+      message: `An error occurred: ${error.message || "Unknown error"}`,
     };
   }
 }

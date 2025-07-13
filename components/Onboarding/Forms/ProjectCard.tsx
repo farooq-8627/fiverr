@@ -8,7 +8,7 @@ import {
   useModal,
 } from "@/components/UI/AnimatedModal";
 import { motion } from "framer-motion";
-import { Project } from "@/types/profile";
+import { Project } from "@/types/agent-profile";
 import { Pencil, Rocket, Trash } from "lucide-react";
 
 interface ProjectCardProps {
@@ -27,7 +27,7 @@ const ProjectCardContent = ({
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onDelete) {
-      onDelete(project.id);
+      onDelete(project._id || "");
       setOpen(false);
     }
   };
@@ -81,8 +81,8 @@ const ProjectCardContent = ({
       {/* Project Images Gallery */}
       <div className="relative w-full overflow-x-auto pb-4 -mx-2 px-2">
         <div className="flex gap-4 min-w-min">
-          {project.imageUrls &&
-            project.imageUrls.map((image, idx) => (
+          {project.imageFiles &&
+            project.imageFiles.map((image, idx) => (
               <motion.div
                 key={"image" + idx}
                 style={{
@@ -96,7 +96,7 @@ const ProjectCardContent = ({
                 className="relative flex-shrink-0 rounded-2xl overflow-hidden border border-white/10 shadow-xl"
               >
                 <img
-                  src={image}
+                  src={URL.createObjectURL(image)}
                   alt={`${project.title} image ${idx + 1}`}
                   className="h-48 w-64 object-cover"
                 />
@@ -131,10 +131,10 @@ export function ProjectCard(props: ProjectCardProps) {
     <Modal>
       <ModalTrigger>
         <div className="w-full h-full cursor-pointer">
-          {props.project.imageUrls && props.project.imageUrls.length > 0 ? (
+          {props.project.imageFiles && props.project.imageFiles.length > 0 ? (
             <div className="aspect-[3/2] rounded-md overflow-hidden relative border border-white/20">
               <img
-                src={props.project.imageUrls[0]}
+                src={URL.createObjectURL(props.project.imageFiles[0])}
                 alt={props.project.title}
                 className="w-full h-full object-cover"
               />

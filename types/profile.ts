@@ -1,3 +1,5 @@
+import { AgentProject, ClientProject } from "./project";
+
 // Shared profile types for both agents and clients
 
 // Base types
@@ -34,38 +36,6 @@ export interface CoreIdentity {
   fullName: string;
   hasCompany: boolean;
   companyDetails?: CompanyDetails;
-}
-
-// Project image type
-export interface ProjectImage {
-  url: string;
-  alt?: string;
-}
-
-// Project information
-export interface Project {
-  id: string;
-  title: string;
-  description: string;
-  projectLink?: string;
-  demoLink?: string;
-  technologies: string[];
-  // Fields for handling image uploads in the UI
-  images: File[];
-  imageUrls: string[];
-  activeImageIndex: number;
-  // Fields for Sanity storage
-  projectType?: string;
-  industry?: string;
-  complexity?: string;
-  duration?: string;
-  outcome?: string;
-  testimonial?: string;
-  // For storing processed images in Sanity
-  projectImages?: {
-    url: string;
-    alt?: string;
-  }[];
 }
 
 // Agent-specific types
@@ -121,7 +91,7 @@ export interface AgentProfile {
   personalDetails: PersonalDetails;
   coreIdentity: CoreIdentity;
   automationExpertise: AutomationExpertise;
-  projects: Project[];
+  projects: AgentProject[];
   businessDetails: AgentBusinessDetails;
   createdAt: Date;
   updatedAt: Date;
@@ -134,6 +104,7 @@ export interface ClientProfile {
   personalDetails: PersonalDetails;
   coreIdentity: CoreIdentity;
   automationNeeds: AutomationNeeds;
+  projects: ClientProject[];
   projectRequirements?: ProjectRequirements;
   projectScope?: ProjectScopeDetails;
   createdAt: Date;
@@ -143,14 +114,14 @@ export interface ClientProfile {
 // Combined user profile type that could be either agent or client
 export type UserProfile = AgentProfile | ClientProfile;
 
-// Type guard to check if a profile is an agent profile
-export function isAgentProfile(profile: UserProfile): profile is AgentProfile {
-  return "automationExpertise" in profile;
-}
-
 // Type guard to check if a profile is a client profile
 export function isClientProfile(
   profile: UserProfile
 ): profile is ClientProfile {
   return "automationNeeds" in profile;
+}
+
+// Type guard to check if a profile is an agent profile
+export function isAgentProfile(profile: UserProfile): profile is AgentProfile {
+  return "automationExpertise" in profile;
 }

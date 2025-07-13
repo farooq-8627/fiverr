@@ -4,11 +4,11 @@ import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayo
 import { Input } from "@/components/UI/input";
 import { Textarea } from "@/components/UI/textarea";
 import { Button } from "@/components/UI/button";
-import { Plus, X, Upload, Link as LinkIcon, Trash, Image } from "lucide-react";
+import { Upload, Trash, Image } from "lucide-react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
-import { Project } from "@/types/profile";
+import { Project } from "@/types/agent-profile";
 import { ProjectCard } from "../../Forms/ProjectCard";
 import {
   useAgentProfileForm,
@@ -48,6 +48,15 @@ const itemVariants: Variants = {
   },
 };
 
+const emptyProject: Project = {
+  _id: "new",
+  title: "",
+  description: "",
+  projectLink: "",
+  technologies: [],
+  imageFiles: [],
+};
+
 export function ProjectsSection() {
   const { handleNext, handlePrev, handleSkip } = useAgentProfileForm();
   const { watch, setValue } = useAgentProfileFormFields();
@@ -58,20 +67,10 @@ export function ProjectsSection() {
     (formData?.projects || []).map((project) => ({
       ...project,
       activeImageIndex: -1,
-      images: project.images || [],
-      imageUrls: project.imageUrls || [],
+      imageFiles: project.imageFiles || [],
     }))
   );
-  const [currentProject, setCurrentProject] = useState<Project>({
-    id: "new",
-    title: "",
-    description: "",
-    projectLink: "",
-    technologies: [],
-    images: [],
-    imageUrls: [],
-    activeImageIndex: -1,
-  });
+  const [currentProject, setCurrentProject] = useState<Project>(emptyProject);
   const [isHovered, setIsHovered] = useState(false);
   // Add state to track the saved project images for immediate display
   const [savedProjectImages, setSavedProjectImages] = useState<{
@@ -82,28 +81,24 @@ export function ProjectsSection() {
     if (!files) return;
 
     const newImages = Array.from(files);
-    const remainingSlots = 6 - currentProject.images.length;
+    const remainingSlots = 6 - (currentProject.imageFiles?.length || 0);
     const imagesToAdd = newImages.slice(0, remainingSlots);
     const newImageUrls = imagesToAdd.map((file) => URL.createObjectURL(file));
 
     setCurrentProject((prev) => ({
       ...prev,
-      images: [...prev.images, ...imagesToAdd], // Preserve order: add new images at the end
-      imageUrls: [...prev.imageUrls, ...newImageUrls], // Preserve order: add new URLs at the end
+      imageFiles: [...(prev.imageFiles || []), ...imagesToAdd], // Preserve order: add new images at the end
       activeImageIndex: -1,
     }));
   };
 
   const removeImage = (imageIndex: number) => {
     setCurrentProject((prev) => {
-      const newImages = [...prev.images];
-      const newImageUrls = [...prev.imageUrls];
+      const newImages = [...(prev.imageFiles || [])];
       newImages.splice(imageIndex, 1);
-      newImageUrls.splice(imageIndex, 1);
       return {
         ...prev,
-        images: newImages,
-        imageUrls: newImageUrls,
+        imageFiles: newImages,
         activeImageIndex: -1,
       };
     });
@@ -120,20 +115,23 @@ export function ProjectsSection() {
     if (!currentProject.title || !currentProject.description) return;
 
     // If we're editing an existing project, update it instead of adding a new one
-    if (currentProject.id !== "new") {
+    if (currentProject._id !== "new") {
       updateProject();
       return;
     }
 
     const newProjectId = String(Date.now());
-    const newProject = { ...currentProject, id: newProjectId };
+    const newProject = { ...currentProject, _id: newProjectId };
     const updatedProjects = [...projects, newProject];
 
     // Save the image URLs for immediate display
-    if (currentProject.imageUrls.length > 0) {
+    if (currentProject.imageFiles && currentProject.imageFiles.length > 0) {
+      const imageUrls = currentProject.imageFiles.map((file) =>
+        file instanceof File ? URL.createObjectURL(file) : file
+      );
       setSavedProjectImages((prev) => ({
         ...prev,
-        [newProjectId]: [...currentProject.imageUrls],
+        [newProjectId]: imageUrls,
       }));
     }
 
@@ -144,21 +142,12 @@ export function ProjectsSection() {
     setValue("projects", updatedProjects, { shouldValidate: true });
 
     // Reset current project
-    setCurrentProject({
-      id: "new",
-      title: "",
-      description: "",
-      projectLink: "",
-      technologies: [],
-      images: [],
-      imageUrls: [],
-      activeImageIndex: -1,
-    });
+    setCurrentProject(emptyProject);
   };
 
   const updateProject = () => {
     const updatedProjects = projects.map((project) =>
-      project.id === currentProject.id ? currentProject : project
+      project._id === currentProject._id ? currentProject : project
     );
 
     // Update projects state
@@ -168,21 +157,12 @@ export function ProjectsSection() {
     setValue("projects", updatedProjects, { shouldValidate: true });
 
     // Reset current project
-    setCurrentProject({
-      id: "new",
-      title: "",
-      description: "",
-      projectLink: "",
-      technologies: [],
-      images: [],
-      imageUrls: [],
-      activeImageIndex: -1,
-    });
+    setCurrentProject(emptyProject);
   };
 
   const removeProject = (projectId: string) => {
     const updatedProjects = projects.filter(
-      (project) => project.id !== projectId
+      (project) => project._id !== projectId
     );
     setProjects(updatedProjects);
 
@@ -204,8 +184,6 @@ export function ProjectsSection() {
 
   const handleEditProject = (projectToEdit: Project) => {
     setCurrentProject(projectToEdit);
-    // setIsEditing(true); // This state is not defined in the original file
-    // setOpen(true); // This state is not defined in the original file
   };
 
   const rightContent = (
@@ -231,8 +209,8 @@ export function ProjectsSection() {
             "Help clients understand your specialization and capabilities",
         },
       ]}
-      currentStep={3}
-      totalSteps={6}
+      currentStep={2}
+      totalSteps={4}
     />
   );
 
@@ -244,6 +222,7 @@ export function ProjectsSection() {
       onPrev={handlePrev}
       onSkip={handleSkip}
       rightContent={rightContent}
+      canProceed={true} // Projects are optional
     >
       <motion.div
         className="space-y-4"
@@ -319,11 +298,12 @@ export function ProjectsSection() {
                   onMouseLeave={() => setIsHovered(false)}
                 >
                   <div className="relative w-[200px] h-full">
-                    {currentProject.imageUrls.length > 0 ? (
+                    {currentProject.imageFiles &&
+                    currentProject.imageFiles.length > 0 ? (
                       <AnimatePresence>
-                        {currentProject.imageUrls.map((url, imgIndex) => (
+                        {currentProject.imageFiles.map((url, imgIndex) => (
                           <motion.div
-                            key={url}
+                            key={imgIndex}
                             className={cn(
                               "absolute top-0 left-0 w-[200px] h-[150px] cursor-pointer",
                               "rounded-lg overflow-hidden shadow-lg",
@@ -348,7 +328,8 @@ export function ProjectsSection() {
                               zIndex:
                                 currentProject.activeImageIndex === imgIndex
                                   ? 50
-                                  : currentProject.imageUrls.length - imgIndex,
+                                  : (currentProject.imageFiles?.length || 0) -
+                                    imgIndex,
                             }}
                             exit={{ scale: 0.95, opacity: 0 }}
                             transition={{
@@ -370,11 +351,11 @@ export function ProjectsSection() {
                             }}
                           >
                             <img
-                              src={url}
+                              src={URL.createObjectURL(url)}
                               alt={`Project image ${imgIndex + 1}`}
                               className="w-full h-full object-cover"
                             />
-                            {currentProject.activeImageIndex === imgIndex && (
+                            {currentProject.activeImageIndex === -1 && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -398,14 +379,14 @@ export function ProjectsSection() {
                         </motion.div>
                         <motion.p className="text-sm text-white/60">
                           Upload Project Images
-                        </motion.p>{" "}
+                        </motion.p>
                       </motion.div>
                     )}
                   </div>
                 </div>
 
                 {/* Upload Button */}
-                {currentProject.imageUrls.length < 6 && (
+                {(currentProject.imageFiles?.length || 0) < 6 && (
                   <motion.div
                     variants={itemVariants}
                     className="flex items-center justify-center mt-4 w-full"
@@ -420,8 +401,8 @@ export function ProjectsSection() {
                       />
                       <Upload className="h-4 w-4 text-white/60 mr-2" />
                       <span className="text-sm text-white/60">
-                        Upload Project Images ({currentProject.imageUrls.length}
-                        /6)
+                        Upload Project Images (
+                        {currentProject.imageFiles?.length || 0} /6)
                       </span>
                     </motion.label>
                   </motion.div>
@@ -454,7 +435,7 @@ export function ProjectsSection() {
               <AnimatePresence mode="popLayout">
                 {projects.map((project, index) => (
                   <motion.div
-                    key={project.id}
+                    key={project._id}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}

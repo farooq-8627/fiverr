@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
-import { Automation } from "@/components/Onboarding/SharedProfile/UI/Automation";
+import { Automation } from "@/components/Onboarding/SharedProfile/Onboarding/Automation";
 import {
   CLIENT_AUTOMATION_NEEDS,
   CLIENT_CURRENT_TOOLS,

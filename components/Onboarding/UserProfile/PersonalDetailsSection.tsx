@@ -1,60 +1,81 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/UI/input";
 import { SocialMediaIcons } from "@/components/Onboarding/Forms/SocialMediaIcons";
 import { ImageUpload } from "@/components/Onboarding/Forms/ImageUpload";
 import { FormSectionLayout } from "@/components/Onboarding/Forms/FormSectionLayout";
 import { RightContentLayout } from "@/components/Onboarding/Forms/RightContentLayout";
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
+import {
+  useUserProfileForm,
+  useUserProfileFormFields,
+} from "@/components/Onboarding/UserProfile/context/UserProfileFormContext";
+import { Loader2 } from "lucide-react";
 
-export interface PersonalDetailsSectionUIProps {
-  // Form control props
-  handleNext: () => void;
-  goToFirstSection: () => void;
-  canProceed?: boolean;
-
-  // Form data props
-  email: string;
-  phone: string;
-  username: string;
-  website: string;
-  socialLinks: { platform: string; url: string }[];
-  profilePicture: File | null;
-  bannerImage: File | null;
-
-  // Form handlers
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  handleSocialLinksChange: (links: { platform: string; url: string }[]) => void;
-  handleProfilePictureChange: (file: File | null) => void;
-  handleBannerImageChange: (file: File | null) => void;
-
-  // Right content customization
-  subtitle?: string;
-  userType: "agent" | "client";
-}
-
-export function PersonalDetailsSectionUI({
-  handleNext,
-  goToFirstSection,
-  canProceed,
-  email,
-  phone,
-  username,
-  website,
-  socialLinks,
-  profilePicture,
-  bannerImage,
-  handleInputChange,
-  handleSocialLinksChange,
-  handleProfilePictureChange,
-  handleBannerImageChange,
-  subtitle = "Let's start with the basics. Tell us about yourself.",
-  userType,
-}: PersonalDetailsSectionUIProps) {
+export function PersonalDetailsSection() {
+  const { handleNext, goToFirstSection, canProceed } = useUserProfileForm();
+  const {
+    register,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useUserProfileFormFields();
   const { user, isLoaded } = useUser();
 
+  // Get form data
+  const formData = watch();
+
+  // Initialize state with form data or Clerk data
+  const [profilePicture, setProfilePicture] = useState(
+    formData?.personalDetails?.profilePicture || null
+  );
+  const [bannerImage, setBannerImage] = useState(
+    formData?.personalDetails?.bannerImage || null
+  );
+  const [socialLinks, setSocialLinks] = useState(
+    formData?.personalDetails?.socialLinks || []
+  );
+  // Use Clerk data when available
+  useEffect(() => {
+    if (isLoaded && user) {
+      // Get user data from Clerk
+      const email = user.emailAddresses[0]?.emailAddress || "";
+      const phone = user.phoneNumbers[0]?.phoneNumber || "";
+      const username = user.username || "";
+
+      // Set form values from Clerk data
+      setValue("personalDetails.email", email);
+      setValue("personalDetails.phone", phone);
+      setValue("personalDetails.username", username);
+    }
+  }, [isLoaded, user, setValue]);
+
+  // Handle form input changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setValue(`personalDetails.${id}` as any, value, { shouldValidate: true });
+  };
+
+  const handleProfilePictureChange = (file: File | null) => {
+    setProfilePicture(file);
+    setValue("personalDetails.profilePicture", file, { shouldValidate: true });
+  };
+
+  const handleBannerImageChange = (file: File | null) => {
+    setBannerImage(file);
+    setValue("personalDetails.bannerImage", file, { shouldValidate: true });
+  };
+
   // Animation variants
+  const handleSocialLinksChange = (
+    links: { platform: string; url: string }[]
+  ) => {
+    setSocialLinks(links);
+    setValue("personalDetails.socialLinks", links, {
+      shouldValidate: true,
+    });
+  };
+
   const containerVariants = {
     hidden: {
       opacity: 0,
@@ -95,7 +116,7 @@ export function PersonalDetailsSectionUI({
   const rightContent = (
     <RightContentLayout
       title="Personal Details"
-      subtitle={subtitle}
+      subtitle="Let's start with the basics. Tell us about yourself."
       features={[
         {
           icon: "fa-user",
@@ -123,7 +144,6 @@ export function PersonalDetailsSectionUI({
       title="Contact Details"
       description="Let's get your essential information"
       onNext={handleNext}
-      onFirstSection={goToFirstSection}
       rightContent={rightContent}
     >
       <motion.div
@@ -144,7 +164,11 @@ export function PersonalDetailsSectionUI({
               type="email"
               required
               disabled={true}
-              value={email || user?.emailAddresses[0]?.emailAddress || ""}
+              value={
+                formData?.personalDetails?.email ||
+                user?.emailAddresses[0]?.emailAddress ||
+                ""
+              }
               placeholder="Email Address"
               className="bg-white/5 text-white pl-10 opacity-70"
             />
@@ -160,7 +184,11 @@ export function PersonalDetailsSectionUI({
               type="tel"
               required
               disabled={true}
-              value={phone || user?.phoneNumbers[0]?.phoneNumber || ""}
+              value={
+                formData?.personalDetails?.phone ||
+                user?.phoneNumbers[0]?.phoneNumber ||
+                ""
+              }
               placeholder="Phone Number"
               className="bg-white/5 text-white pl-10 opacity-70"
             />
@@ -175,7 +203,9 @@ export function PersonalDetailsSectionUI({
               type="text"
               required
               disabled={true}
-              value={username || user?.username || ""}
+              value={
+                formData?.personalDetails?.username || user?.username || ""
+              }
               placeholder="Username"
               className="bg-white/5 text-white pl-10 opacity-70"
             />
@@ -189,19 +219,19 @@ export function PersonalDetailsSectionUI({
             <Input
               id="website"
               type="url"
-              value={website || ""}
+              value={formData?.personalDetails?.website || ""}
               onChange={handleInputChange}
               placeholder="Website URL"
               className="bg-white/5 text-white pl-10"
             />
           </motion.div>
+        </motion.div>
 
-          <motion.div variants={itemVariants}>
-            <SocialMediaIcons
-              onSocialLinksChange={handleSocialLinksChange}
-              initialLinks={socialLinks}
-            />
-          </motion.div>
+        <motion.div variants={containerVariants} className="space-y-4">
+          <SocialMediaIcons
+            onSocialLinksChange={handleSocialLinksChange}
+            initialLinks={socialLinks}
+          />
         </motion.div>
 
         {/* Profile Images */}
@@ -221,9 +251,7 @@ export function PersonalDetailsSectionUI({
               <p className="text-white/60 text-sm">
                 {profilePicture
                   ? "Edit or replace your profile photo"
-                  : `Add a professional photo to help ${
-                      userType === "agent" ? "clients" : "agents"
-                    } recognize you`}
+                  : "Add a professional photo to help others recognize you"}
               </p>
             </div>
           </motion.div>

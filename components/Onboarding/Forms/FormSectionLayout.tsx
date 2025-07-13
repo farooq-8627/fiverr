@@ -14,6 +14,7 @@ interface FormSectionLayoutProps {
   onFirstSection?: () => void;
   isSubmitting?: boolean;
   canProceed?: boolean;
+  isLastStep?: boolean;
 }
 
 export function FormSectionLayout({
@@ -28,6 +29,7 @@ export function FormSectionLayout({
   onFirstSection,
   isSubmitting = false,
   canProceed = true,
+  isLastStep = false,
 }: FormSectionLayoutProps) {
   return (
     <div className="grid grid-cols-2 h-[82vh]">
@@ -95,7 +97,7 @@ export function FormSectionLayout({
                 </Button>
               )}
             </motion.div>
-            {onNext && (
+            {onNext && !isLastStep && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -110,9 +112,9 @@ export function FormSectionLayout({
                 </Button>
               </motion.div>
             )}
-            {onSubmit && (
+            {(onSubmit || isLastStep) && (
               <Button
-                onClick={onSubmit}
+                onClick={onSubmit || onNext}
                 disabled={isSubmitting || !canProceed}
                 className="bg-purple-600 hover:bg-purple-700 text-white px-12 py-2"
               >
