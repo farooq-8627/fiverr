@@ -1,230 +1,415 @@
 "use client";
 
-import { useEffect } from "react";
 import { useParams } from "next/navigation";
 import { GlassCard } from "@/components/UI/GlassCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/UI/avatar";
-import { Button } from "@/components/UI/button";
-import { useUserProfile } from "@/hooks/useUserProfile";
+import { useUserProfiles } from "@/hooks/useUserProfiles";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/UI/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/UI/tabs";
+import { useUser } from "@/hooks/useUser";
 
 export default function ProfilePage() {
-  const { username } = useParams();
-  const { profile, isLoading, error } = useUserProfile(username as string);
+  const { user, isLoading: profileLoading, error: profileError } = useUser();
+  const {
+    agentProfiles,
+    clientProfiles,
+    loading: profilesLoading,
+    error: profilesError,
+  } = useUserProfiles();
 
-  if (isLoading) {
+  if (profileLoading || profilesLoading) {
     return <div>Loading...</div>;
   }
 
-  if (error || !profile) {
+  if (profileError || profilesError || !user) {
     return <div>Error loading profile</div>;
   }
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
-        {/* Main Content */}
-        <div className="space-y-6">
-          {/* Banner and Profile Section */}
-          <GlassCard className="relative overflow-hidden">
-            {/* Banner */}
-            <div className="h-48 relative">
-              {profile.personalDetails.bannerImage?.asset.url ? (
-                <img
-                  src={profile.personalDetails.bannerImage.asset.url}
-                  alt="Profile banner"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-r from-blue-500/20 to-purple-500/20" />
+      {/* User Profile Header */}
+      <GlassCard className="relative overflow-hidden">
+        {/* Banner */}
+        <div className="h-48 relative">
+          {user.personalDetails.bannerImage?.asset.url ? (
+            <img
+              src={user.personalDetails.bannerImage.asset.url}
+              alt="Profile banner"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-r from-blue-500/20 to-purple-500/20" />
+          )}
+        </div>
+
+        {/* Profile Info */}
+        <div className="px-6 pb-6">
+          <div className="flex flex-col items-start">
+            <Avatar className="w-24 h-24 -mt-12 border-4 border-black/50 shadow-xl">
+              <AvatarImage
+                src={user.personalDetails.profilePicture?.asset.url}
+              />
+              <AvatarFallback>
+                {user.personalDetails.username[0]}
+              </AvatarFallback>
+            </Avatar>
+            <div className="mt-4">
+              <h1 className="text-2xl font-bold">
+                {user.coreIdentity.fullName}
+              </h1>
+              <p className="text-gray-400">{user.personalDetails.username}</p>
+              {user.personalDetails.website && (
+                <a
+                  href={user.personalDetails.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 text-sm mt-1 inline-block"
+                >
+                  Portfolio
+                </a>
               )}
             </div>
+          </div>
+        </div>
+      </GlassCard>
 
-            {/* Profile Info */}
-            <div className="px-6 pb-6">
-              <div className="flex flex-col items-start">
-                <Avatar className="w-24 h-24 -mt-12 border-4 border-black/50 shadow-xl">
-                  <AvatarImage
-                    src={profile.personalDetails.profilePicture?.asset.url}
-                  />
-                  <AvatarFallback>
-                    {profile.personalDetails.username[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="mt-4">
-                  <h1 className="text-2xl font-bold">
-                    {profile.coreIdentity.fullName}
-                  </h1>
-                  <p className="text-gray-400">
-                    {profile.coreIdentity.companyName}
-                  </p>
-                  {profile.personalDetails.website && (
-                    <a
-                      href={profile.personalDetails.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300 text-sm mt-1 inline-block"
-                    >
-                      Portfolio
-                    </a>
-                  )}
+      {/* Profile Tabs */}
+      <Tabs defaultValue="agent" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="agent" disabled={!agentProfiles.length}>
+            Agent Profile ({agentProfiles.length})
+          </TabsTrigger>
+          <TabsTrigger value="client" disabled={!clientProfiles.length}>
+            Client Profile ({clientProfiles.length})
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Agent Profiles Tab */}
+        <TabsContent value="agent">
+          {agentProfiles.map((agentProfile) => (
+            <div key={agentProfile._id} className="space-y-6 mt-6">
+              {/* Automation Expertise */}
+              <GlassCard>
+                <div className="p-6">
+                  <h2 className="text-lg font-semibold mb-4">
+                    Automation Expertise
+                  </h2>
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-md font-medium mb-2">Services</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {agentProfile.automationExpertise.automationServices.map(
+                          (service, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="bg-purple-500/10 text-purple-400 border-purple-500/20"
+                            >
+                              {service}
+                            </Badge>
+                          )
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-md font-medium mb-2">Tools</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {agentProfile.automationExpertise.toolsExpertise.map(
+                          (tool, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="bg-blue-500/10 text-blue-400 border-blue-500/20"
+                            >
+                              {tool}
+                            </Badge>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          </GlassCard>
+              </GlassCard>
 
-          {/* Suggestions Section (Only for logged-in users) */}
-          <GlassCard>
-            <div className="p-6">
-              <h2 className="text-lg font-semibold mb-4">Suggestions</h2>
-              <div className="flex gap-4">
-                <Button className="bg-white/10 hover:bg-white/20">
-                  Add Projects
-                </Button>
-                <Button className="bg-white/10 hover:bg-white/20">
-                  Add Posts
-                </Button>
-              </div>
-            </div>
-          </GlassCard>
-
-          {/* About Section */}
-          <GlassCard>
-            <div className="p-6">
-              <h2 className="text-lg font-semibold mb-4">About</h2>
-              <p className="text-gray-300 whitespace-pre-wrap">
-                {profile.mustHaveRequirements?.bio}
-              </p>
-            </div>
-          </GlassCard>
-
-          {/* Experience Section */}
-          {profile.isAgentProfile && (
-            <GlassCard>
-              <div className="p-6">
-                <h2 className="text-lg font-semibold mb-4">Experience</h2>
-                <p className="text-gray-300 whitespace-pre-wrap">
-                  {profile.mustHaveRequirements?.experience}
-                </p>
-              </div>
-            </GlassCard>
-          )}
-
-          {/* Projects Section */}
-          <GlassCard>
-            <div className="p-6">
-              <h2 className="text-lg font-semibold mb-4">Projects</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Project cards will go here */}
-              </div>
-            </div>
-          </GlassCard>
-
-          {/* Industries Section */}
-          <GlassCard>
-            <div className="p-6">
-              <h2 className="text-lg font-semibold mb-4">Industries</h2>
-              <div className="flex flex-wrap gap-2">
-                {profile.isAgentProfile
-                  ? profile.mustHaveRequirements?.industryDomain.map(
-                      (industry: string, index: number) => (
-                        <Badge
-                          key={`industry-${index}`}
-                          variant="outline"
-                          className="bg-purple-500/10 text-purple-400 border-purple-500/20"
-                        >
-                          {industry}
-                        </Badge>
-                      )
-                    )
-                  : profile.mustHaveRequirements?.industryDomain.map(
-                      (industry: string, index: number) => (
-                        <Badge
-                          key={`industry-${index}`}
-                          variant="outline"
-                          className="bg-blue-500/10 text-blue-400 border-blue-500/20"
-                        >
-                          {industry}
-                        </Badge>
-                      )
+              {/* Business Details */}
+              <GlassCard>
+                <div className="p-6">
+                  <h2 className="text-lg font-semibold mb-4">
+                    Business Details
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-gray-400">Pricing Model</p>
+                      <p className="font-medium">
+                        {agentProfile.businessDetails.pricingModel}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Availability</p>
+                      <p className="font-medium">
+                        {agentProfile.businessDetails.availability}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Work Type</p>
+                      <p className="font-medium">
+                        {agentProfile.businessDetails.workType}
+                      </p>
+                    </div>
+                    {agentProfile.businessDetails.teamSize && (
+                      <div>
+                        <p className="text-gray-400">Team Size</p>
+                        <p className="font-medium">
+                          {agentProfile.businessDetails.teamSize}
+                        </p>
+                      </div>
                     )}
-              </div>
-            </div>
-          </GlassCard>
+                  </div>
+                </div>
+              </GlassCard>
 
-          {/* Requirements Section */}
-          <GlassCard>
-            <div className="p-6">
-              <h2 className="text-lg font-semibold mb-4">Requirements</h2>
-              <div className="flex flex-wrap gap-2">
-                {profile.mustHaveRequirements?.requirements?.map(
-                  (requirement: string, index: number) => (
-                    <Badge
-                      key={`requirement-${index}`}
-                      variant="outline"
-                      className={`${
-                        profile.isAgentProfile
-                          ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
-                          : "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                      }`}
-                    >
-                      {requirement}
-                    </Badge>
-                  )
-                )}
-              </div>
+              {/* Projects */}
+              {agentProfile.projects && agentProfile.projects.length > 0 && (
+                <GlassCard>
+                  <div className="p-6">
+                    <h2 className="text-lg font-semibold mb-4">Projects</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {agentProfile.projects.map((project) => (
+                        <div key={project._id} className="space-y-2">
+                          <h3 className="font-medium">{project.title}</h3>
+                          <p className="text-sm text-gray-400">
+                            {project.description}
+                          </p>
+                          {project.technologies && (
+                            <div className="flex flex-wrap gap-2">
+                              {project.technologies.map((tech, index) => (
+                                <Badge
+                                  key={index}
+                                  variant="outline"
+                                  className="bg-green-500/10 text-green-400 border-green-500/20"
+                                >
+                                  {tech}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          {project.images && project.images.length > 0 && (
+                            <div className="grid grid-cols-2 gap-2 mt-2">
+                              {project.images.map((img, index) => (
+                                <img
+                                  key={index}
+                                  src={img.image.asset.url}
+                                  alt={img.alt}
+                                  className="rounded-md w-full h-32 object-cover"
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </GlassCard>
+              )}
             </div>
-          </GlassCard>
+          ))}
+        </TabsContent>
 
-          {/* Deal Breakers Section */}
-          <GlassCard>
-            <div className="p-6">
-              <h2 className="text-lg font-semibold mb-4">Deal Breakers</h2>
-              <div className="flex flex-wrap gap-2">
-                {profile.mustHaveRequirements?.dealBreakers?.map(
-                  (dealBreaker: string, index: number) => (
-                    <Badge
-                      key={`dealBreaker-${index}`}
-                      variant="outline"
-                      className={`${
-                        profile.isAgentProfile
-                          ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
-                          : "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                      }`}
-                    >
-                      {dealBreaker}
-                    </Badge>
-                  )
-                )}
-              </div>
-            </div>
-          </GlassCard>
-        </div>
+        {/* Client Profiles Tab */}
+        <TabsContent value="client">
+          {clientProfiles.map((clientProfile) => (
+            <div key={clientProfile._id} className="space-y-6 mt-6">
+              {/* Automation Needs */}
+              <GlassCard>
+                <div className="p-6">
+                  <h2 className="text-lg font-semibold mb-4">
+                    Automation Needs
+                  </h2>
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-md font-medium mb-2">
+                        Business Domain
+                      </h3>
+                      <p className="text-gray-300">
+                        {clientProfile.automationNeeds.businessDomain}
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className="text-md font-medium mb-2">Pain Points</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {clientProfile.automationNeeds.painPoints.map(
+                          (point, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="bg-red-500/10 text-red-400 border-red-500/20"
+                            >
+                              {point}
+                            </Badge>
+                          )
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-md font-medium mb-2">
+                        Automation Goals
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {clientProfile.automationNeeds.automationGoals.map(
+                          (goal, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="bg-green-500/10 text-green-400 border-green-500/20"
+                            >
+                              {goal}
+                            </Badge>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </GlassCard>
 
-        {/* Suggestions Sidebar */}
-        <div className="hidden lg:block">
-          <GlassCard className="sticky top-6">
-            <div className="p-6">
-              <h2 className="text-lg font-semibold mb-4">
-                People suggestions based on this profile
-              </h2>
-              <div className="space-y-4">
-                {profile.isAgentProfile ? (
-                  <p className="text-gray-400 text-sm">
-                    We will recommend potential clients for this profile
-                  </p>
-                ) : (
-                  <p className="text-gray-400 text-sm">
-                    We will recommend potential agents for this profile
-                  </p>
-                )}
-                {/* Add suggestion cards here */}
-              </div>
+              {/* Communication Preferences */}
+              <GlassCard>
+                <div className="p-6">
+                  <h2 className="text-lg font-semibold mb-4">
+                    Communication Preferences
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-gray-400">Languages</p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {clientProfile.communicationPreferences.preferredLanguages.map(
+                          (lang, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="bg-blue-500/10 text-blue-400 border-blue-500/20"
+                            >
+                              {lang}
+                            </Badge>
+                          )
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Timezone</p>
+                      <p className="font-medium">
+                        {clientProfile.communicationPreferences.timezone}
+                      </p>
+                    </div>
+                    {clientProfile.communicationPreferences
+                      .availabilityHours && (
+                      <div className="col-span-2">
+                        <p className="text-gray-400">Available Hours</p>
+                        <p className="font-medium">
+                          {
+                            clientProfile.communicationPreferences
+                              .availabilityHours.start
+                          }{" "}
+                          -{" "}
+                          {
+                            clientProfile.communicationPreferences
+                              .availabilityHours.end
+                          }{" "}
+                          (
+                          {
+                            clientProfile.communicationPreferences
+                              .availabilityHours.timeZone
+                          }
+                          )
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </GlassCard>
+
+              {/* Projects */}
+              {clientProfile.projects && clientProfile.projects.length > 0 && (
+                <GlassCard>
+                  <div className="p-6">
+                    <h2 className="text-lg font-semibold mb-4">Projects</h2>
+                    <div className="grid grid-cols-1 gap-6">
+                      {clientProfile.projects.map((project) => (
+                        <div
+                          key={project._id}
+                          className="space-y-4 border border-white/10 rounded-lg p-4"
+                        >
+                          <div>
+                            <h3 className="font-medium text-lg">
+                              {project.title}
+                            </h3>
+                            <p className="text-gray-400">
+                              {project.description}
+                            </p>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                              <p className="text-gray-400 text-sm">
+                                Budget Range
+                              </p>
+                              <p className="font-medium">
+                                {project.budgetRange}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-400 text-sm">Timeline</p>
+                              <p className="font-medium">{project.timeline}</p>
+                            </div>
+                            <div>
+                              <p className="text-gray-400 text-sm">
+                                Complexity
+                              </p>
+                              <p className="font-medium">
+                                {project.projectComplexity}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-gray-400 text-sm">Status</p>
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "mt-1",
+                                  project.status === "active"
+                                    ? "bg-green-500/10 text-green-400 border-green-500/20"
+                                    : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                                )}
+                              >
+                                {project.status}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-gray-400 text-sm">
+                              Technologies
+                            </p>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {project.technology.map((tech, index) => (
+                                <Badge
+                                  key={index}
+                                  variant="outline"
+                                  className="bg-purple-500/10 text-purple-400 border-purple-500/20"
+                                >
+                                  {tech}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </GlassCard>
+              )}
             </div>
-          </GlassCard>
-        </div>
-      </div>
+          ))}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

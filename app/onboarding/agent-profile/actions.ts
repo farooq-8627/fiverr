@@ -1,269 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { auth } from "@clerk/nextjs/server";
 import { backendClient } from "@/sanity/lib/backendClinet";
 
-// Validation schema matching your Sanity schema
-const agentProfileSchema = z.object({
-  title: z.string().min(1, "Professional title is required"),
-  bio: z.string().min(50, "Bio must be at least 50 characters long"),
-  skills: z
-    .array(z.string())
-    .min(1, "At least one skill is required")
-    .max(10, "Maximum 10 skills allowed"),
-  pricingModel: z.string().min(1, "Pricing model is required"),
-  availability: z.string().min(1, "Availability status is required"),
-  languages: z.array(z.string()).min(1, "At least one language is required"),
-  timezone: z.string().min(1, "Timezone is required"),
-  portfolio: z
-    .array(
-      z.object({
-        title: z.string().min(1, "Project title is required"),
-        description: z
-          .string()
-          .min(10, "Project description must be at least 10 characters"),
-        url: z.string().url("Invalid URL").optional(),
-      })
-    )
-    .optional(),
-});
+import {
+  handleAsyncImageUploads,
+  processProjectImagesAsync,
+} from "@/lib/ImageUploads";
+import { ensureUserDocumentExists } from "@/lib/UserProfiles";
 
-export interface FormState {
+interface FormState {
   success: boolean;
   message: string;
   errors?: Record<string, string>;
-}
-
-// Helper function to upload an image to Sanity's asset store
-async function uploadImageToSanity(file: File) {
-  try {
-    // Convert File to ArrayBuffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Log file details for debugging
-    console.log(
-      `Uploading image: ${file.name}, size: ${file.size} bytes, type: ${file.type}`
-    );
-
-    // Upload to Sanity with retry logic
-    let attempts = 0;
-    const maxAttempts = 3;
-
-    while (attempts < maxAttempts) {
-      try {
-        const result = await backendClient.assets.upload("image", buffer, {
-          filename: file.name,
-          contentType: file.type,
-        });
-
-        console.log(
-          `Successfully uploaded image: ${file.name}, id: ${result._id}`
-        );
-        return result;
-      } catch (error) {
-        attempts++;
-        console.error(
-          `Upload attempt ${attempts} failed for ${file.name}:`,
-          error
-        );
-
-        if (attempts >= maxAttempts) {
-          throw error;
-        }
-
-        // Wait before retrying
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-    }
-  } catch (error) {
-    console.error(`Failed to upload image ${file.name}:`, error);
-    throw error;
-  }
-}
-
-// Async function to handle image uploads with retries
-async function handleAsyncImageUploads(
-  profileId: string,
-  files: {
-    type: string;
-    file: File;
-    path: string;
-    additionalData?: any;
-    documentId?: string;
-  }[]
-) {
-  for (const { type, file, path, additionalData, documentId } of files) {
-    if (!file || file.size === 0) continue;
-
-    // Add retry logic for image uploads
-    let retries = 0;
-    const maxRetries = 3;
-    let success = false;
-
-    while (!success && retries < maxRetries) {
-      try {
-        console.log(
-          `Uploading image ${file.name} (attempt ${retries + 1}/${maxRetries})...`
-        );
-        const imageAsset = await uploadImageToSanity(file);
-
-        if (imageAsset) {
-          // Create image reference
-          const imageRef = {
-            _type: "image",
-            asset: {
-              _type: "reference",
-              _ref: imageAsset._id,
-            },
-          };
-
-          // Determine which document to patch
-          const targetDocId = documentId || profileId;
-          console.log(
-            `Updating document ${targetDocId} with image at path: ${path}`
-          );
-
-          // Patch the document with the new image
-          if (type === "array") {
-            // For array types, we need to get the current array and append to it
-            try {
-              // First get the current document to see what's already in the array
-              const doc = await backendClient.getDocument(targetDocId);
-
-              if (doc) {
-                // Create a new array with existing items + new item
-                const currentArray = doc[path] || [];
-
-                // Check if this is a projectImage type (from additionalData._type)
-                let newItem;
-                if (additionalData && additionalData._type === "projectImage") {
-                  // For projectImage type, we need to structure it according to the schema
-                  newItem = {
-                    _type: "projectImage",
-                    _key: additionalData._key,
-                    alt: additionalData.alt || "Project image",
-                    image: imageRef, // Nest the image reference inside the 'image' field
-                  };
-                } else {
-                  // For regular images, just add the imageRef with additionalData
-                  newItem = { ...imageRef, ...additionalData };
-                }
-
-                const updatedArray = [...currentArray, newItem];
-
-                // Update with the new array
-                await backendClient
-                  .patch(targetDocId)
-                  .set({ [path]: updatedArray })
-                  .commit();
-              } else {
-                console.error(`Document not found for ID: ${targetDocId}`);
-                throw new Error(`Document not found for ID: ${targetDocId}`);
-              }
-            } catch (error) {
-              console.error(`Error updating array at path ${path}:`, error);
-              throw error; // Rethrow to trigger retry
-            }
-          } else {
-            // For simple object types
-            await backendClient
-              .patch(targetDocId)
-              .set({ [path]: imageRef })
-              .commit();
-          }
-
-          console.log(
-            `Successfully added ${file.name} to document ${targetDocId} at path: ${path}`
-          );
-          success = true; // Mark as successful to exit retry loop
-        } else {
-          throw new Error("Image asset upload failed");
-        }
-      } catch (error) {
-        retries++;
-        console.error(
-          `Attempt ${retries}/${maxRetries} failed for ${file.name}:`,
-          error
-        );
-
-        if (retries >= maxRetries) {
-          console.error(
-            `Failed to upload and attach image ${file.name} after ${maxRetries} attempts:`,
-            error
-          );
-        } else {
-          // Wait before retrying (exponential backoff)
-          const delay = Math.min(1000 * Math.pow(2, retries), 10000);
-          console.log(`Retrying in ${delay}ms...`);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-        }
-      }
-    }
-  }
-}
-
-// Process project images asynchronously
-async function processProjectImagesAsync(profileId: string, projects: any[]) {
-  // For each project that's been created
-  for (let i = 0; i < projects.length; i++) {
-    const project = projects[i];
-    if (
-      !project._id ||
-      !project.imageFiles ||
-      project.imageFiles.length === 0
-    ) {
-      console.log(
-        `Skipping project with no images or invalid ID: ${project.title}`
-      );
-      continue;
-    }
-
-    console.log(
-      `Processing ${project.imageFiles.length} images for project: ${project.title} (${project._id})`
-    );
-
-    // Collect all images for this project
-    const imagesToUpload = [];
-    for (let j = 0; j < project.imageFiles.length; j++) {
-      const imageFile = project.imageFiles[j];
-
-      if (imageFile && imageFile.size > 0) {
-        try {
-          imagesToUpload.push({
-            type: "array",
-            file: imageFile,
-            path: "images",
-            documentId: project._id,
-            additionalData: {
-              _type: "projectImage", // Changed from "image" to "projectImage"
-              _key: `image_${j}_${Date.now()}`,
-              alt: project.title || "Project image",
-            },
-          });
-        } catch (error) {
-          console.error(
-            `Error preparing image ${j} for project ${project._id}:`,
-            error
-          );
-        }
-      }
-    }
-
-    // Upload images for this project if there are any
-    if (imagesToUpload.length > 0) {
-      try {
-        await handleAsyncImageUploads(project._id, imagesToUpload);
-      } catch (error) {
-        console.error(
-          `Failed to process images for project ${project._id}:`,
-          error
-        );
-      }
-    }
-  }
 }
 
 // Main function to save agent profile to Sanity
@@ -283,15 +33,29 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
     }
     console.log("User authenticated:", userId);
 
+    // Ensure user document exists before proceeding
+    const userExists = await ensureUserDocumentExists(userId);
+    if (!userExists) {
+      return {
+        success: false,
+        message: "User profile not found. Please complete your profile first.",
+      };
+    }
+
+    // Get the user document ID
+    const userDocId = `user-${userId}`;
+    console.log("User document found:", userDocId);
+
     // Extract essential form fields
     console.log("Extracting form fields...");
+
     // Create agent profile document
     console.log("Creating agent profile document structure...");
     const agentProfile: any = {
       _type: "agentProfile",
       userId: {
         _type: "reference",
-        _ref: `user-${userId}`, // Changed from userId to user-${userId}
+        _ref: userDocId, // Use the full user document ID
       },
       profileId: {
         _type: "slug",
@@ -446,20 +210,47 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
       const profileId = result._id;
       console.log("Profile saved successfully:", profileId);
 
-      // Update user document to add this agent profile
+      // Update user document to add this agent profile reference
       console.log("Updating user document with new agent profile reference...");
+
+      // First, get the current user document to check existing agentProfiles
+      const currentUserDoc = await backendClient.getDocument(userDocId);
+      console.log("Current user document:", currentUserDoc);
+
+      // Check if agentProfiles array exists, if not initialize it
+      const currentAgentProfiles = currentUserDoc?.agentProfiles || [];
+      console.log("Current agent profiles:", currentAgentProfiles);
+
+      // Create new agent profile reference
+      const newAgentProfileRef = {
+        _type: "reference",
+        _key: `agentProfile_${Date.now()}`, // Use timestamp for unique key
+        _ref: profileId,
+      };
+
+      // Add the new reference to existing array
+      const updatedAgentProfiles = [
+        ...currentAgentProfiles,
+        newAgentProfileRef,
+      ];
+      console.log("Updated agent profiles array:", updatedAgentProfiles);
+
+      // Update the user document with the new agentProfiles array
       await backendClient
-        .patch(`user-${userId}`)
-        .setIfMissing({ agentProfiles: [] })
-        .append("agentProfiles", [
-          {
-            _type: "reference",
-            _key: `agentProfile_${profileId}`,
-            _ref: profileId,
-          },
-        ])
+        .patch(userDocId)
+        .set({ agentProfiles: updatedAgentProfiles })
         .commit();
-      console.log("User document updated with agent profile reference");
+
+      console.log(
+        "User document updated successfully with agent profile reference"
+      );
+
+      // Verify the update
+      const updatedUserDoc = await backendClient.getDocument(userDocId);
+      console.log(
+        "Verification - Updated user document agentProfiles:",
+        updatedUserDoc?.agentProfiles
+      );
 
       // Revalidate cached data immediately
       console.log("Revalidating paths...");
@@ -485,7 +276,7 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
       return {
         success: true,
         message:
-          "Agent profile created successfully! Images are still uploading in the background.",
+          "Agent profile created successfully and linked to your user profile! Images are still uploading in the background.",
       };
     } catch (sanityError: any) {
       // Handle specific Sanity errors
@@ -522,83 +313,4 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
       message: `Failed to save your profile: ${error.message || "Unknown error"}`,
     };
   }
-}
-
-// Additional server action for updating profile
-export async function updateAgentProfile(
-  profileId: string,
-  prevState: FormState,
-  formData: FormData
-): Promise<FormState> {
-  try {
-    const rawData = {
-      title: formData.get("title") as string,
-      bio: formData.get("bio") as string,
-      skills: formData.getAll("skills") as string[],
-      pricingModel: formData.get("pricingModel") as string,
-      availability: formData.get("availability") as string,
-      languages: formData.getAll("languages") as string[],
-      timezone: formData.get("timezone") as string,
-      portfolio: parsePortfolioData(formData),
-    };
-
-    const validatedData = agentProfileSchema.parse(rawData);
-
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // Example: Update in Sanity
-    // const client = getSanityClient();
-    // await client.patch(profileId).set({
-    //   ...validatedData,
-    //   updatedAt: new Date().toISOString(),
-    // }).commit();
-
-    revalidatePath("/dashboard");
-    revalidatePath("/profile");
-
-    return {
-      success: true,
-      message: "Profile updated successfully! ✅",
-    };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      const errors: Record<string, string> = {};
-      error.errors.forEach((err) => {
-        if (err.path) {
-          errors[err.path[0]] = err.message;
-        }
-      });
-
-      return {
-        success: false,
-        message: "Please fix the errors below",
-        errors,
-      };
-    }
-
-    console.error("Error updating agent profile:", error);
-    return {
-      success: false,
-      message:
-        "An error occurred while updating your profile. Please try again.",
-    };
-  }
-}
-
-// Helper function to parse portfolio data from FormData
-function parsePortfolioData(formData: FormData) {
-  const portfolioItems = [];
-  let index = 0;
-
-  while (formData.has(`portfolio[${index}].title`)) {
-    portfolioItems.push({
-      title: formData.get(`portfolio[${index}].title`) as string,
-      description: formData.get(`portfolio[${index}].description`) as string,
-      url: formData.get(`portfolio[${index}].url`) as string,
-    });
-    index++;
-  }
-
-  return portfolioItems.length > 0 ? portfolioItems : undefined;
 }
