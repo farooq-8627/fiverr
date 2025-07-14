@@ -7,12 +7,14 @@ interface GlassCardProps extends Omit<HTMLMotionProps<"div">, "children"> {
   theme?: "dark" | "light";
   children: React.ReactNode;
   className?: string;
+  padding?: string;
 }
 
 export function GlassCard({
   theme = "dark",
   children,
   className,
+  padding = "p-6",
   ...props
 }: GlassCardProps) {
   return (
@@ -171,10 +173,15 @@ export function GlassCard({
           </div>
 
           {/* Card border glow */}
-          <div className="absolute -inset-[0.5px] rounded-2xl bg-gradient-to-r from-white/3 via-white/7 to-white/3 opacity-0 group-hover:opacity-70 transition-opacity duration-500" />
+          <div className="absolute -inset-[0.5px] rounded-2xl bg-gradient-to-r from-white/3 via-white/7 to-white/3 opacity-0 " />
 
           {/* Glass card background */}
-          <div className="relative bg-black/60 backdrop-blur-xl rounded-2xl p-6 border border-white/[0.05] shadow-2xl overflow-hidden">
+          <div
+            className={cn(
+              "relative bg-black/60 backdrop-blur-xl rounded-2xl   border border-white/[0.05] shadow-2xl overflow-hidden",
+              padding
+            )}
+          >
             {/* Subtle card inner patterns */}
             <div
               className="absolute inset-0 opacity-[0.03]"

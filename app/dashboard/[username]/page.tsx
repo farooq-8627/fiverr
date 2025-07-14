@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/UI/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/UI/tabs";
 import { useUser } from "@/hooks/useUser";
+import { ProfileBannerCard } from "@/components/cards/ProfileBannerCard";
 
 export default function ProfilePage() {
   const { user, isLoading: profileLoading, error: profileError } = useUser();
@@ -27,52 +28,17 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
+    <div className="container mx-auto p-4 space-y-6 w-full md:w-2/3">
       {/* User Profile Header */}
-      <GlassCard className="relative overflow-hidden">
-        {/* Banner */}
-        <div className="h-48 relative">
-          {user.personalDetails.bannerImage?.asset.url ? (
-            <img
-              src={user.personalDetails.bannerImage.asset.url}
-              alt="Profile banner"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-r from-blue-500/20 to-purple-500/20" />
-          )}
-        </div>
-
-        {/* Profile Info */}
-        <div className="px-6 pb-6">
-          <div className="flex flex-col items-start">
-            <Avatar className="w-24 h-24 -mt-12 border-4 border-black/50 shadow-xl">
-              <AvatarImage
-                src={user.personalDetails.profilePicture?.asset.url}
-              />
-              <AvatarFallback>
-                {user.personalDetails.username[0]}
-              </AvatarFallback>
-            </Avatar>
-            <div className="mt-4">
-              <h1 className="text-2xl font-bold">
-                {user.coreIdentity.fullName}
-              </h1>
-              <p className="text-gray-400">{user.personalDetails.username}</p>
-              {user.personalDetails.website && (
-                <a
-                  href={user.personalDetails.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-400 hover:text-blue-300 text-sm mt-1 inline-block"
-                >
-                  Portfolio
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-      </GlassCard>
+      <ProfileBannerCard
+        bannerImage={user.personalDetails.bannerImage?.asset.url || ""}
+        profilePicture={user.personalDetails.profilePicture?.asset.url || ""}
+        fullName={user.coreIdentity.fullName}
+        username={user.personalDetails.username}
+        website={user.personalDetails.website || ""}
+        tagline={user.coreIdentity.tagline || ""}
+        socialLinks={user.personalDetails.socialLinks || []}
+      />
 
       {/* Profile Tabs */}
       <Tabs defaultValue="agent" className="w-full">
@@ -228,17 +194,9 @@ export default function ProfilePage() {
                   </h2>
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-md font-medium mb-2">
-                        Business Domain
-                      </h3>
-                      <p className="text-gray-300">
-                        {clientProfile.automationNeeds.businessDomain}
-                      </p>
-                    </div>
-                    <div>
                       <h3 className="text-md font-medium mb-2">Pain Points</h3>
                       <div className="flex flex-wrap gap-2">
-                        {clientProfile.automationNeeds.painPoints.map(
+                        {clientProfile.automationNeeds.automationRequirements.map(
                           (point, index) => (
                             <Badge
                               key={index}
@@ -256,7 +214,7 @@ export default function ProfilePage() {
                         Automation Goals
                       </h3>
                       <div className="flex flex-wrap gap-2">
-                        {clientProfile.automationNeeds.automationGoals.map(
+                        {clientProfile.automationNeeds.currentTools.map(
                           (goal, index) => (
                             <Badge
                               key={index}
@@ -283,7 +241,7 @@ export default function ProfilePage() {
                     <div>
                       <p className="text-gray-400">Languages</p>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        {clientProfile.communicationPreferences.preferredLanguages.map(
+                        {clientProfile.communicationPreferences?.languagesSpoken?.map(
                           (lang, index) => (
                             <Badge
                               key={index}
@@ -299,27 +257,27 @@ export default function ProfilePage() {
                     <div>
                       <p className="text-gray-400">Timezone</p>
                       <p className="font-medium">
-                        {clientProfile.communicationPreferences.timezone}
+                        {clientProfile.communicationPreferences?.timeZone}
                       </p>
                     </div>
                     {clientProfile.communicationPreferences
-                      .availabilityHours && (
+                      ?.meetingAvailability && (
                       <div className="col-span-2">
                         <p className="text-gray-400">Available Hours</p>
                         <p className="font-medium">
                           {
                             clientProfile.communicationPreferences
-                              .availabilityHours.start
+                              ?.meetingAvailability
                           }{" "}
                           -{" "}
                           {
                             clientProfile.communicationPreferences
-                              .availabilityHours.end
+                              ?.meetingAvailability
                           }{" "}
                           (
                           {
                             clientProfile.communicationPreferences
-                              .availabilityHours.timeZone
+                              ?.meetingAvailability
                           }
                           )
                         </p>

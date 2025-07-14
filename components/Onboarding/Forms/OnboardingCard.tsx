@@ -21,7 +21,7 @@ export function OnboardingCard({
           {/* Glass card background */}
           <GlassCard
             theme="dark"
-            className="w-full h-full bg-black/70 "
+            className="w-full h-full bg-black/70"
             {...props}
           >
             {children}

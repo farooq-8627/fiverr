@@ -56,19 +56,14 @@ export interface UserProfiles {
       current: string;
     };
     automationNeeds: {
-      businessDomain: string;
-      painPoints: string[];
-      automationGoals: string[];
-      toolPreferences?: string[];
+      automationRequirements: string[];
+      currentTools: string[];
     };
     communicationPreferences: {
-      preferredLanguages: string[];
-      timezone: string;
-      availabilityHours?: {
-        start: string;
-        end: string;
-        timeZone: string;
-      };
+      languagesSpoken: string[];
+      timeZone: string;
+      updateFrequency: string;
+      meetingAvailability: string;
     };
     projects?: Array<{
       _id: string;
@@ -156,15 +151,14 @@ export function useUserProfiles(): UserProfiles {
             _id,
             profileId,
             automationNeeds {
-              businessDomain,
-              painPoints,
-              automationGoals,
-              toolPreferences
+              automationRequirements,
+              currentTools,
             },
             communicationPreferences {
-              preferredLanguages,
-              timezone,
-              availabilityHours
+              languagesSpoken,
+              preferredContactMethod,
+              updateFrequency,
+              meetingAvailability
             },
             "projects": *[_type == "clientProject" && references(^._id)] {
               _id,

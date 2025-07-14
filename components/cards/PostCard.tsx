@@ -26,11 +26,9 @@ import {
 } from "lucide-react";
 import { Heart as HeartFilled } from "@phosphor-icons/react";
 import { PostModal } from "@/components/UI/PostModal";
-import { formatDistanceToNow } from "date-fns";
 import { formatPostTime } from "@/lib/formatPostTime";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/UI/avatar";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/UI/badge";
 
 export interface Media {
   type: "image" | "video" | "pdf";

@@ -2,8 +2,22 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Menu, Bell, Home, Users, UserSquare2, Newspaper } from "lucide-react";
-import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
+import {
+  Menu,
+  Bell,
+  Home,
+  Users,
+  UserSquare2,
+  Newspaper,
+  User,
+} from "lucide-react";
+import {
+  SignInButton,
+  SignUpButton,
+  UserButton,
+  useSession,
+  useUser,
+} from "@clerk/nextjs";
 
 import {
   NavigationMenu,
@@ -20,130 +34,86 @@ import {
   PopoverTrigger,
 } from "@/components/UI/popover";
 
-const navigationItems = [
+import { useState } from "react";
+import { MenuBar } from "@/components/UI/glow-menu";
+import { useUserProfiles } from "@/hooks/useUserProfiles";
+import { isSetIterator } from "util/types";
+
+const SignedInItems = [
   {
-    title: "Home",
-    href: "/",
     icon: Home,
+    label: "Home",
+    href: "/",
+    gradient:
+      "radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.06) 50%, rgba(29,78,216,0) 100%)",
+    iconColor: "text-blue-500",
   },
   {
-    title: "Agents",
-    href: "/agents",
     icon: UserSquare2,
+    label: "Agents",
+    href: "/agents",
+    gradient:
+      "radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(37,99,235,0.06) 50%, rgba(29,78,216,0) 100%)",
+    iconColor: "text-blue-500",
   },
   {
-    title: "Clients",
-    href: "/clients",
     icon: Users,
+    label: "Clients",
+    href: "/clients",
+    gradient:
+      "radial-gradient(circle, rgba(34,197,94,0.15) 0%, rgba(22,163,74,0.06) 50%, rgba(21,128,61,0) 100%)",
+    iconColor: "text-green-500",
   },
   {
-    title: "Feed",
-    href: "/feed",
     icon: Newspaper,
+    label: "Feed",
+    href: "/feed",
+    gradient:
+      "radial-gradient(circle, rgba(239,68,68,0.15) 0%, rgba(220,38,38,0.06) 50%, rgba(185,28,28,0) 100%)",
+    iconColor: "text-red-500",
+  },
+  {
+    icon: Bell,
+    label: "Notifications",
+    href: "#",
+    gradient:
+      "radial-gradient(circle, rgba(249,115,22,0.15) 0%, rgba(234,88,12,0.06) 50%, rgba(194,65,12,0) 100%)",
+    iconColor: "text-orange-500",
   },
 ];
 
 export function Navbar() {
+  const [activeItem, setActiveItem] = useState<string>("Home");
   const { isSignedIn, user } = useUser();
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <header className="w-full border-b border-border/40 bg-background/60 backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center">
-          <div className="w-full" />
-        </div>
-      </header>
-    );
-  }
 
   return (
-    <header className="w-full border-b border-border/40 bg-background/60 backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
-        {/* Mobile Menu */}
-        <Popover>
-          <PopoverTrigger className="mr-2 px-0 text-base hover:bg-accent/50 rounded-md focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 md:hidden">
-            <Menu className="h-5 w-5" />
-          </PopoverTrigger>
-          <PopoverContent className="w-64 p-2 mt-4 ml-2 bg-background/80 backdrop-blur-xl backdrop-saturate-150 border-border/40">
-            <nav className="grid gap-2">
-              {navigationItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.title}
-                    href={item.href}
-                    className="group grid grid-cols-[auto_1fr] gap-3 rounded-lg p-2 text-sm hover:bg-accent/50 transition-colors"
-                  >
-                    <Icon className="h-5 w-5" />
-                    <div className="font-medium leading-none">{item.title}</div>
-                  </Link>
-                );
-              })}
-            </nav>
-          </PopoverContent>
-        </Popover>
+    <div className="flex items-center justify-between w-full">
+      <MenuBar
+        items={SignedInItems}
+        activeItem={activeItem}
+        onItemClick={setActiveItem}
+      />
 
-        {/* Logo */}
-        <Link href="/" className="mr-6 flex items-center space-x-2">
-          <span className="font-bold">LOGO</span>
-        </Link>
-
-        {/* Desktop Navigation */}
-        <NavigationMenu className="hidden md:flex">
-          <NavigationMenuList>
-            {navigationItems.map((item) => (
-              <NavigationMenuItem key={item.title}>
-                <NavigationMenuLink asChild>
-                  <Link
-                    href={item.href}
-                    className="group inline-flex h-9 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium transition-colors hover:bg-accent/50 focus:bg-accent/50 focus:outline-none disabled:pointer-events-none disabled:opacity-50"
-                  >
-                    {item.title}
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            ))}
-          </NavigationMenuList>
-        </NavigationMenu>
-
-        <div className="flex flex-1 items-center justify-end space-x-4">
-          {/* Notifications */}
-          <button className="hover:bg-accent/50 transition-colors h-9 w-9 rounded-md p-2">
-            <Bell className="h-5 w-5" />
-            <span className="sr-only">Notifications</span>
-          </button>
-
-          {/* Auth */}
-          {isSignedIn ? (
-            <UserButton
-              afterSignOutUrl="/"
-              appearance={{
-                elements: {
-                  userButtonAvatarBox: "h-8 w-8",
-                },
-              }}
-            />
-          ) : (
-            <div className="flex items-center gap-2">
-              <SignInButton mode="modal">
-                <button className="text-sm font-medium hover:bg-accent/50 px-3 py-2 rounded-md transition-colors">
-                  Sign In
-                </button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <button className="bg-primary/80 backdrop-blur-sm text-primary-foreground hover:bg-primary/70 rounded-md px-3 py-2 text-sm font-medium transition-colors">
-                  Sign Up
-                </button>
-              </SignUpButton>
-            </div>
-          )}
-        </div>
+      <div className="flex items-center gap-4 pr-4">
+        {isSignedIn ? (
+          <div className="flex items-center gap-2">
+            <UserButton afterSignOutUrl="/" />
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <SignInButton mode="modal">
+              <button className="text-sm font-medium text-white hover:text-white/80">
+                Sign In
+              </button>
+            </SignInButton>
+            <SignUpButton mode="modal">
+              <button className="text-sm font-medium bg-white text-black px-4 py-2 rounded-full hover:bg-white/90">
+                Sign Up
+              </button>
+            </SignUpButton>
+          </div>
+        )}
       </div>
-    </header>
+    </div>
   );
 }

@@ -3,162 +3,30 @@ import { motion, AnimatePresence } from "framer-motion";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Input } from "../../UI/input";
 import { cn } from "@/lib/utils";
-import {
-  FaLinkedin,
-  FaGithub,
-  FaStackOverflow,
-  FaDev,
-  FaMedium,
-  FaHashtag,
-  FaDiscord,
-  FaSlack,
-  FaTelegram,
-  FaBehance,
-  FaDribbble,
-  FaKaggle,
-  FaTwitter,
-  FaYoutube,
-  FaInstagram,
-} from "react-icons/fa";
+import { socialPlatforms } from "@/lib/social-platforms";
 
 export type SocialPlatform = {
   id: string;
   name: string;
-  icon: React.ReactNode;
+  icon: React.ElementType; // Changed from ReactNode to ElementType
   placeholder: string;
   urlPrefix?: string; // Optional URL prefix for standard formats
   color: string;
 };
 
-export const socialPlatforms: SocialPlatform[] = [
-  // Core Professional Platforms
-  {
-    id: "linkedin",
-    name: "LinkedIn",
-    icon: <FaLinkedin className="w-6 h-6" />,
-    placeholder: "https://linkedin.com/in/username",
-    urlPrefix: "https://linkedin.com/in/",
-    color: "#0077B5",
-  },
-  {
-    id: "github",
-    name: "GitHub",
-    icon: <FaGithub className="w-6 h-6" />,
-    placeholder: "https://github.com/username",
-    urlPrefix: "https://github.com/",
-    color: "#333",
-  },
-  {
-    id: "stackoverflow",
-    name: "Stack Overflow",
-    icon: <FaStackOverflow className="w-6 h-6" />,
-    placeholder: "https://stackoverflow.com/users/username",
-    urlPrefix: "https://stackoverflow.com/",
-    color: "#F48024",
-  },
+// Helper function to render social icons consistently
+export function SocialIcon({
+  platform,
+  className = "w-6 h-6",
+}: {
+  platform: SocialPlatform | undefined;
+  className?: string;
+}) {
+  if (!platform) return null;
 
-  // Tech Community Platforms
-  {
-    id: "dev",
-    name: "Dev.to",
-    icon: <FaDev className="w-6 h-6" />,
-    placeholder: "https://dev.to/username",
-    urlPrefix: "https://dev.to/",
-    color: "#0A0A0A",
-  },
-  {
-    id: "medium",
-    name: "Medium",
-    icon: <FaMedium className="w-6 h-6" />,
-    placeholder: "https://medium.com/@username",
-    urlPrefix: "https://medium.com/",
-    color: "#12100E",
-  },
-  {
-    id: "hashnode",
-    name: "Hashnode",
-    icon: <FaHashtag className="w-6 h-6" />,
-    placeholder: "https://hashnode.com/@username",
-    urlPrefix: "https://hashnode.com/",
-    color: "#2962FF",
-  },
-
-  // Communication & Collaboration
-  {
-    id: "discord",
-    name: "Discord",
-    icon: <FaDiscord className="w-6 h-6" />,
-    placeholder: "Discord Username",
-    color: "#7289DA",
-  },
-  {
-    id: "slack",
-    name: "Slack",
-    icon: <FaSlack className="w-6 h-6" />,
-    placeholder: "Slack Workspace URL",
-    color: "#4A154B",
-  },
-  {
-    id: "telegram",
-    name: "Telegram",
-    icon: <FaTelegram className="w-6 h-6" />,
-    placeholder: "https://t.me/username",
-    urlPrefix: "https://t.me/",
-    color: "#0088CC",
-  },
-
-  // Professional Networking & Showcase
-  {
-    id: "behance",
-    name: "Behance",
-    icon: <FaBehance className="w-6 h-6" />,
-    placeholder: "https://behance.net/username",
-    urlPrefix: "https://behance.net/",
-    color: "#1769FF",
-  },
-  {
-    id: "dribbble",
-    name: "Dribbble",
-    icon: <FaDribbble className="w-6 h-6" />,
-    placeholder: "https://dribbble.com/username",
-    urlPrefix: "https://dribbble.com/",
-    color: "#EA4C89",
-  },
-  {
-    id: "kaggle",
-    name: "Kaggle",
-    icon: <FaKaggle className="w-6 h-6" />,
-    placeholder: "https://kaggle.com/username",
-    urlPrefix: "https://kaggle.com/",
-    color: "#20BEFF",
-  },
-
-  // Tech & Professional Platforms
-  {
-    id: "twitter",
-    name: "X (Twitter)",
-    icon: <FaTwitter className="w-6 h-6" />,
-    placeholder: "https://x.com/username",
-    urlPrefix: "https://x.com/",
-    color: "#000000",
-  },
-  {
-    id: "youtube",
-    name: "YouTube",
-    icon: <FaYoutube className="w-6 h-6" />,
-    placeholder: "https://youtube.com/@channel-name",
-    urlPrefix: "https://youtube.com/@",
-    color: "#FF0000",
-  },
-  {
-    id: "instagram",
-    name: "Instagram",
-    icon: <FaInstagram className="w-6 h-6" />,
-    placeholder: "https://instagram.com/username",
-    urlPrefix: "https://instagram.com/",
-    color: "#E1306C",
-  },
-];
+  const Icon = platform.icon;
+  return <Icon className={className} />;
+}
 
 interface SocialMediaIconsProps {
   onSocialLinksChange: (links: { platform: string; url: string }[]) => void;
@@ -293,7 +161,7 @@ export function SocialMediaIcons({
                               : "rgba(255,255,255,0.5)",
                         }}
                       >
-                        {platform.icon}
+                        <SocialIcon platform={platform} />
                       </div>
                     </button>
                     {isLinkSaved(platform.id) && (
@@ -337,7 +205,11 @@ export function SocialMediaIcons({
               >
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <div className="text-white/40">
-                    {socialPlatforms.find((p) => p.id === activeIcon)?.icon}
+                    <SocialIcon
+                      platform={socialPlatforms.find(
+                        (p) => p.id === activeIcon
+                      )}
+                    />
                   </div>
                 </div>
                 <Input
