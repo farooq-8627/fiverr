@@ -281,41 +281,17 @@ export async function saveClientProfile(
       };
     }
 
-    // Extract essential form fields
-    const email = formData.get("email") as string;
-    const username = formData.get("username") as string;
-    const phone = formData.get("phone") as string;
-    const website = formData.get("website") as string;
-    const fullName = formData.get("fullName") as string;
-    const hasCompany = formData.get("hasCompany") === "true";
-    const socialLinksJSON = formData.get("socialLinks") as string;
-    const socialLinks = socialLinksJSON ? JSON.parse(socialLinksJSON) : [];
-
     // Create client profile document
     const clientProfile: any = {
       _type: "clientProfile",
-      userId: userId,
-      personalDetails: {
-        _type: "personalDetails",
-        email,
-        phone,
-        username,
-        website,
-        socialLinks: socialLinks.map((link: any, index: number) => ({
-          _type: "socialLink",
-          _key: `social_${index}_${Date.now()}`,
-          platform: link.platform,
-          url: link.url,
-        })),
+      userId: {
+        _type: "reference",
+        _ref: `user-${userId}`, // Changed from userId to user-${userId}
       },
-      coreIdentity: {
-        _type: "coreIdentity",
-        fullName,
-        hasCompany,
-      },
+
       profileId: {
         _type: "slug",
-        current: `${fullName.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
+        current: `${userId.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -329,115 +305,6 @@ export async function saveClientProfile(
       additionalData?: any;
       documentId?: string;
     }[] = [];
-
-    // Queue profile picture for async upload if provided
-    const profilePicture = formData.get("profilePicture") as File;
-    if (profilePicture && profilePicture.size > 0) {
-      imagesToUpload.push({
-        type: "object",
-        file: profilePicture,
-        path: "personalDetails.profilePicture",
-      });
-    }
-
-    // Queue banner image for async upload if provided
-    const bannerImage = formData.get("bannerImage") as File;
-    if (bannerImage && bannerImage.size > 0) {
-      imagesToUpload.push({
-        type: "object",
-        file: bannerImage,
-        path: "personalDetails.bannerImage",
-      });
-    }
-
-    // Add company details if applicable
-    let companyId: string | undefined;
-    if (hasCompany) {
-      // Create a proper company reference instead of embedding company details
-      interface CompanyData {
-        _type: string;
-        name: string;
-        teamSize: string;
-        bio: string;
-        website: string;
-        companyType: string;
-        serviceOfferings?: string[];
-        industries?: string[];
-        yearsInBusiness?: number;
-        createdAt: string;
-        updatedAt: string;
-      }
-
-      const companyData: CompanyData = {
-        _type: "company", // Use the base company type
-        name: formData.get("company.name") as string,
-        teamSize: formData.get("company.teamSize") as string, // Match the field name in the schema
-        bio: formData.get("company.bio") as string,
-        website: formData.get("company.website") as string,
-        companyType: "agent", // Specify this is an agent company
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      // Add service offerings if available
-      const serviceOfferings = formData.getAll(
-        "company.serviceOfferings"
-      ) as string[];
-      if (serviceOfferings && serviceOfferings.length > 0) {
-        companyData.serviceOfferings = serviceOfferings;
-      }
-
-      // Add industries if available
-      const industries = formData.getAll("company.industries") as string[];
-      if (industries && industries.length > 0) {
-        companyData.industries = industries;
-      }
-
-      // Add years in business if available
-      const yearsInBusiness = formData.get("company.yearsInBusiness") as string;
-      if (yearsInBusiness) {
-        companyData.yearsInBusiness = parseInt(yearsInBusiness, 10);
-      }
-
-      // Queue company logo and banner for async upload
-      const companyLogo = formData.get("company.logo") as File;
-      const companyBanner = formData.get("company.banner") as File;
-
-      try {
-        // Create the company document first (without images)
-        console.log("Creating company document:", companyData);
-        const companyDoc = await backendClient.create(companyData);
-        companyId = companyDoc._id;
-
-        // Then reference it in the agent profile
-        clientProfile.coreIdentity.companyId = {
-          _type: "reference",
-          _ref: companyDoc._id,
-        };
-
-        // Queue company logo for async upload if provided
-        if (companyLogo && companyLogo.size > 0) {
-          imagesToUpload.push({
-            type: "object",
-            file: companyLogo,
-            path: "logo",
-            documentId: companyDoc._id,
-          });
-        }
-
-        // Queue company banner for async upload if provided
-        if (companyBanner && companyBanner.size > 0) {
-          imagesToUpload.push({
-            type: "object",
-            file: companyBanner,
-            path: "banner",
-            documentId: companyDoc._id,
-          });
-        }
-      } catch (error) {
-        console.error("Error creating company document:", error);
-      }
-    }
 
     // Add automation needs and tools
     const automationNeeds = formData.getAll("automationNeeds");
@@ -514,14 +381,13 @@ export async function saveClientProfile(
       "projectSizePreference"
     ) as string[];
     if (projectSizePreference && projectSizePreference.length > 0) {
-      clientProfile.projectDetails.projectSizePreferences =
-        projectSizePreference;
+      clientProfile.projectSizePreferences = projectSizePreference;
     }
 
     // Add team size if provided
     const teamSize = formData.get("teamSize") as string;
     if (teamSize) {
-      clientProfile.projectDetails.teamSize = teamSize;
+      clientProfile.teamSize = teamSize;
     }
 
     // Process projects data first (without images)
@@ -543,7 +409,7 @@ export async function saveClientProfile(
           createdAt: string;
           updatedAt: string;
         } = {
-          _type: "project",
+          _type: "clientProject",
           title: project.title,
           description: project.description,
           painPoints: project.painPoints || "",
@@ -551,7 +417,7 @@ export async function saveClientProfile(
           updatedAt: new Date().toISOString(),
         };
 
-        // Create the agent project document
+        // Create the client project document
         try {
           const projectDoc = await backendClient.create(clientProjectData);
           console.log(`Created project document: ${projectDoc._id}`);
@@ -561,7 +427,7 @@ export async function saveClientProfile(
             title: project.title,
           });
 
-          // Add the project reference to the agent profile
+          // Add the project reference to the client profile
           clientProfile.projects = clientProfile.projects || [];
           clientProfile.projects.push({
             _type: "reference",
@@ -591,9 +457,27 @@ export async function saveClientProfile(
 
     try {
       // Save the main profile to Sanity
+      console.log("Saving client profile to Sanity...");
       const result = await backendClient.create(clientProfile);
       const profileId = result._id;
       console.log("Profile saved successfully:", profileId);
+
+      // Update user document to add this client profile
+      console.log(
+        "Updating user document with new client profile reference..."
+      );
+
+      await backendClient
+        .patch(`user-${userId}`)
+        .setIfMissing({ clientProfiles: [] })
+        .append("clientProfiles", [
+          {
+            _type: "reference",
+            _key: `clientProfile_${profileId}`,
+            _ref: profileId,
+          },
+        ])
+        .commit();
 
       // Revalidate cached data immediately
       revalidatePath("/dashboard");

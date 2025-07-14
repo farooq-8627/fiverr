@@ -1,10 +1,6 @@
 "use client";
 import { OnboardingCard } from "@/components/Onboarding/Forms/OnboardingCard";
-import { PersonalDetailsSection } from "@/components/Onboarding/ClientProfile/Onboarding/PersonalDetailsSection";
-import { CoreIdentitySection } from "@/components/Onboarding/ClientProfile/Onboarding/CoreIdentitySection";
 import { ProjectDetails } from "@/components/Onboarding/ClientProfile/Onboarding/ProjectDetails";
-import { ProjectScopeDetails } from "@/components/Onboarding/ClientProfile/Onboarding/ProjectScopeDetails";
-import { AutomationNeedsSection } from "@/components/Onboarding/ClientProfile/Onboarding/AutomationNeedsSection";
 import { ConclusionSection } from "@/components/Onboarding/ClientProfile/Onboarding/ConclusionSection";
 import { AnimatePresence, motion } from "framer-motion";
 import { Toaster } from "sonner";
@@ -15,6 +11,8 @@ import {
 } from "@/components/Onboarding/ClientProfile/context/ClientProfileFormContext";
 import { Loader2 } from "lucide-react";
 import { redirect } from "next/navigation";
+import { AutomationNeedsSection } from "@/components/Onboarding/ClientProfile/Onboarding/AutomationNeedsSection";
+import { ProjectScopeDetails } from "@/components/Onboarding/ClientProfile/Onboarding/ProjectScopeDetails";
 
 // Animation variants for page transitions
 const variants = {
@@ -59,7 +57,7 @@ function FormContent() {
             exit="exit"
             custom={1}
           >
-            {renderContent(<PersonalDetailsSection />)}
+            {renderContent(<AutomationNeedsSection />)}
           </OnboardingCard>
         );
       case 2:
@@ -72,7 +70,7 @@ function FormContent() {
             exit="exit"
             custom={1}
           >
-            {renderContent(<CoreIdentitySection />)}
+            {renderContent(<ProjectDetails />)}
           </OnboardingCard>
         );
       case 3:
@@ -85,36 +83,10 @@ function FormContent() {
             exit="exit"
             custom={1}
           >
-            {renderContent(<AutomationNeedsSection />)}
-          </OnboardingCard>
-        );
-      case 4:
-        return (
-          <OnboardingCard
-            key="portfolio"
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            custom={1}
-          >
-            {renderContent(<ProjectDetails />)}
-          </OnboardingCard>
-        );
-      case 5:
-        return (
-          <OnboardingCard
-            key="business"
-            variants={variants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            custom={1}
-          >
             {renderContent(<ProjectScopeDetails />)}
           </OnboardingCard>
         );
-      case 6:
+      case 4:
         return (
           <OnboardingCard
             key="conclusion"

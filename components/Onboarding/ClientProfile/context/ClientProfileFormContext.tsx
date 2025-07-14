@@ -49,9 +49,6 @@ export function ClientProfileFormProvider({
     resolver: zodResolver(ClientProfileSchema),
     defaultValues: {
       ...storedData,
-      email: storedData.email || user?.emailAddresses?.[0]?.emailAddress || "",
-      username: storedData.username || user?.username || "",
-      phone: storedData.phone || user?.phoneNumbers?.[0]?.phoneNumber || "",
     },
     mode: "onChange",
   });
@@ -74,17 +71,6 @@ export function ClientProfileFormProvider({
     });
     return () => subscription.unsubscribe();
   }, [watch, setStoredData]);
-
-  // Helper function to validate URL
-  const isValidUrl = (url: string) => {
-    try {
-      if (!url) return true; // Empty URL is valid (optional field)
-      new URL(url);
-      return true;
-    } catch {
-      return false;
-    }
-  };
 
   // Determine if user can proceed based on current step validation
   const canProceed = React.useMemo(() => {
@@ -128,72 +114,6 @@ export function ClientProfileFormProvider({
       // Convert form data to FormData for server action
       const formData = new FormData();
       console.log("Creating FormData object");
-
-      // Add basic fields with validation
-      console.log("Adding basic fields with values:", {
-        email: data.email,
-        username: data.username,
-        phone: data.phone,
-      });
-
-      // Ensure required fields are not empty
-      if (!data.email?.trim()) {
-        toast.error("Email is required");
-        return;
-      }
-      if (!data.username?.trim()) {
-        toast.error("Username is required");
-        return;
-      }
-
-      formData.append("email", data.email.trim());
-      formData.append("username", data.username.trim());
-      formData.append("phone", data.phone?.trim() || "");
-      formData.append("website", data.website || "");
-      formData.append("fullName", data.fullName || "");
-      formData.append("hasCompany", String(data.hasCompany || false));
-
-      // Add social links
-      console.log("Processing social links...", data.socialLinks);
-      if (data.socialLinks && data.socialLinks.length > 0) {
-        formData.append("socialLinks", JSON.stringify(data.socialLinks));
-      } else {
-        formData.append("socialLinks", JSON.stringify([]));
-      }
-
-      // Add profile images if they exist
-      console.log("Processing profile images...");
-      if (data.profilePicture instanceof File) {
-        console.log("Adding profile picture:", data.profilePicture.name);
-        formData.append("profilePicture", data.profilePicture);
-      }
-
-      if (data.bannerImage instanceof File) {
-        console.log("Adding banner image:", data.bannerImage.name);
-        formData.append("bannerImage", data.bannerImage);
-      }
-
-      // Add company details if hasCompany is true
-      if (data.hasCompany && data.company) {
-        console.log("Processing company details:", data.company);
-        formData.append("company.name", data.company.name || "");
-        formData.append("company.teamSize", data.company.teamSize || "");
-        formData.append("company.bio", data.company.bio || "");
-        if (data.company.website) {
-          formData.append("company.website", data.company.website);
-        }
-
-        // Add company logo and banner if they exist
-        if (data.company.logo instanceof File) {
-          console.log("Adding company logo:", data.company.logo.name);
-          formData.append("company.logo", data.company.logo);
-        }
-
-        if (data.company.banner instanceof File) {
-          console.log("Adding company banner:", data.company.banner.name);
-          formData.append("company.banner", data.company.banner);
-        }
-      }
 
       // Add automation needs and tools
       console.log("Processing automation needs and tools...");

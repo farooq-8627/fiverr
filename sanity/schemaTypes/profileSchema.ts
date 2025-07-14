@@ -667,7 +667,7 @@ export const clientProfileSchema = defineType({
       },
     }),
     defineField({
-      name: "user",
+      name: "userId",
       title: "User ID",
       type: "reference",
       to: [{ type: "user" }],
@@ -750,9 +750,9 @@ export const clientProfileSchema = defineType({
   ],
   preview: {
     select: {
-      title: "personalDetails.username",
-      subtitle: "coreIdentity.fullName",
-      media: "personalDetails.profilePicture",
+      title: "userId.personalDetails.username",
+      subtitle: "userId.coreIdentity.fullName",
+      media: "userId.personalDetails.profilePicture",
     },
     prepare(selection) {
       const { title, subtitle, media } = selection;

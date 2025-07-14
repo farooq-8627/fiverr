@@ -5,7 +5,7 @@ import {
   useAgentProfileForm,
   useAgentProfileFormFields,
 } from "@/components/Onboarding/AgentProfile/context/AgentProfileFormContext";
-import { ConclusionSectionUI } from "@/components/Onboarding/SharedProfile/UI/ConclusionSectionUI";
+import { ConclusionSectionUI } from "@/components/Onboarding/SharedProfile/Onboarding/ConclusionSectionUI";
 
 export function ConclusionSection() {
   const { handlePrev, handleSubmit } = useAgentProfileForm();

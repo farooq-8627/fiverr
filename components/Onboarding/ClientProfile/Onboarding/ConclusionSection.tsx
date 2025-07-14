@@ -5,7 +5,7 @@ import {
   useClientProfileForm,
   useClientProfileFormFields,
 } from "@/components/Onboarding/ClientProfile/context/ClientProfileFormContext";
-import { ConclusionSectionUI } from "@/components/Onboarding/SharedProfile/UI/ConclusionSectionUI";
+import { ConclusionSectionUI } from "@/components/Onboarding/SharedProfile/Onboarding/ConclusionSectionUI";
 import { ClientProfile } from "@/types/profile";
 
 export function ConclusionSection() {
