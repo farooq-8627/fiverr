@@ -6,7 +6,6 @@ import {
   TEAM_SIZES,
   AVAILABILITY_OPTIONS,
   AVAILABILITY_STATUSES,
-  WORKING_HOURS_PREFERENCES,
   RESPONSE_TIME_COMMITMENTS,
   HOURLY_RATE_RANGES,
   MINIMUM_PROJECT_BUDGETS,
@@ -15,112 +14,113 @@ import {
   LANGUAGE_PROFICIENCIES,
   UPDATE_FREQUENCIES,
   MEETING_AVAILABILITIES,
+  WORKING_HOURS_PREFERENCES,
 } from "./constants";
 
 // Social Media Link Schema
-export const socialLinkSchema = defineType({
-  name: "socialLink",
-  title: "Social Link",
-  type: "object",
-  fields: [
-    defineField({
-      name: "platform",
-      title: "Platform",
-      type: "string",
-      validation: (Rule) => Rule.required(),
-    }),
-    defineField({
-      name: "url",
-      title: "URL",
-      type: "url",
-      validation: (Rule) =>
-        Rule.required().uri({
-          scheme: ["http", "https"],
-        }),
-    }),
-  ],
-});
+// export const socialLinkSchema = defineType({
+//   name: "socialLink",
+//   title: "Social Link",
+//   type: "object",
+//   fields: [
+//     defineField({
+//       name: "platform",
+//       title: "Platform",
+//       type: "string",
+//       validation: (Rule) => Rule.required(),
+//     }),
+//     defineField({
+//       name: "url",
+//       title: "URL",
+//       type: "url",
+//       validation: (Rule) =>
+//         Rule.required().uri({
+//           scheme: ["http", "https"],
+//         }),
+//     }),
+//   ],
+// });
 
 // Personal Details Schema
-export const personalDetailsSchema = defineType({
-  name: "personalDetails",
-  title: "Personal Details",
-  type: "object",
-  fields: [
-    defineField({
-      name: "email",
-      title: "Email",
-      type: "string",
-      validation: (Rule) => Rule.required().email(),
-    }),
-    defineField({
-      name: "phone",
-      title: "Phone",
-      type: "string",
-    }),
-    defineField({
-      name: "username",
-      title: "Username",
-      type: "string",
-      validation: (Rule) => Rule.required(),
-    }),
-    defineField({
-      name: "website",
-      title: "Website",
-      type: "url",
-    }),
-    defineField({
-      name: "socialLinks",
-      title: "Social Links",
-      type: "array",
-      of: [{ type: "socialLink" }],
-    }),
-    defineField({
-      name: "profilePicture",
-      title: "Profile Picture",
-      type: "image",
-      options: {
-        hotspot: true,
-      },
-    }),
-    defineField({
-      name: "bannerImage",
-      title: "Banner Image",
-      type: "image",
-      options: {
-        hotspot: true,
-      },
-    }),
-  ],
-});
+// export const personalDetailsSchema = defineType({
+//   name: "personalDetails",
+//   title: "Personal Details",
+//   type: "object",
+//   fields: [
+//     defineField({
+//       name: "email",
+//       title: "Email",
+//       type: "string",
+//       validation: (Rule) => Rule.required().email(),
+//     }),
+//     defineField({
+//       name: "phone",
+//       title: "Phone",
+//       type: "string",
+//     }),
+//     defineField({
+//       name: "username",
+//       title: "Username",
+//       type: "string",
+//       validation: (Rule) => Rule.required(),
+//     }),
+//     defineField({
+//       name: "website",
+//       title: "Website",
+//       type: "url",
+//     }),
+//     defineField({
+//       name: "socialLinks",
+//       title: "Social Links",
+//       type: "array",
+//       of: [{ type: "socialLink" }],
+//     }),
+//     defineField({
+//       name: "profilePicture",
+//       title: "Profile Picture",
+//       type: "image",
+//       options: {
+//         hotspot: true,
+//       },
+//     }),
+//     defineField({
+//       name: "bannerImage",
+//       title: "Banner Image",
+//       type: "image",
+//       options: {
+//         hotspot: true,
+//       },
+//     }),
+//   ],
+// });
 
 // Core Identity Schema
-export const coreIdentitySchema = defineType({
-  name: "coreIdentity",
-  title: "Core Identity",
-  type: "object",
-  fields: [
-    defineField({
-      name: "fullName",
-      title: "Full Name",
-      type: "string",
-      validation: (Rule) => Rule.required(),
-    }),
-    defineField({
-      name: "hasCompany",
-      title: "Has Company",
-      type: "boolean",
-      initialValue: false,
-    }),
-    defineField({
-      name: "companyId",
-      title: "Company ID",
-      type: "reference",
-      to: [{ type: "company" }],
-      hidden: ({ parent }) => !parent?.hasCompany,
-    }),
-  ],
-});
+// export const coreIdentitySchema = defineType({
+//   name: "coreIdentity",
+//   title: "Core Identity",
+//   type: "object",
+//   fields: [
+//     defineField({
+//       name: "fullName",
+//       title: "Full Name",
+//       type: "string",
+//       validation: (Rule) => Rule.required(),
+//     }),
+//     defineField({
+//       name: "hasCompany",
+//       title: "Has Company",
+//       type: "boolean",
+//       initialValue: false,
+//     }),
+//     defineField({
+//       name: "companyId",
+//       title: "Company ID",
+//       type: "reference",
+//       to: [{ type: "company" }],
+//       hidden: ({ parent }) => !parent?.hasCompany,
+//     }),
+//   ],
+// });
 
 // Automation Expertise Schema (for Agents)
 export const automationExpertiseSchema = defineType({
@@ -183,6 +183,15 @@ export const agentBusinessDetailsSchema = defineType({
         list: AVAILABILITY_OPTIONS,
       },
       description: "Your general availability for work",
+    }),
+    defineField({
+      name: "workType",
+      title: "Work Type",
+      type: "string",
+      options: {
+        list: WORKING_HOURS_PREFERENCES,
+      },
+      description: "Your general work type preference",
     }),
   ],
 });
@@ -459,13 +468,6 @@ export const mustHaveRequirementsSchema = defineType({
   type: "object",
   fields: [
     defineField({
-      name: "bio",
-      title: "Bio",
-      type: "text",
-      description: "A detailed biography or description of yourself/your work",
-      validation: (Rule) => Rule.required(),
-    }),
-    defineField({
       name: "experience",
       title: "Experience",
       type: "text",
@@ -535,19 +537,8 @@ export const agentProfileSchema = defineType({
     defineField({
       name: "userId",
       title: "User ID",
-      type: "string",
-      validation: (Rule) => Rule.required(),
-    }),
-    defineField({
-      name: "personalDetails",
-      title: "Personal Details",
-      type: "personalDetails",
-      validation: (Rule) => Rule.required(),
-    }),
-    defineField({
-      name: "coreIdentity",
-      title: "Core Identity",
-      type: "coreIdentity",
+      type: "reference",
+      to: [{ type: "user" }],
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -587,21 +578,6 @@ export const agentProfileSchema = defineType({
       title: "Must Have Requirements",
       type: "object",
       fields: [
-        defineField({
-          name: "tagline",
-          title: "Tagline",
-          type: "string",
-          description: "A single line that best describes what you do",
-          validation: (Rule) => Rule.required().max(100),
-        }),
-        defineField({
-          name: "bio",
-          title: "Bio",
-          type: "text",
-          description:
-            "A detailed biography or description of yourself/your work",
-          validation: (Rule) => Rule.required(),
-        }),
         defineField({
           name: "experience",
           title: "Experience",
@@ -657,9 +633,9 @@ export const agentProfileSchema = defineType({
   ],
   preview: {
     select: {
-      title: "personalDetails.username",
-      subtitle: "coreIdentity.fullName",
-      media: "personalDetails.profilePicture",
+      title: "userId.personalDetails.username",
+      subtitle: "userId.coreIdentity.fullName",
+      media: "userId.personalDetails.profilePicture",
     },
   },
 });
@@ -691,21 +667,10 @@ export const clientProfileSchema = defineType({
       },
     }),
     defineField({
-      name: "userId",
+      name: "user",
       title: "User ID",
-      type: "string",
-      validation: (Rule) => Rule.required(),
-    }),
-    defineField({
-      name: "personalDetails",
-      title: "Personal Details",
-      type: "personalDetails",
-      validation: (Rule) => Rule.required(),
-    }),
-    defineField({
-      name: "coreIdentity",
-      title: "Core Identity",
-      type: "coreIdentity",
+      type: "reference",
+      to: [{ type: "user" }],
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -730,22 +695,6 @@ export const clientProfileSchema = defineType({
       title: "Must Have Requirements",
       type: "object",
       fields: [
-        defineField({
-          name: "tagline",
-          title: "Tagline",
-          type: "string",
-          description:
-            "A single line that best describes what you're looking for",
-          validation: (Rule) => Rule.required().max(100),
-        }),
-        defineField({
-          name: "bio",
-          title: "Bio",
-          type: "text",
-          description:
-            "A detailed biography or description of yourself/your work",
-          validation: (Rule) => Rule.required(),
-        }),
         defineField({
           name: "experience",
           title: "Experience",

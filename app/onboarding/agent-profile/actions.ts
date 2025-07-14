@@ -285,51 +285,17 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
 
     // Extract essential form fields
     console.log("Extracting form fields...");
-    const email = formData.get("email") as string;
-    const username = formData.get("username") as string;
-    const phone = formData.get("phone") as string;
-    const website = formData.get("website") as string;
-    const fullName = formData.get("fullName") as string;
-    const hasCompany = formData.get("hasCompany") === "true";
-    const socialLinksJSON = formData.get("socialLinks") as string;
-    const socialLinks = socialLinksJSON ? JSON.parse(socialLinksJSON) : [];
-
-    console.log("Extracted basic fields:", {
-      email,
-      username,
-      phone,
-      website,
-      fullName,
-      hasCompany,
-      socialLinks,
-    });
-
     // Create agent profile document
     console.log("Creating agent profile document structure...");
     const agentProfile: any = {
       _type: "agentProfile",
-      userId: userId,
-      personalDetails: {
-        _type: "personalDetails",
-        email,
-        phone,
-        username,
-        website,
-        socialLinks: socialLinks.map((link: any, index: number) => ({
-          _type: "socialLink",
-          _key: `social_${index}_${Date.now()}`,
-          platform: link.platform,
-          url: link.url,
-        })),
-      },
-      coreIdentity: {
-        _type: "coreIdentity",
-        fullName,
-        hasCompany,
+      userId: {
+        _type: "reference",
+        _ref: `user-${userId}`, // Changed from userId to user-${userId}
       },
       profileId: {
         _type: "slug",
-        current: `${fullName.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
+        current: `${userId.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}`,
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -346,130 +312,6 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
       additionalData?: any;
       documentId?: string;
     }[] = [];
-
-    // Queue profile picture for async upload if provided
-    const profilePicture = formData.get("profilePicture") as File;
-    if (profilePicture && profilePicture.size > 0) {
-      console.log("Found profile picture:", profilePicture.name);
-      imagesToUpload.push({
-        type: "object",
-        file: profilePicture,
-        path: "personalDetails.profilePicture",
-      });
-    }
-
-    // Queue banner image for async upload if provided
-    const bannerImage = formData.get("bannerImage") as File;
-    if (bannerImage && bannerImage.size > 0) {
-      console.log("Found banner image:", bannerImage.name);
-      imagesToUpload.push({
-        type: "object",
-        file: bannerImage,
-        path: "personalDetails.bannerImage",
-      });
-    }
-
-    // Add company details if applicable
-    let companyId: string | undefined;
-    if (hasCompany) {
-      console.log("Processing company details...");
-      // Create a proper company reference instead of embedding company details
-      interface CompanyData {
-        _type: string;
-        name: string;
-        teamSize: string;
-        bio: string;
-        website: string;
-        companyType: string;
-        serviceOfferings?: string[];
-        industries?: string[];
-        yearsInBusiness?: number;
-        createdAt: string;
-        updatedAt: string;
-      }
-
-      const companyData: CompanyData = {
-        _type: "company",
-        name: formData.get("company.name") as string,
-        teamSize: formData.get("company.teamSize") as string,
-        bio: formData.get("company.bio") as string,
-        website: formData.get("company.website") as string,
-        companyType: "agent",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      console.log("Company data structure:", companyData);
-
-      // Add service offerings if available
-      const serviceOfferings = formData.getAll(
-        "company.serviceOfferings"
-      ) as string[];
-      if (serviceOfferings && serviceOfferings.length > 0) {
-        console.log("Adding service offerings:", serviceOfferings);
-        companyData.serviceOfferings = serviceOfferings;
-      }
-
-      // Add industries if available
-      const industries = formData.getAll("company.industries") as string[];
-      if (industries && industries.length > 0) {
-        console.log("Adding industries:", industries);
-        companyData.industries = industries;
-      }
-
-      // Add years in business if available
-      const yearsInBusiness = formData.get("company.yearsInBusiness") as string;
-      if (yearsInBusiness) {
-        console.log("Adding years in business:", yearsInBusiness);
-        companyData.yearsInBusiness = parseInt(yearsInBusiness, 10);
-      }
-
-      // Queue company logo and banner for async upload
-      const companyLogo = formData.get("company.logo") as File;
-      const companyBanner = formData.get("company.banner") as File;
-
-      try {
-        // Create the company document first (without images)
-        console.log("Creating company document in Sanity...");
-        const companyDoc = await backendClient.create(companyData);
-        companyId = companyDoc._id;
-        console.log("Company document created:", companyDoc._id);
-
-        // Then reference it in the agent profile
-        agentProfile.coreIdentity.companyId = {
-          _type: "reference",
-          _ref: companyDoc._id,
-        };
-
-        // Queue company logo for async upload if provided
-        if (companyLogo && companyLogo.size > 0) {
-          console.log("Queueing company logo for upload:", companyLogo.name);
-          imagesToUpload.push({
-            type: "object",
-            file: companyLogo,
-            path: "logo",
-            documentId: companyDoc._id,
-          });
-        }
-
-        // Queue company banner for async upload if provided
-        if (companyBanner && companyBanner.size > 0) {
-          console.log(
-            "Queueing company banner for upload:",
-            companyBanner.name
-          );
-          imagesToUpload.push({
-            type: "object",
-            file: companyBanner,
-            path: "banner",
-            documentId: companyDoc._id,
-          });
-        }
-      } catch (error) {
-        console.error("Error creating company document:", error);
-        throw error;
-      }
-    }
 
     // Add automation expertise
     console.log("Processing automation expertise...");
@@ -492,12 +334,14 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
     console.log("Processing business details...");
     const pricingModel = formData.get("pricingModel") as string;
     const availability = formData.get("availability") as string;
-    console.log("Business details:", { pricingModel, availability });
+    const workType = formData.get("workType") as string;
+    console.log("Business details:", { pricingModel, availability, workType });
 
     agentProfile.businessDetails = {
       _type: "agentBusinessDetails",
       pricingModel,
       availability,
+      workType,
     };
 
     // Add project size preferences if provided
@@ -601,6 +445,21 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
       const result = await backendClient.create(agentProfile);
       const profileId = result._id;
       console.log("Profile saved successfully:", profileId);
+
+      // Update user document to add this agent profile
+      console.log("Updating user document with new agent profile reference...");
+      await backendClient
+        .patch(`user-${userId}`)
+        .setIfMissing({ agentProfiles: [] })
+        .append("agentProfiles", [
+          {
+            _type: "reference",
+            _key: `agentProfile_${profileId}`,
+            _ref: profileId,
+          },
+        ])
+        .commit();
+      console.log("User document updated with agent profile reference");
 
       // Revalidate cached data immediately
       console.log("Revalidating paths...");

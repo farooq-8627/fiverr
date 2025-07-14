@@ -1,8 +1,5 @@
 import { SchemaTypeDefinition } from "sanity";
 import {
-  socialLinkSchema,
-  personalDetailsSchema,
-  coreIdentitySchema,
   automationExpertiseSchema,
   agentBusinessDetailsSchema,
   automationNeedsSchema,
@@ -21,6 +18,7 @@ import {
 } from "./projectSchema";
 
 import { companySchema } from "./companySchema";
+import { userSchema } from "./userSchema";
 
 // Import the new social feed schemas
 import {
@@ -33,7 +31,6 @@ import {
 export const schema: { types: SchemaTypeDefinition[] } = {
   types: [
     // Base types
-    socialLinkSchema,
     projectImageSchema,
 
     // Company schemas
@@ -43,6 +40,9 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     agentProjectSchema,
     clientProjectSchema,
 
+    // User schemas
+    userSchema,
+
     // Social Feed schemas
     FeedPostSchema,
     FeedMediaSchema,
@@ -50,8 +50,6 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     FeedLikeSchema,
 
     // Component schemas
-    personalDetailsSchema,
-    coreIdentitySchema,
 
     // Agent-specific schemas
     automationExpertiseSchema,
@@ -69,10 +67,8 @@ export const schema: { types: SchemaTypeDefinition[] } = {
 };
 
 export const schemaTypes = [
-  socialLinkSchema,
-  personalDetailsSchema,
-  coreIdentitySchema,
   automationExpertiseSchema,
+  userSchema,
   agentBusinessDetailsSchema,
   automationNeedsSchema,
   agentAvailabilitySchema,

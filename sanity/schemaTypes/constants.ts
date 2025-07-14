@@ -176,6 +176,13 @@ export const RESPONSE_TIME_COMMITMENTS = [
   { title: "3+ days", value: "3PlusDays" },
 ];
 
+// Work Type options
+export const WORK_TYPES = [
+  { title: "Full-time", value: "fullTime" },
+  { title: "Part-time", value: "partTime" },
+  { title: "Freelance", value: "freelance" },
+];
+
 // Preferred Payment Methods options
 export const PAYMENT_METHODS = [
   { title: "PayPal", value: "paypal" },

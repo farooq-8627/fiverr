@@ -25,7 +25,7 @@ interface AgentProfileFormContextType {
 const AgentProfileFormContext =
   createContext<AgentProfileFormContextType | null>(null);
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 4;
 const FORM_STORAGE_KEY = "agent-profile-form";
 
 export function AgentProfileFormProvider({
@@ -46,9 +46,6 @@ export function AgentProfileFormProvider({
     resolver: zodResolver(AgentProfileSchema),
     defaultValues: {
       ...storedData,
-      email: storedData.email || user?.emailAddresses?.[0]?.emailAddress || "",
-      username: storedData.username || user?.username || "",
-      phone: storedData.phone || user?.phoneNumbers?.[0]?.phoneNumber || "",
     },
     mode: "onChange",
   });
@@ -90,64 +87,53 @@ export function AgentProfileFormProvider({
   const canProceed = React.useMemo(() => {
     const currentStepFields =
       {
-        1: ["email", "username", "phone"],
-        2: ["fullName"], // Simplified - only require fullName, hasCompany is optional
-        3: ["automationTools", "expertiseLevel"],
+        1: ["skills", "expertiseLevel", "automationTools"],
+        2: ["projects"], // Simplified - only require fullName, hasCompany is optional
+        3: [
+          "pricingModel",
+          "availability",
+          "teamSize",
+          "workType",
+          "projectSizePreference",
+        ],
       }[currentStep] || [];
 
     const values = getValues();
 
-    // Special validation for step 1 (Personal Details)
     if (currentStep === 1) {
-      const emailValue = values.email?.trim();
-      const usernameValue = values.username?.trim();
-      const phoneValue = values.phone?.trim();
-      const websiteValue = values.website?.trim();
-
-      // Website validation (optional but must be valid if provided)
-      if (websiteValue && !isValidUrl(websiteValue)) {
-        return false;
-      }
+      const skillsValue = values.skills?.length > 0;
+      const expertiseLevelValue = values.expertiseLevel;
+      const automationToolsValue = values.automationTools?.length > 0;
 
       return Boolean(
-        emailValue &&
-          usernameValue &&
-          phoneValue &&
-          !errors.email &&
-          !errors.username &&
-          !errors.phone
+        skillsValue && expertiseLevelValue && automationToolsValue
       );
     }
 
-    // Special validation for step 2 (Core Identity)
+    // Special validation for step 2 (Projects)
     if (currentStep === 2) {
-      const fullNameValue = values.fullName?.trim();
-      const hasCompanyValue = values.hasCompany;
+      const projectsValue = values.projects?.length > 0;
 
-      // Basic validation - just require fullName
-      if (!fullNameValue) {
+      // Basic validation - just require projects
+      if (!projectsValue) {
         return false;
       }
 
-      // If hasCompany is true, validate company fields including website
-      if (hasCompanyValue && values.company) {
-        const companyWebsite = values.company.website?.trim();
-
-        // Company website validation (optional but must be valid if provided)
-        if (companyWebsite && !isValidUrl(companyWebsite)) {
-          return false;
-        }
+      // If projects is true, validate projects fields including website
+      if (projectsValue && values.projects) {
+        const projectsWebsite = values.projects.map((project) =>
+          project.projectLink?.trim()
+        );
 
         return Boolean(
-          fullNameValue &&
-            !errors.fullName &&
-            values.company.name?.trim() &&
-            values.company.bio?.trim()
+          projectsValue &&
+            !errors.projects &&
+            projectsWebsite?.every((website) => isValidUrl(website || ""))
         );
       }
 
       // If no company, just validate fullName
-      return Boolean(fullNameValue && !errors.fullName);
+      return Boolean(projectsValue && !errors.projects);
     }
 
     // Special validation for projects section
@@ -204,70 +190,6 @@ export function AgentProfileFormProvider({
       const formData = new FormData();
       console.log("Creating FormData object");
 
-      // Add basic fields with validation
-      console.log("Adding basic fields with values:", {
-        email: data.email,
-        username: data.username,
-        phone: data.phone,
-      });
-
-      // Ensure required fields are not empty
-      if (!data.email?.trim()) {
-        toast.error("Email is required");
-        return;
-      }
-      if (!data.username?.trim()) {
-        toast.error("Username is required");
-        return;
-      }
-
-      formData.append("email", data.email.trim());
-      formData.append("username", data.username.trim());
-      formData.append("phone", data.phone?.trim() || "");
-      formData.append("website", data.website || "");
-      formData.append("fullName", data.fullName || "");
-      formData.append("hasCompany", String(data.hasCompany || false));
-
-      // Add social links
-      console.log("Processing social links...", data.socialLinks);
-      if (data.socialLinks && data.socialLinks.length > 0) {
-        formData.append("socialLinks", JSON.stringify(data.socialLinks));
-      } else {
-        formData.append("socialLinks", JSON.stringify([]));
-      }
-
-      // Add profile images if they exist
-      console.log("Processing profile images...");
-      if (data.profilePicture instanceof File) {
-        console.log("Adding profile picture:", data.profilePicture.name);
-        formData.append("profilePicture", data.profilePicture);
-      }
-
-      if (data.bannerImage instanceof File) {
-        console.log("Adding banner image:", data.bannerImage.name);
-        formData.append("bannerImage", data.bannerImage);
-      }
-
-      // Add company details if hasCompany is true
-      if (data.hasCompany && data.company) {
-        console.log("Processing company details:", data.company);
-        formData.append("company.name", data.company.name || "");
-        formData.append("company.teamSize", data.company.teamSize || "");
-        formData.append("company.bio", data.company.bio || "");
-        formData.append("company.website", data.company.website || "");
-
-        // Add company logo and banner if they exist
-        if (data.company.logo instanceof File) {
-          console.log("Adding company logo:", data.company.logo.name);
-          formData.append("company.logo", data.company.logo);
-        }
-
-        if (data.company.banner instanceof File) {
-          console.log("Adding company banner:", data.company.banner.name);
-          formData.append("company.banner", data.company.banner);
-        }
-      }
-
       // Add skills and expertise
       console.log("Processing skills and expertise...");
       if (data.skills && data.skills.length > 0) {
@@ -283,6 +205,7 @@ export function AgentProfileFormProvider({
       }
 
       console.log("Adding expertise level:", data.expertiseLevel);
+
       formData.append("expertiseLevel", data.expertiseLevel || "");
 
       // Add business details
