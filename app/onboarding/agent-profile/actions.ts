@@ -315,15 +315,30 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
   }
 }
 
-// Function to update agent profile automation expertise
-export async function updateAgentProfileAutomation(formData: {
+interface UpdateAgentProfileDetailsParams {
   profileId: string;
-  skills?: string[];
-  automationTools?: string[];
-}): Promise<FormState> {
-  console.log("Starting updateAgentProfileAutomation server action");
+  pricingModel?: string;
+  availability?: string;
+  workType?: string;
+  teamSize?: string;
+  projectSizePreferences?: string[];
+  automationExpertise?: {
+    automationServices: string[];
+    toolsExpertise: string[];
+  };
+}
+
+// Updated function with Studio refresh
+export async function updateAgentProfileDetails(
+  params: UpdateAgentProfileDetailsParams
+): Promise<FormState> {
   try {
-    // Get authenticated user ID
+    const { profileId, ...updateData } = params;
+
+    console.log("=== DEBUG: Raw input data ===");
+    console.log("profileId:", profileId);
+    console.log("updateData:", JSON.stringify(updateData, null, 2));
+
     const { userId } = await auth();
     if (!userId) {
       return {
@@ -332,39 +347,113 @@ export async function updateAgentProfileAutomation(formData: {
       };
     }
 
-    // Check if token is available
-    if (!process.env.SANITY_API_TOKEN) {
-      console.error("SANITY_API_TOKEN not found in environment variables");
+    const existingProfile = await backendClient.getDocument(profileId);
+    if (!existingProfile) {
       return {
         success: false,
-        message:
-          "Server configuration error: Missing API token. Please contact support.",
+        message: "Profile not found.",
       };
     }
 
-    // Update the automation expertise section
-    await backendClient
-      .patch(formData.profileId)
-      .set({
-        "automationExpertise.automationServices": formData.skills,
-        "automationExpertise.toolsExpertise": formData.automationTools,
-        updatedAt: new Date().toISOString(),
-      })
-      .commit();
+    console.log("=== DEBUG: Existing Profile ===");
+    console.log(JSON.stringify(existingProfile, null, 2));
 
-    // Revalidate cached data
-    revalidatePath("/dashboard");
-    revalidatePath("/profile");
+    // Create mutation with proper structure
+    const mutations: any = {};
 
-    return {
-      success: true,
-      message: "Automation expertise updated successfully!",
-    };
+    if (updateData.automationExpertise !== undefined) {
+      const existingAutomationExpertise =
+        existingProfile.automationExpertise || {};
+
+      mutations.automationExpertise = {
+        _type: "automationExpertise",
+        automationServices: updateData.automationExpertise.automationServices,
+        toolsExpertise: updateData.automationExpertise.toolsExpertise,
+      };
+    }
+
+    if (
+      updateData.pricingModel !== undefined ||
+      updateData.availability !== undefined ||
+      updateData.workType !== undefined ||
+      updateData.teamSize !== undefined ||
+      updateData.projectSizePreferences !== undefined
+    ) {
+      const existingBusinessDetails = existingProfile?.businessDetails || {};
+
+      mutations.businessDetails = {
+        _type: "agentBusinessDetails",
+        pricingModel:
+          updateData.pricingModel || existingBusinessDetails.pricingModel,
+        availability:
+          updateData.availability || existingBusinessDetails.availability,
+        workType: updateData.workType || existingBusinessDetails.workType,
+        teamSize: updateData.teamSize || existingBusinessDetails.teamSize,
+        projectSizePreferences:
+          updateData.projectSizePreferences ||
+          existingBusinessDetails.projectSizePreferences,
+      };
+    }
+
+    mutations.updatedAt = new Date().toISOString();
+
+    console.log("=== DEBUG: Final mutations ===");
+    console.log(JSON.stringify(mutations, null, 2));
+
+    // Update the document
+    try {
+      const result = await backendClient
+        .patch(profileId)
+        .set(mutations)
+        .commit();
+
+      console.log("=== DEBUG: Update result ===");
+      console.log(JSON.stringify(result, null, 2));
+
+      // Verify the update by fetching the document again
+      const updatedDoc = await backendClient.getDocument(profileId);
+      console.log("=== DEBUG: Updated document ===");
+      console.log(JSON.stringify(updatedDoc, null, 2));
+
+      // FORCE STUDIO TO REFRESH by invalidating the document
+      try {
+        await backendClient
+          .patch(profileId)
+          .set({ _updatedAt: new Date().toISOString() })
+          .commit();
+      } catch (e) {
+        console.log("Studio refresh attempt failed (non-critical):", e);
+      }
+
+      // Aggressive cache clearing
+      revalidatePath("/dashboard", "layout");
+      revalidatePath(`/dashboard/${userId}`, "layout");
+      revalidatePath("/dashboard", "page");
+      revalidatePath(`/dashboard/${userId}`, "page");
+      revalidatePath("/studio", "layout");
+      revalidatePath("/studio", "page");
+
+      return {
+        success: true,
+        message:
+          "Profile updated successfully. Please refresh Sanity Studio to see changes.",
+      };
+    } catch (error: any) {
+      console.error("=== ERROR: Sanity Update Failed ===");
+      console.error("Error details:", error);
+      console.error("Error response:", error.response);
+      console.error("Error message:", error.message);
+
+      return {
+        success: false,
+        message: `Update failed: ${error.message || "Unknown error"}`,
+      };
+    }
   } catch (error: any) {
-    console.error("Error updating agent profile automation:", error);
+    console.error("=== ERROR: General Error ===", error);
     return {
       success: false,
-      message: `Failed to update automation expertise: ${error.message || "Unknown error"}`,
+      message: `Update failed: ${error.message || "Unknown error"}`,
     };
   }
 }

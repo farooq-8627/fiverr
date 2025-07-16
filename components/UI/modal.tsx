@@ -33,12 +33,13 @@ ModalOverlay.displayName = SheetPrimitive.Overlay.displayName;
 interface ModalContentProps
   extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content> {
   title?: string;
+  description?: string;
 }
 
 const ModalContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   ModalContentProps
->(({ className, children, title = "Modal", ...props }, ref) => (
+>(({ className, children, title = "Modal", description, ...props }, ref) => (
   <ModalPortal>
     <ModalOverlay />
     <SheetPrimitive.Content
@@ -51,6 +52,9 @@ const ModalContent = React.forwardRef<
     >
       <VisuallyHidden>
         <ModalTitle>{title}</ModalTitle>
+        {description && (
+          <SheetPrimitive.Description>{description}</SheetPrimitive.Description>
+        )}
       </VisuallyHidden>
       {children}
     </SheetPrimitive.Content>

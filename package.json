@@ -10,7 +10,8 @@
     "sync-users": "ts-node scripts/sync-clerk-users.ts",
     "sync-profiles": "ts-node scripts/sync-profiles-to-users.ts",
     "migrate:user-roles": "ts-node scripts/migrate-user-roles.ts",
-    "migrate-profiles": "ts-node scripts/migrate-profile-ids.ts"
+    "migrate-profiles": "ts-node scripts/migrate-profile-ids.ts",
+    "delete-all-documents": "ts-node scripts/deleteAllDocuments.ts"
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^4.13.23",

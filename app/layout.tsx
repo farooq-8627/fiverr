@@ -53,7 +53,6 @@ export default function RootLayout({
         <body
           className={`${inter.className} ${geistSans.variable} ${geistMono.variable} min-h-screen bg-black text-white bg-gradient-to-b from-black to-violet-900`}
         >
-          <Navbar />
           {children}
           <Toaster />
         </body>

@@ -3,6 +3,10 @@ export interface AgentProfile {
   profileId: {
     current: string;
   };
+  userId?: {
+    _ref: string;
+    _type: "reference";
+  };
   automationExpertise: {
     automationServices: string[];
     toolsExpertise: string[];
@@ -20,6 +24,7 @@ export interface AgentProfile {
     _id: string;
     title: string;
     description: string;
+    projectLink?: string;
     technologies?: string[];
     images?: Array<{
       image: {
@@ -29,6 +34,8 @@ export interface AgentProfile {
       };
       alt: string;
     }>;
+    status?: string;
+    isPortfolioProject?: boolean;
   }>;
   createdAt: string;
   updatedAt: string;
@@ -38,6 +45,10 @@ export interface ClientProfile {
   _id: string;
   profileId: {
     current: string;
+  };
+  userId?: {
+    _ref: string;
+    _type: "reference";
   };
   automationNeeds: {
     automationRequirements: string[];
@@ -53,11 +64,15 @@ export interface ClientProfile {
     _id: string;
     title: string;
     description: string;
-    budgetRange: string;
-    timeline: string;
-    projectComplexity: string;
-    status: string;
-    technology: string[];
+    technologies?: string[];
+    painPoints?: string;
+    budgetRange?: string;
+    timeline?: string;
+    projectComplexity?: string;
+    engagementType?: string;
+    teamSize?: string;
+    experienceLevel?: string;
+    status?: string;
   }>;
   createdAt: string;
   updatedAt: string;

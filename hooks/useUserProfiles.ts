@@ -90,130 +90,143 @@ export interface UserProfiles {
   }>;
   loading: boolean;
   error: string | null;
+  refetch: () => Promise<void>;
 }
 
 export function useUserProfiles(): UserProfiles {
   const { user } = useClerkUser();
-  const [profiles, setProfiles] = useState<UserProfiles>({
+  const [profiles, setProfiles] = useState<Omit<UserProfiles, "refetch">>({
     agentProfiles: [],
     clientProfiles: [],
     loading: true,
     error: null,
   });
 
-  useEffect(() => {
-    async function fetchProfiles() {
-      if (!user?.id) {
-        setProfiles((prev) => ({ ...prev, loading: false }));
-        return;
-      }
+  const fetchProfiles = async () => {
+    if (!user?.id) {
+      setProfiles((prev) => ({ ...prev, loading: false }));
+      return;
+    }
 
-      try {
-        // Fetch user document with expanded agent and client profiles
-        const query = `*[_type == "user" && clerkId == $userId][0]{
-          "agentProfiles": agentProfiles[]-> {
+    try {
+      setProfiles((prev) => ({ ...prev, loading: true }));
+
+      // Fetch user document with expanded agent and client profiles
+      const query = `*[_type == "user" && clerkId == $userId][0]{
+        "agentProfiles": agentProfiles[]-> {
+          _id,
+          profileId,
+          userId,
+          automationExpertise {
+            automationServices,
+            toolsExpertise
+          },
+          businessDetails {
+            _type,
+            pricingModel,
+            availability,
+            workType,
+            projectSizePreferences,
+            teamSize
+          },
+          projects[]-> {
             _id,
-            profileId,
-            automationExpertise {
-              automationServices,
-              toolsExpertise
-            },
-            businessDetails {
-              pricingModel,
-              availability,
-              workType,
-              projectSizePreferences,
-              teamSize
-            },
-            "projects": *[_type == "agentProject" && references(^._id)] {
-              _id,
-              title,
-              description,
-              projectLink,
-              technologies,
-              "images": images[] {
-                "image": {
-                  "asset": {
-                    "url": asset->url
-                  }
-                },
-                alt
+            title,
+            description,
+            projectLink,
+            technologies,
+            "images": images[] {
+              "image": {
+                "asset": {
+                  "url": asset->url
+                }
               },
-              status,
-              isPortfolioProject,
-              createdAt,
-              updatedAt
+              alt
             },
+            status,
+            isPortfolioProject,
+            clientReference,
+            testimonial,
+            completionDate,
             createdAt,
             updatedAt
           },
-          "clientProfiles": clientProfiles[]-> {
+          createdAt,
+          updatedAt
+        },
+        "clientProfiles": clientProfiles[]-> {
+          _id,
+          profileId,
+          automationNeeds {
+            automationRequirements,
+            currentTools,
+          },
+          communicationPreferences {
+            languagesSpoken,
+            preferredContactMethod,
+            updateFrequency,
+            meetingAvailability
+          },
+          projects[]-> {
             _id,
-            profileId,
-            automationNeeds {
-              automationRequirements,
-              currentTools,
-            },
-            communicationPreferences {
-              languagesSpoken,
-              preferredContactMethod,
-              updateFrequency,
-              meetingAvailability
-            },
-            "projects": *[_type == "clientProject" && references(^._id)] {
-              _id,
-              title,
-              description,
-              automationTool,
-              businessDomain,
-              technology,
-              painPoints,
-              budgetRange,
-              timeline,
-              projectComplexity,
-              engagementType,
-              teamSize,
-              experienceLevel,
-              priority,
-              startDate,
-              status,
-              createdAt,
-              updatedAt
-            },
+            title,
+            description,
+            automationTool,
+            businessDomain,
+            technology,
+            painPoints,
+            budgetRange,
+            timeline,
+            projectComplexity,
+            engagementType,
+            teamSize,
+            experienceLevel,
+            priority,
+            startDate,
+            status,
             createdAt,
             updatedAt
-          }
-        }`;
-
-        const result = await client.fetch(query, { userId: user.id });
-
-        if (result) {
-          setProfiles({
-            agentProfiles: result.agentProfiles || [],
-            clientProfiles: result.clientProfiles || [],
-            loading: false,
-            error: null,
-          });
-        } else {
-          setProfiles({
-            agentProfiles: [],
-            clientProfiles: [],
-            loading: false,
-            error: null,
-          });
+          },
+          createdAt,
+          updatedAt
         }
-      } catch (error) {
-        console.error("Error fetching user profiles:", error);
-        setProfiles((prev) => ({
-          ...prev,
-          loading: false,
-          error: "Failed to fetch user profiles",
-        }));
-      }
-    }
+      }`;
 
+      const result = await client.fetch(query, { userId: user.id });
+
+      console.log("Query for UserProfiles Result:", result);
+
+      if (result) {
+        setProfiles({
+          agentProfiles: result.agentProfiles || [],
+          clientProfiles: result.clientProfiles || [],
+          loading: false,
+          error: null,
+        });
+      } else {
+        setProfiles({
+          agentProfiles: [],
+          clientProfiles: [],
+          loading: false,
+          error: null,
+        });
+      }
+    } catch (error) {
+      setProfiles((prev) => ({
+        ...prev,
+        loading: false,
+        error:
+          error instanceof Error ? error.message : "Failed to fetch profiles",
+      }));
+    }
+  };
+
+  useEffect(() => {
     fetchProfiles();
   }, [user?.id]);
 
-  return profiles;
+  return {
+    ...profiles,
+    refetch: fetchProfiles,
+  };
 }

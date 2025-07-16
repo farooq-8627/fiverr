@@ -10,6 +10,7 @@ interface GlassModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
+  description?: string;
   children: React.ReactNode;
   className?: string;
   showCloseButton?: boolean;
@@ -28,6 +29,7 @@ export function GlassModal({
   isOpen,
   onClose,
   title,
+  description,
   children,
   className,
   showCloseButton = true,
@@ -35,7 +37,11 @@ export function GlassModal({
 }: GlassModalProps) {
   return (
     <Modal open={isOpen} onOpenChange={onClose}>
-      <ModalContent className="p-0 border-none bg-transparent ">
+      <ModalContent
+        className="p-0 border-none bg-transparent"
+        title={title}
+        description={description}
+      >
         <GlassCard
           className={cn(
             "w-full relative",

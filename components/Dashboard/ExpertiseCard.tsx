@@ -2,6 +2,7 @@ import React from "react";
 import { motion, Variants, Easing } from "framer-motion";
 import { ExpertiseItem } from "@/lib/expertise-utils";
 import { cn } from "@/lib/utils";
+import { Zap, Wrench } from "lucide-react";
 
 interface ExpertiseCardProps {
   title: string;
@@ -91,16 +92,26 @@ interface GroupedExpertiseProps {
   title: string;
   groups: [string, ExpertiseItem[]][];
   className?: string;
+  type: "services" | "tools"; // Add type to determine which icon to show
 }
 
 export function GroupedExpertise({
   title,
   groups,
   className,
+  type,
 }: GroupedExpertiseProps) {
+  const Icon = type === "services" ? Zap : Wrench;
+  const iconColor = type === "services" ? "text-violet-400" : "text-indigo-400";
+
   return (
     <div className={cn("space-y-4", className)}>
-      <h2 className="text-xl font-semibold">{title}</h2>
+      <div className="flex flex-row items-center justify-between">
+        <h2 className="text-lg font-semibold text-violet-200 flex items-center">
+          <Icon className={`inline-block mr-2 h-5 w-5 ${iconColor}`} />
+          {title}
+        </h2>
+      </div>
       <div className="flex flex-row gap-2 overflow-x-auto no-scrollbar">
         {groups.map(([category, items]) => (
           <ExpertiseCard
