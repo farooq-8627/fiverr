@@ -33,8 +33,12 @@ function formatArrayValue(values: string[]): string {
 }
 
 // Helper function to format single value
-function formatValue(value: string): string {
-  return value.replace(/_/g, " ");
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  const stringValue = String(value);
+  return stringValue.replace(/_/g, " ");
 }
 
 // Helper function to get business detail info

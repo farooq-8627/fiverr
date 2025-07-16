@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion, Variants, Easing } from "framer-motion";
 import {
   BusinessDetailInfo,
@@ -7,6 +7,10 @@ import {
 } from "@/lib/business-utils";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
+import { GlassCard } from "../UI/GlassCard";
+import { Button } from "../UI/button";
+import { Pencil } from "lucide-react";
+import { BusinessDetailsEditModal } from "./Edit/BusinessDetailsEditModal";
 
 interface BusinessDetailCardProps {
   info: BusinessDetailInfo;
@@ -112,5 +116,84 @@ export function BusinessDetailsGroup({
         <BusinessDetailCard key={item.title} info={item} />
       ))}
     </motion.div>
+  );
+}
+
+interface BusinessCardProps {
+  businessDetails: {
+    pricingModel: string;
+    availability: string;
+    workType: string;
+    teamSize?: string;
+    projectSizePreferences?: string[];
+  };
+  isCurrentUser: boolean;
+  profileId: string;
+  onBusinessUpdate: (data: {
+    pricingModel?: string;
+    availability?: string;
+    workType?: string;
+    teamSize?: string;
+    projectSizePreferences?: string[];
+  }) => void;
+}
+
+export default function BussinessCard({
+  businessDetails,
+  isCurrentUser,
+  profileId,
+  onBusinessUpdate,
+}: BusinessCardProps) {
+  const [isBusinessModalOpen, setIsBusinessModalOpen] = useState(false);
+  const [currentDetails, setCurrentDetails] = useState(businessDetails);
+
+  const handleBusinessUpdate = (data: {
+    pricingModel?: string;
+    availability?: string;
+    workType?: string;
+    teamSize?: string;
+    projectSizePreferences?: string[];
+  }) => {
+    setCurrentDetails((prev) => ({
+      ...prev,
+      ...data,
+    }));
+    onBusinessUpdate(data);
+  };
+
+  return (
+    <>
+      <GlassCard>
+        <div className="md:px-6 py-2">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold">Business Details</h2>
+            {isCurrentUser && (
+              <Button
+                onClick={() => setIsBusinessModalOpen(true)}
+                className="h-8 w-8 p-0 bg-white/5 hover:bg-white/10 rounded-full"
+              >
+                <Pencil className="h-4 w-4 text-white" />
+              </Button>
+            )}
+          </div>
+          <BusinessDetailsGroup details={currentDetails} />
+        </div>
+      </GlassCard>
+
+      <BusinessDetailsEditModal
+        isOpen={isBusinessModalOpen}
+        onClose={() => setIsBusinessModalOpen(false)}
+        initialData={{
+          profileId,
+          pricingModel: currentDetails.pricingModel,
+          availability: currentDetails.availability,
+          workType: currentDetails.workType,
+          teamSize: currentDetails.teamSize || "",
+          projectSizePreferences: currentDetails.projectSizePreferences || [],
+        }}
+        isCurrentUser={isCurrentUser ?? false}
+        onSave={handleBusinessUpdate}
+      />
+    </>
   );
 }

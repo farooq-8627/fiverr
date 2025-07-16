@@ -1,17 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { AgentProfile } from "@/types/index";
-import { GlassCard } from "@/components/UI/GlassCard";
-import { GroupedExpertise } from "@/components/Dashboard/ExpertiseCard";
-import { BusinessDetailsGroup } from "@/components/Dashboard/BusinessDetailsCard";
-import {
-  getAutomationServiceInfo,
-  getToolsExpertiseInfo,
-  groupExpertiseByCategory,
-} from "@/lib/expertise-utils";
-import { Button } from "@/components/UI/button";
-import { Pencil } from "lucide-react";
-import { AutomationExpertiseEditModal } from "./Edit/AutomationExpertiseEditModal";
-import { BusinessDetailsEditModal } from "./Edit/BusinessDetailsEditModal";
+import { AutomationExpertiseCard } from "@/components/Dashboard/AutomationExpertiseCard";
+import BussinessCard from "@/components/Dashboard/BusinessDetailsCard";
 import { useToast } from "@/hooks/useToast";
 
 interface AgentProfileTabProps {
@@ -25,10 +15,8 @@ export function AgentProfileTab({
   isCurrentUser,
   onProfileUpdate,
 }: AgentProfileTabProps) {
-  const [isAutomationModalOpen, setIsAutomationModalOpen] =
-    React.useState(false);
-  const [isBusinessModalOpen, setIsBusinessModalOpen] = React.useState(false);
   const { toast } = useToast();
+  const [localProfile, setLocalProfile] = useState(profiles[0]);
 
   if (!profiles?.length) {
     return (
@@ -38,119 +26,72 @@ export function AgentProfileTab({
     );
   }
 
-  const currentProfile = profiles[0]; // Assuming we're working with the first profile
-  console.log("Current profile:", currentProfile);
+  const handleAutomationExpertiseUpdate = (data: {
+    automationServices: string[];
+    toolsExpertise: string[];
+  }) => {
+    // Update local state immediately
+    setLocalProfile((prev) => ({
+      ...prev,
+      automationExpertise: {
+        ...prev.automationExpertise,
+        automationServices: data.automationServices,
+        toolsExpertise: data.toolsExpertise,
+      },
+    }));
 
-  const handleProfileUpdate = async () => {
-    try {
-      await onProfileUpdate?.();
+    // Update backend in parallel
+    onProfileUpdate?.().catch((error) => {
+      console.error("Failed to update profile in backend:", error);
       toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update profile",
+        title: "Warning",
+        description: "Changes saved locally but failed to sync with server",
         variant: "destructive",
       });
-    }
+    });
+  };
+
+  const handleBusinessDetailsUpdate = (data: {
+    pricingModel?: string;
+    availability?: string;
+    workType?: string;
+    teamSize?: string;
+    projectSizePreferences?: string[];
+  }) => {
+    // Update local state immediately
+    setLocalProfile((prev) => ({
+      ...prev,
+      businessDetails: {
+        ...prev.businessDetails,
+        ...data,
+      },
+    }));
+
+    // Update backend in parallel
+    onProfileUpdate?.().catch((error) => {
+      console.error("Failed to update profile in backend:", error);
+      toast({
+        title: "Warning",
+        description: "Changes saved locally but failed to sync with server",
+        variant: "destructive",
+      });
+    });
   };
 
   return (
     <div className="space-y-6">
-      {/* Automation Expertise */}
-      <GlassCard>
-        <div className="md:px-6 py-2">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">Automation Expertise</h2>
-            {isCurrentUser && (
-              <Button
-                onClick={() => setIsAutomationModalOpen(true)}
-                className="h-8 w-8 p-0 bg-white/5 hover:bg-white/10 rounded-full"
-              >
-                <Pencil className="h-4 w-4 text-white" />
-              </Button>
-            )}
-          </div>
-
-          {/* Services Section */}
-          <GroupedExpertise
-            title="Automation Services"
-            groups={groupExpertiseByCategory(
-              [
-                ...currentProfile.automationExpertise.automationServices,
-                ...(currentProfile.automationExpertise
-                  .customAutomationServices || []),
-              ],
-              getAutomationServiceInfo
-            )}
-            className="mb-8"
-            type="services"
-          />
-
-          {/* Tools Section */}
-          <GroupedExpertise
-            title="Tools & Platforms"
-            groups={groupExpertiseByCategory(
-              [
-                ...currentProfile.automationExpertise.toolsExpertise,
-                ...(currentProfile.automationExpertise.customToolsExpertise ||
-                  []),
-              ],
-              getToolsExpertiseInfo
-            )}
-            type="tools"
-          />
-        </div>
-      </GlassCard>
-
-      {/* Business Details */}
-      <GlassCard>
-        <div className="md:px-6 py-2">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">Business Details</h2>
-            {isCurrentUser && (
-              <Button
-                onClick={() => setIsBusinessModalOpen(true)}
-                className="h-8 w-8 p-0 bg-white/5 hover:bg-white/10 rounded-full"
-              >
-                <Pencil className="h-4 w-4 text-white" />
-              </Button>
-            )}
-          </div>
-          <BusinessDetailsGroup details={currentProfile.businessDetails} />
-        </div>
-      </GlassCard>
-
-      {/* Modals */}
-      <AutomationExpertiseEditModal
-        isOpen={isAutomationModalOpen}
-        onClose={() => setIsAutomationModalOpen(false)}
-        initialData={{
-          profileId: currentProfile._id,
-          automationServices:
-            currentProfile.automationExpertise.automationServices,
-          toolsExpertise: currentProfile.automationExpertise.toolsExpertise,
-        }}
+      <AutomationExpertiseCard
+        automationExpertise={localProfile.automationExpertise}
         isCurrentUser={isCurrentUser ?? false}
-        onSave={handleProfileUpdate}
+        profileId={localProfile._id}
+        onExpertiseUpdate={handleAutomationExpertiseUpdate}
       />
 
-      <BusinessDetailsEditModal
-        isOpen={isBusinessModalOpen}
-        onClose={() => setIsBusinessModalOpen(false)}
-        initialData={{
-          profileId: currentProfile._id,
-          pricingModel: currentProfile.businessDetails.pricingModel,
-          availability: currentProfile.businessDetails.availability,
-          workType: currentProfile.businessDetails.workType,
-          teamSize: currentProfile.businessDetails.teamSize || "",
-          projectSizePreferences:
-            currentProfile.businessDetails.projectSizePreferences || [],
-        }}
+      <BussinessCard
+        businessDetails={localProfile.businessDetails}
         isCurrentUser={isCurrentUser ?? false}
-        onSave={handleProfileUpdate}
+        profileId={localProfile._id}
+        onBusinessUpdate={handleBusinessDetailsUpdate}
       />
     </div>
   );

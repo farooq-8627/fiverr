@@ -25,7 +25,13 @@ import { convertToOnboardingFormat } from "@/lib/constants-utils";
 interface BusinessDetailsEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave?: () => void;
+  onSave: (data: {
+    pricingModel?: string;
+    availability?: string;
+    workType?: string;
+    teamSize?: string;
+    projectSizePreferences?: string[];
+  }) => void;
   initialData: {
     profileId: string;
     pricingModel: string;
@@ -35,7 +41,6 @@ interface BusinessDetailsEditModalProps {
     projectSizePreferences: string[];
   };
   isCurrentUser: boolean;
-  onRefetch?: () => Promise<void>;
 }
 
 export function BusinessDetailsEditModal({
@@ -44,7 +49,6 @@ export function BusinessDetailsEditModal({
   onSave,
   initialData,
   isCurrentUser,
-  onRefetch,
 }: BusinessDetailsEditModalProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -52,8 +56,8 @@ export function BusinessDetailsEditModal({
     pricingModel: initialData.pricingModel || "",
     availability: initialData.availability || "",
     workType: initialData.workType || "",
-    teamSize: initialData.teamSize || "",
     projectSizePreferences: initialData.projectSizePreferences || [],
+    teamSize: initialData.teamSize || "",
   });
 
   const handleSubmit = async () => {
@@ -66,44 +70,33 @@ export function BusinessDetailsEditModal({
       return;
     }
 
-    console.log("[BusinessDetailsEditModal] Submitting form data:", formData);
-    setIsLoading(true);
     try {
-      const result = await updateAgentProfileDetails({
+      setIsLoading(true);
+      const response = await updateAgentProfileDetails({
         profileId: initialData.profileId,
-        pricingModel: formData.pricingModel,
-        availability: formData.availability,
-        workType: formData.workType,
-        teamSize: formData.teamSize,
-        projectSizePreferences: formData.projectSizePreferences,
+        ...formData,
       });
 
-      console.log("[BusinessDetailsEditModal] Update result:", result);
+      if (response.success) {
+        // Update parent component state immediately
+        onSave(formData);
 
-      if (result.success) {
         toast({
           title: "Success",
-          description: result.message,
+          description: "Business details updated successfully.",
         });
-        onSave?.();
-        await onRefetch?.();
         onClose();
       } else {
-        console.error(
-          "[BusinessDetailsEditModal] Update failed:",
-          result.message
-        );
         toast({
           title: "Error",
-          description: result.message,
+          description: response.message || "Failed to update business details.",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error("[BusinessDetailsEditModal] Submission error:", error);
       toast({
         title: "Error",
-        description: "Failed to update business details",
+        description: "An unexpected error occurred.",
         variant: "destructive",
       });
     } finally {
@@ -111,148 +104,146 @@ export function BusinessDetailsEditModal({
     }
   };
 
-  // Convert project size preferences to the format needed by MultiSelect
-  const projectSizeOptions = convertToOnboardingFormat(
-    PROJECT_SIZE_PREFERENCES
-  );
-
   return (
     <GlassModal
       isOpen={isOpen}
       onClose={onClose}
       size="xl"
       title="Edit Business Details"
-      description="Edit your business details including pricing model, availability, work type, team size, and project size preferences"
-      className=""
+      description="Update your business preferences and availability"
     >
-      <div className="space-y-8 p-2">
-        <div className="space-y-6">
-          <div>
-            <Label className="text-lg font-semibold mb-2 flex items-center text-violet-200">
-              <DollarSign className="inline-block mr-2 h-5 w-5 text-violet-400" />
-              Pricing Model
-            </Label>
-            <Select
-              value={formData.pricingModel}
-              onValueChange={(value) =>
-                setFormData({ ...formData, pricingModel: value })
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select pricing model" />
-              </SelectTrigger>
-              <SelectContent>
-                {PRICING_MODELS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-lg font-semibold mb-2 flex items-center text-violet-200">
-              <Clock className="inline-block mr-2 h-5 w-5 text-violet-400" />
-              Availability
-            </Label>
-            <Select
-              value={formData.availability}
-              onValueChange={(value) =>
-                setFormData({ ...formData, availability: value })
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select availability" />
-              </SelectTrigger>
-              <SelectContent>
-                {AVAILABILITY_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-lg font-semibold mb-2 flex items-center text-violet-200">
-              <Briefcase className="inline-block mr-2 h-5 w-5 text-violet-400" />
-              Work Type
-            </Label>
-            <Select
-              value={formData.workType}
-              onValueChange={(value) =>
-                setFormData({ ...formData, workType: value })
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select work type" />
-              </SelectTrigger>
-              <SelectContent>
-                {WORK_TYPES.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-lg font-semibold mb-2 flex items-center text-violet-200">
-              <Users className="inline-block mr-2 h-5 w-5 text-violet-400" />
-              Team Size
-            </Label>
-            <Select
-              value={formData.teamSize}
-              onValueChange={(value) =>
-                setFormData({ ...formData, teamSize: value })
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select team size" />
-              </SelectTrigger>
-              <SelectContent>
-                {TEAM_SIZES.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-3">
-            <Label className="text-lg font-semibold mb-2 flex items-center text-violet-200">
-              <Scale className="inline-block mr-2 h-5 w-5 text-violet-400" />
-              Project Size Preferences
-            </Label>
-            <MultiSelect
-              options={projectSizeOptions}
-              selectedValues={formData.projectSizePreferences}
-              onChange={(values) =>
-                setFormData({ ...formData, projectSizePreferences: values })
-              }
-            />
-          </div>
+      <div className="space-y-6 p-2">
+        {/* Pricing Model */}
+        <div className="space-y-2">
+          <Label className="flex items-center text-violet-200">
+            <DollarSign className="w-4 h-4 mr-2 text-violet-400" />
+            Pricing Model
+          </Label>
+          <Select
+            value={formData.pricingModel}
+            onValueChange={(value) =>
+              setFormData((prev) => ({ ...prev, pricingModel: value }))
+            }
+          >
+            <SelectTrigger className="w-full bg-white/5 text-white">
+              <SelectValue placeholder="Select your pricing model" />
+            </SelectTrigger>
+            <SelectContent>
+              {PRICING_MODELS.map((model) => (
+                <SelectItem key={model.value} value={model.value}>
+                  {model.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="flex justify-end space-x-4 pt-4 border-t border-violet-800/30">
+        {/* Availability */}
+        <div className="space-y-2">
+          <Label className="flex items-center text-violet-200">
+            <Clock className="w-4 h-4 mr-2 text-violet-400" />
+            Availability
+          </Label>
+          <Select
+            value={formData.availability}
+            onValueChange={(value) =>
+              setFormData((prev) => ({ ...prev, availability: value }))
+            }
+          >
+            <SelectTrigger className="w-full bg-white/5 text-white">
+              <SelectValue placeholder="Select your availability" />
+            </SelectTrigger>
+            <SelectContent>
+              {AVAILABILITY_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Work Type */}
+        <div className="space-y-2">
+          <Label className="flex items-center text-violet-200">
+            <Briefcase className="w-4 h-4 mr-2 text-violet-400" />
+            Work Type
+          </Label>
+          <Select
+            value={formData.workType}
+            onValueChange={(value) =>
+              setFormData((prev) => ({ ...prev, workType: value }))
+            }
+          >
+            <SelectTrigger className="w-full bg-white/5 text-white">
+              <SelectValue placeholder="Select your work type" />
+            </SelectTrigger>
+            <SelectContent>
+              {WORK_TYPES.map((type) => (
+                <SelectItem key={type.value} value={type.value}>
+                  {type.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Team Size */}
+        <div className="space-y-2">
+          <Label className="flex items-center text-violet-200">
+            <Users className="w-4 h-4 mr-2 text-violet-400" />
+            Team Size
+          </Label>
+          <Select
+            value={formData.teamSize}
+            onValueChange={(value) =>
+              setFormData((prev) => ({ ...prev, teamSize: value }))
+            }
+          >
+            <SelectTrigger className="w-full bg-white/5 text-white">
+              <SelectValue placeholder="Select your team size" />
+            </SelectTrigger>
+            <SelectContent>
+              {TEAM_SIZES.map((size) => (
+                <SelectItem key={size.value} value={size.value}>
+                  {size.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Project Size Preferences */}
+        <div className="space-y-2">
+          <Label className="flex items-center text-violet-200">
+            <Scale className="w-4 h-4 mr-2 text-violet-400" />
+            Project Size Preferences
+          </Label>
+          <MultiSelect
+            options={convertToOnboardingFormat(PROJECT_SIZE_PREFERENCES)}
+            selectedValues={formData.projectSizePreferences}
+            onChange={(values) =>
+              setFormData((prev) => ({
+                ...prev,
+                projectSizePreferences: values,
+              }))
+            }
+          />
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-end gap-2 border-t border-white/10 pt-4">
           <Button
             type="button"
-            variant="outline"
             onClick={onClose}
-            disabled={isLoading}
-            className="px-6 py-2 text-violet-200 bg-transparent border-violet-700/50 hover:bg-violet-900/50"
+            className="border-white/20 text-white hover:bg-white/10 p-2"
           >
             Cancel
           </Button>
           <Button
-            type="button"
             onClick={handleSubmit}
             disabled={isLoading}
-            className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white"
+            className="bg-white/10 hover:bg-white/20 p-2"
           >
             {isLoading ? "Saving..." : "Save"}
           </Button>

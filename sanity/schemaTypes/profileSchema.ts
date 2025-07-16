@@ -15,6 +15,7 @@ import {
   UPDATE_FREQUENCIES,
   MEETING_AVAILABILITIES,
   WORKING_HOURS_PREFERENCES,
+  WORK_TYPES,
 } from "./constants";
 
 // Automation Expertise Schema (for Agents)
@@ -84,7 +85,7 @@ export const agentBusinessDetailsSchema = defineType({
       title: "Work Type",
       type: "string",
       options: {
-        list: WORKING_HOURS_PREFERENCES,
+        list: WORK_TYPES,
       },
       description: "Your general work type preference",
     }),

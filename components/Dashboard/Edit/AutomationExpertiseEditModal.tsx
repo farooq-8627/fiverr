@@ -1,37 +1,33 @@
 import React, { useState } from "react";
-import { GlassModal } from "../../UI/GlassModal";
-import { Button } from "../../UI/button";
-import { Label } from "../../UI/label";
-import { Zap, Wrench } from "lucide-react";
-import { updateAgentProfileDetails } from "@/app/onboarding/agent-profile/actions";
+import { AutomationExpertiseForm } from "@/components/Dashboard/Edit/AutomationExpertiseForm";
 import { useToast } from "@/hooks/useToast";
-import {
-  AGENT_AUTOMATION_SERVICES,
-  AGENT_TOOLS_EXPERTISE,
-} from "@/sanity/schemaTypes/constants";
-import {
-  getAutomationServiceInfo,
-  getToolsExpertiseInfo,
-} from "@/lib/expertise-utils";
+import { updateAgentProfileDetails } from "@/app/onboarding/agent-profile/actions";
 
 interface AutomationExpertiseEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave?: () => void;
   initialData: {
     profileId: string;
     automationServices: string[];
     toolsExpertise: string[];
   };
   isCurrentUser: boolean;
+  onExpertiseUpdate: (data: {
+    automationServices: string[];
+    toolsExpertise: string[];
+  }) => void;
+  title?: string;
+  updateFunction?: (data: any) => Promise<any>;
 }
 
 export function AutomationExpertiseEditModal({
   isOpen,
   onClose,
-  onSave,
   initialData,
   isCurrentUser,
+  onExpertiseUpdate,
+  title = "Edit Automation Expertise",
+  updateFunction,
 }: AutomationExpertiseEditModalProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -39,6 +35,26 @@ export function AutomationExpertiseEditModal({
     automationServices: initialData.automationServices || [],
     toolsExpertise: initialData.toolsExpertise || [],
   });
+
+  const handleAutomationServiceChange = (service: string) => {
+    const newServices = formData.automationServices.includes(service)
+      ? formData.automationServices.filter((s) => s !== service)
+      : [...formData.automationServices, service];
+    setFormData({
+      ...formData,
+      automationServices: newServices,
+    });
+  };
+
+  const handleToolExpertiseChange = (tool: string) => {
+    const newTools = formData.toolsExpertise.includes(tool)
+      ? formData.toolsExpertise.filter((t) => t !== tool)
+      : [...formData.toolsExpertise, tool];
+    setFormData({
+      ...formData,
+      toolsExpertise: newTools,
+    });
+  };
 
   const handleSubmit = async () => {
     if (!isCurrentUser) {
@@ -50,9 +66,10 @@ export function AutomationExpertiseEditModal({
       return;
     }
 
-    setIsLoading(true);
     try {
-      const result = await updateAgentProfileDetails({
+      setIsLoading(true);
+      const updateFn = updateFunction || updateAgentProfileDetails;
+      const response = await updateFn({
         profileId: initialData.profileId,
         automationExpertise: {
           automationServices: formData.automationServices,
@@ -60,25 +77,30 @@ export function AutomationExpertiseEditModal({
         },
       });
 
-      if (result.success) {
+      if (response.success) {
+        // Update parent component state immediately
+        onExpertiseUpdate({
+          automationServices: formData.automationServices,
+          toolsExpertise: formData.toolsExpertise,
+        });
+
         toast({
           title: "Success",
-          description: result.message,
+          description: "Automation expertise updated successfully.",
         });
-        onSave?.();
         onClose();
       } else {
         toast({
           title: "Error",
-          description: result.message,
+          description:
+            response.message || "Failed to update automation expertise.",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error("Error updating automation expertise:", error);
       toast({
         title: "Error",
-        description: "Failed to update automation expertise",
+        description: "An unexpected error occurred.",
         variant: "destructive",
       });
     } finally {
@@ -87,124 +109,17 @@ export function AutomationExpertiseEditModal({
   };
 
   return (
-    <GlassModal
+    <AutomationExpertiseForm
       isOpen={isOpen}
       onClose={onClose}
-      size="xl"
-      title="Edit Automation Expertise"
-      description="Edit your automation services and tools expertise"
-    >
-      <div className="space-y-8 p-2">
-        <div className="space-y-6">
-          <div>
-            <Label className="text-lg font-semibold mb-2 flex items-center text-violet-200">
-              <Zap className="inline-block mr-2 h-5 w-5 text-violet-400" />
-              Automation Services
-            </Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {AGENT_AUTOMATION_SERVICES.map((service) => {
-                const info = getAutomationServiceInfo(service.value);
-                return (
-                  <div
-                    key={service.value}
-                    className={`p-4 rounded-lg border transition-all cursor-pointer ${
-                      formData.automationServices.includes(service.value)
-                        ? "bg-violet-500/20 border-violet-500"
-                        : "bg-white/5 border-white/10 hover:bg-white/10"
-                    }`}
-                    onClick={() => {
-                      const newServices = formData.automationServices.includes(
-                        service.value
-                      )
-                        ? formData.automationServices.filter(
-                            (s) => s !== service.value
-                          )
-                        : [...formData.automationServices, service.value];
-                      setFormData({
-                        ...formData,
-                        automationServices: newServices,
-                      });
-                    }}
-                  >
-                    <div className="flex items-center space-x-3">
-                      {info.icon && (
-                        <info.icon className="h-5 w-5 text-violet-400" />
-                      )}
-                      <span className="text-sm font-medium text-violet-100">
-                        {service.title}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <Label className="text-lg font-semibold mb-2 flex items-center text-violet-200">
-              <Wrench className="inline-block mr-2 h-5 w-5 text-violet-400" />
-              Tools Expertise
-            </Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {AGENT_TOOLS_EXPERTISE.map((tool) => {
-                const info = getToolsExpertiseInfo(tool.value);
-                return (
-                  <div
-                    key={tool.value}
-                    className={`p-4 rounded-lg border transition-all cursor-pointer ${
-                      formData.toolsExpertise.includes(tool.value)
-                        ? "bg-indigo-500/20 border-indigo-500"
-                        : "bg-white/5 border-white/10 hover:bg-white/10"
-                    }`}
-                    onClick={() => {
-                      const newTools = formData.toolsExpertise.includes(
-                        tool.value
-                      )
-                        ? formData.toolsExpertise.filter(
-                            (t) => t !== tool.value
-                          )
-                        : [...formData.toolsExpertise, tool.value];
-                      setFormData({
-                        ...formData,
-                        toolsExpertise: newTools,
-                      });
-                    }}
-                  >
-                    <div className="flex items-center space-x-3">
-                      {info.icon && (
-                        <info.icon className="h-5 w-5 text-indigo-400" />
-                      )}
-                      <span className="text-sm font-medium text-indigo-100">
-                        {tool.title}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-end space-x-4 pt-4 border-t border-violet-800/30">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            disabled={isLoading}
-            className="px-6 py-2 text-violet-200 bg-transparent border-violet-700/50 hover:bg-violet-900/50"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isLoading}
-            className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white"
-          >
-            {isLoading ? "Saving..." : "Save"}
-          </Button>
-        </div>
-      </div>
-    </GlassModal>
+      automationServices={formData.automationServices}
+      toolsExpertise={formData.toolsExpertise}
+      onAutomationServiceChange={handleAutomationServiceChange}
+      onToolExpertiseChange={handleToolExpertiseChange}
+      onSubmit={handleSubmit}
+      onCancel={onClose}
+      isLoading={isLoading}
+      title={title}
+    />
   );
 }
