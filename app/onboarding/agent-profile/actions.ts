@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
-import { backendClient } from "@/sanity/lib/backendClinet";
+import { backendClient } from "@/sanity/lib/backendClient";
 
 import {
   handleAsyncImageUploads,
@@ -311,6 +311,60 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
     return {
       success: false,
       message: `Failed to save your profile: ${error.message || "Unknown error"}`,
+    };
+  }
+}
+
+// Function to update agent profile automation expertise
+export async function updateAgentProfileAutomation(formData: {
+  profileId: string;
+  skills?: string[];
+  automationTools?: string[];
+}): Promise<FormState> {
+  console.log("Starting updateAgentProfileAutomation server action");
+  try {
+    // Get authenticated user ID
+    const { userId } = await auth();
+    if (!userId) {
+      return {
+        success: false,
+        message: "Authentication required. Please sign in.",
+      };
+    }
+
+    // Check if token is available
+    if (!process.env.SANITY_API_TOKEN) {
+      console.error("SANITY_API_TOKEN not found in environment variables");
+      return {
+        success: false,
+        message:
+          "Server configuration error: Missing API token. Please contact support.",
+      };
+    }
+
+    // Update the automation expertise section
+    await backendClient
+      .patch(formData.profileId)
+      .set({
+        "automationExpertise.automationServices": formData.skills,
+        "automationExpertise.toolsExpertise": formData.automationTools,
+        updatedAt: new Date().toISOString(),
+      })
+      .commit();
+
+    // Revalidate cached data
+    revalidatePath("/dashboard");
+    revalidatePath("/profile");
+
+    return {
+      success: true,
+      message: "Automation expertise updated successfully!",
+    };
+  } catch (error: any) {
+    console.error("Error updating agent profile automation:", error);
+    return {
+      success: false,
+      message: `Failed to update automation expertise: ${error.message || "Unknown error"}`,
     };
   }
 }

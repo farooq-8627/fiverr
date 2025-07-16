@@ -1,4 +1,5 @@
 import { defineField, defineType } from "sanity";
+import userProfileDetails from "./userProfileDetails";
 
 export const userSchema = defineType({
   name: "user",
@@ -96,6 +97,13 @@ export const userSchema = defineType({
           type: "string",
         },
       ],
+    }),
+    // Profile Details
+    defineField({
+      name: "profileDetails",
+      title: "Profile Details",
+      type: "object",
+      fields: userProfileDetails.fields,
     }),
     // Company Details
     defineField({

@@ -1,4 +1,4 @@
-import { backendClient } from "@/sanity/lib/backendClinet";
+import { backendClient } from "@/sanity/lib/backendClient";
 
 // Helper function to check if user has existing agent profiles
 export async function getUserAgentProfiles(userId: string) {

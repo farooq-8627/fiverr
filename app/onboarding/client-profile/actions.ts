@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
-import { backendClient } from "@/sanity/lib/backendClinet";
+import { backendClient } from "@/sanity/lib/backendClient";
 import {
   handleAsyncImageUploads,
   processProjectImagesAsync,

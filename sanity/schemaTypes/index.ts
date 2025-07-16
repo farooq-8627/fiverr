@@ -19,6 +19,7 @@ import {
 
 import { companySchema } from "./companySchema";
 import { userSchema } from "./userSchema";
+import userProfileDetails from "./userProfileDetails";
 
 // Import the new social feed schemas
 import {
@@ -42,6 +43,7 @@ export const schema: { types: SchemaTypeDefinition[] } = {
 
     // User schemas
     userSchema,
+    userProfileDetails,
 
     // Social Feed schemas
     FeedPostSchema,
@@ -69,6 +71,7 @@ export const schema: { types: SchemaTypeDefinition[] } = {
 export const schemaTypes = [
   automationExpertiseSchema,
   userSchema,
+  userProfileDetails,
   agentBusinessDetailsSchema,
   automationNeedsSchema,
   agentAvailabilitySchema,

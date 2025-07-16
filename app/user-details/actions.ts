@@ -2,13 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
-import { backendClient } from "@/sanity/lib/backendClinet";
+import { backendClient } from "@/sanity/lib/backendClient";
 import { randomUUID } from "crypto";
 
 export interface FormState {
   success: boolean;
   message: string;
-  errors?: Record<string, string>;
+  data?: {
+    profileImage?: string;
+    bannerImage?: string;
+  };
 }
 
 // Helper function to upload an image to Sanity's asset store
@@ -368,6 +371,162 @@ export async function saveUserProfile(formData: FormData): Promise<FormState> {
     return {
       success: false,
       message: `An error occurred: ${error.message || "Unknown error"}`,
+    };
+  }
+}
+
+// Function to update user profile details
+export async function updateUserProfileDetails(formData: {
+  fullName?: string;
+  tagline?: string;
+  website?: string;
+  location?: {
+    cityState: string;
+    country: string;
+  };
+  bio?: string;
+  socialLinks?: Array<{
+    platform: string;
+    url: string;
+  }>;
+  profileImage?: File;
+  bannerImage?: File;
+}): Promise<FormState> {
+  try {
+    // Get authenticated user ID
+    const { userId } = await auth();
+
+    if (!userId) {
+      return {
+        success: false,
+        message: "Authentication required. Please sign in.",
+      };
+    }
+
+    // Find the user document in Sanity
+    const userDocId = `user-${userId}`;
+    const existingUser = await backendClient.getDocument(userDocId);
+
+    if (!existingUser) {
+      return {
+        success: false,
+        message: "User profile not found.",
+      };
+    }
+
+    console.log("Existing user document:", existingUser);
+    console.log("Form data being submitted:", formData);
+
+    // Prepare update data - only include fields that are provided
+    const updateData: any = {};
+
+    if (formData.fullName !== undefined) {
+      updateData["coreIdentity.fullName"] = formData.fullName;
+    }
+    if (formData.tagline !== undefined) {
+      updateData["coreIdentity.tagline"] = formData.tagline;
+    }
+    if (formData.bio !== undefined) {
+      updateData["coreIdentity.bio"] = formData.bio;
+    }
+    if (formData.website !== undefined) {
+      updateData["personalDetails.website"] = formData.website;
+    }
+    if (formData.socialLinks) {
+      updateData["personalDetails.socialLinks"] = formData.socialLinks.map(
+        (link) => ({
+          _key: `social_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          platform: link.platform,
+          url: link.url,
+        })
+      );
+    }
+
+    // Only add location if it's provided and either cityState or country has a value
+    if (
+      formData.location &&
+      (formData.location.cityState || formData.location.country)
+    ) {
+      updateData["profileDetails.location"] = {
+        _type: "location",
+        cityState: formData.location.cityState || "",
+        country: formData.location.country || "",
+      };
+    }
+
+    console.log("Update data being sent to Sanity:", updateData);
+
+    try {
+      // Handle image uploads if provided
+      if (formData.profileImage) {
+        try {
+          const profileImageAsset = await uploadImageToSanity(
+            formData.profileImage
+          );
+          if (profileImageAsset?._id) {
+            updateData["personalDetails.profilePicture"] = {
+              _type: "image",
+              asset: {
+                _type: "reference",
+                _ref: profileImageAsset._id,
+              },
+            };
+          }
+        } catch (error) {
+          console.error("Failed to upload profile image:", error);
+          return {
+            success: false,
+            message: "Failed to upload profile image. Please try again.",
+          };
+        }
+      }
+
+      if (formData.bannerImage) {
+        try {
+          const bannerImageAsset = await uploadImageToSanity(
+            formData.bannerImage
+          );
+          if (bannerImageAsset?._id) {
+            updateData["personalDetails.bannerImage"] = {
+              _type: "image",
+              asset: {
+                _type: "reference",
+                _ref: bannerImageAsset._id,
+              },
+            };
+          }
+        } catch (error) {
+          console.error("Failed to upload banner image:", error);
+          return {
+            success: false,
+            message: "Failed to upload banner image. Please try again.",
+          };
+        }
+      }
+
+      // Update the user document
+      const result = await backendClient
+        .patch(userDocId)
+        .set(updateData)
+        .commit();
+      console.log("Update result from Sanity:", result);
+
+      return {
+        success: true,
+        message: "Profile updated successfully",
+      };
+    } catch (error: any) {
+      console.error("Error updating user profile:", error);
+      return {
+        success: false,
+        message: `Failed to update profile: ${error.message || "Unknown error"}`,
+      };
+    }
+  } catch (error: any) {
+    console.error("Error updating user profile:", error);
+    return {
+      success: false,
+      message: `Failed to update profile: ${error.message || "Unknown error"}`,
     };
   }
 }

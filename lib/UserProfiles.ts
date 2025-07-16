@@ -1,4 +1,4 @@
-import { backendClient } from "@/sanity/lib/backendClinet";
+import { backendClient } from "@/sanity/lib/backendClient";
 
 // Helper function to ensure user document exists
 export async function ensureUserDocumentExists(userId: string) {

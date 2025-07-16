@@ -1,4 +1,4 @@
-import { backendClient } from "@/sanity/lib/backendClinet";
+import { backendClient } from "@/sanity/lib/backendClient";
 
 // Helper function to upload an image to Sanity's asset store
 export async function uploadImageToSanity(file: File) {

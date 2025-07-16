@@ -6,6 +6,7 @@ import localFont from "next/font/local";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Navbar } from "@/components/Root/Navbar";
+import { Toaster } from "@/components/UI/toaster";
 
 export const metadata: Metadata = {
   title: "Fiverr",
@@ -54,6 +55,7 @@ export default function RootLayout({
         >
           <Navbar />
           {children}
+          <Toaster />
         </body>
       </html>
     </ClerkProvider>

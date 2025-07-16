@@ -38,6 +38,18 @@ export interface UserData {
     bio?: string;
     tagline?: string;
   };
+  profileDetails?: {
+    location?: {
+      cityState: string;
+      country: string;
+    };
+    yearsOfExperience?: string;
+    specialties?: string;
+    education?: string;
+    certifications?: string;
+    languages?: string;
+    extraDetailsJson?: string;
+  };
   hasCompany: boolean;
   companies?: Array<{
     _id: string;
@@ -102,6 +114,15 @@ export function useUser() {
               fullName,
               bio,
               tagline
+            },
+            profileDetails {
+              location,
+              yearsOfExperience,
+              specialties,
+              education,
+              certifications,
+              languages,
+              extraDetailsJson
             },
             hasCompany,
             companies[]-> {
