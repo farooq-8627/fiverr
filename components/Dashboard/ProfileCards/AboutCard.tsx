@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { GlassCard } from "../UI/GlassCard";
+import { GlassCard } from "../../UI/GlassCard";
 import { Pencil, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/UI/button";
-import { AboutEditModal } from "./Edit/AboutEditModal";
+import { AboutEditModal } from "../Edit/AboutEditModal";
 import { PortableText } from "@portabletext/react";
 import { cn } from "@/lib/utils";
 

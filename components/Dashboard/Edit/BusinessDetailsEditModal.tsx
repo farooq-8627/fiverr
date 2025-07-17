@@ -20,7 +20,13 @@ import {
   PROJECT_SIZE_PREFERENCES,
 } from "@/sanity/schemaTypes/constants";
 import { MultiSelect } from "@/components/UI/MultiSelect";
-import { convertToOnboardingFormat } from "@/lib/constants-utils";
+import {
+  convertToOnboardingFormat,
+  getPricingModelTitle,
+  getAvailabilityOptionTitle,
+  getTeamSizeTitle,
+  getProjectSizePreferenceTitle,
+} from "@/lib/constants-utils";
 
 interface BusinessDetailsEditModalProps {
   isOpen: boolean;
@@ -126,7 +132,10 @@ export function BusinessDetailsEditModal({
             }
           >
             <SelectTrigger className="w-full bg-white/5 text-white">
-              <SelectValue placeholder="Select your pricing model" />
+              <SelectValue placeholder="Select your pricing model">
+                {formData.pricingModel &&
+                  getPricingModelTitle(formData.pricingModel)}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {PRICING_MODELS.map((model) => (
@@ -151,7 +160,10 @@ export function BusinessDetailsEditModal({
             }
           >
             <SelectTrigger className="w-full bg-white/5 text-white">
-              <SelectValue placeholder="Select your availability" />
+              <SelectValue placeholder="Select your availability">
+                {formData.availability &&
+                  getAvailabilityOptionTitle(formData.availability)}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {AVAILABILITY_OPTIONS.map((option) => (
@@ -176,7 +188,10 @@ export function BusinessDetailsEditModal({
             }
           >
             <SelectTrigger className="w-full bg-white/5 text-white">
-              <SelectValue placeholder="Select your work type" />
+              <SelectValue placeholder="Select your work type">
+                {formData.workType &&
+                  WORK_TYPES.find((t) => t.value === formData.workType)?.title}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {WORK_TYPES.map((type) => (
@@ -201,7 +216,9 @@ export function BusinessDetailsEditModal({
             }
           >
             <SelectTrigger className="w-full bg-white/5 text-white">
-              <SelectValue placeholder="Select your team size" />
+              <SelectValue placeholder="Select your team size">
+                {formData.teamSize && getTeamSizeTitle(formData.teamSize)}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {TEAM_SIZES.map((size) => (
@@ -220,7 +237,10 @@ export function BusinessDetailsEditModal({
             Project Size Preferences
           </Label>
           <MultiSelect
-            options={convertToOnboardingFormat(PROJECT_SIZE_PREFERENCES)}
+            options={PROJECT_SIZE_PREFERENCES.map((pref) => ({
+              id: pref.value,
+              label: pref.title,
+            }))}
             selectedValues={formData.projectSizePreferences}
             onChange={(values) =>
               setFormData((prev) => ({
@@ -231,19 +251,21 @@ export function BusinessDetailsEditModal({
           />
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex justify-end gap-2 border-t border-white/10 pt-4">
+        <div className="flex justify-end space-x-4 pt-4 border-t border-violet-800/30">
           <Button
             type="button"
+            variant="outline"
             onClick={onClose}
-            className="border-white/20 text-white hover:bg-white/10 p-2"
+            disabled={isLoading}
+            className="px-6 py-2 text-violet-200 bg-transparent border-violet-700/50 hover:bg-violet-900/50"
           >
             Cancel
           </Button>
           <Button
+            type="button"
             onClick={handleSubmit}
             disabled={isLoading}
-            className="bg-white/10 hover:bg-white/20 p-2"
+            className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white"
           >
             {isLoading ? "Saving..." : "Save"}
           </Button>

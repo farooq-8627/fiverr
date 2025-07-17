@@ -9,9 +9,8 @@ import React from "react";
 import { AgentProfile, ClientProfile } from "@/types";
 import { useUserProfiles } from "@/hooks/useUserProfiles";
 import { ProfileBannerCard } from "@/components/Dashboard/ProfileBannerCard";
-import { AboutCard } from "@/components/Dashboard/AboutCard";
+import { AboutCard } from "@/components/Dashboard/ProfileCards/AboutCard";
 import { useUser } from "@/hooks/useUser";
-import { useToast } from "@/hooks/useToast";
 
 export default function DashboardPage({
   params,
@@ -20,10 +19,8 @@ export default function DashboardPage({
 }) {
   const unwrappedParams = React.use(params) as { username: string };
   const [activeTab, setActiveTab] = useState("Agent Profile");
-  const { agentProfiles, clientProfiles, loading, error, refetch } =
-    useUserProfiles();
+  const { agentProfiles, clientProfiles, loading, error } = useUserProfiles();
   const { user: userProfile, isLoading: userLoading } = useUser();
-  const { toast } = useToast();
 
   if (loading || userLoading) {
     return <div>Loading...</div>;
@@ -36,22 +33,6 @@ export default function DashboardPage({
   // Check if the current user is viewing their own profile
   const isCurrentUser =
     userProfile?.personalDetails?.username === unwrappedParams.username;
-
-  const handleProfileUpdate = async () => {
-    try {
-      await refetch();
-      toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to refresh profile data",
-        variant: "destructive",
-      });
-    }
-  };
 
   const menuItems = [
     {
@@ -115,13 +96,12 @@ export default function DashboardPage({
         <div className="mt-6">
           {activeTab === "Agent Profile" && (
             <AgentProfileTab
-              profiles={agentProfiles || []}
+              profiles={agentProfiles as AgentProfile[]}
               isCurrentUser={isCurrentUser}
-              onProfileUpdate={handleProfileUpdate}
             />
           )}
           {activeTab === "Client Profile" && (
-            <ClientProfileTab profiles={clientProfiles || []} />
+            <ClientProfileTab profiles={clientProfiles as ClientProfile[]} />
           )}
         </div>
       </div>

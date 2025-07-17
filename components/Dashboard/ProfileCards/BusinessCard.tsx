@@ -7,10 +7,10 @@ import {
 } from "@/lib/business-utils";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
-import { GlassCard } from "../UI/GlassCard";
-import { Button } from "../UI/button";
+import { GlassCard } from "../../UI/GlassCard";
+import { Button } from "../../UI/button";
 import { Pencil } from "lucide-react";
-import { BusinessDetailsEditModal } from "./Edit/BusinessDetailsEditModal";
+import { BusinessDetailsEditModal } from "../Edit/BusinessDetailsEditModal";
 
 interface BusinessDetailCardProps {
   info: BusinessDetailInfo;
@@ -55,13 +55,23 @@ export function BusinessDetailCard({
             {info.title}
           </h3>
           <div className="h-3 w-[1px] bg-violet-400/20" />
-          <p className="text-sm font-medium text-violet-50 truncate">
-            {isProjectSize
-              ? info.value.split(",").slice(0, 2).join(", ") +
-                (info.value.split(",").length > 2 ? "..." : "")
-              : info.value}
-          </p>
+          {isProjectSize ? (
+            <>
+              <p className="hidden sm:block text-sm font-medium text-violet-50 flex-1 min-w-0 text-end">
+                {info.value}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm font-medium text-violet-50 flex-1 min-w-0 text-end">
+              {info.value}
+            </p>
+          )}
         </div>
+        {isProjectSize && (
+          <p className="sm:hidden text-xs font-medium text-violet-50 text-end">
+            {info.value.split(",").join("\n")}
+          </p>
+        )}
         <p className="text-xs text-violet-200/50 line-clamp-1">
           {info.description}
         </p>
@@ -129,20 +139,12 @@ interface BusinessCardProps {
   };
   isCurrentUser: boolean;
   profileId: string;
-  onBusinessUpdate: (data: {
-    pricingModel?: string;
-    availability?: string;
-    workType?: string;
-    teamSize?: string;
-    projectSizePreferences?: string[];
-  }) => void;
 }
 
-export default function BussinessCard({
+export default function BusinessCard({
   businessDetails,
   isCurrentUser,
   profileId,
-  onBusinessUpdate,
 }: BusinessCardProps) {
   const [isBusinessModalOpen, setIsBusinessModalOpen] = useState(false);
   const [currentDetails, setCurrentDetails] = useState(businessDetails);
@@ -158,7 +160,6 @@ export default function BussinessCard({
       ...prev,
       ...data,
     }));
-    onBusinessUpdate(data);
   };
 
   return (

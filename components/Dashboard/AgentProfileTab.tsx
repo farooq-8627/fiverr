@@ -1,23 +1,19 @@
-import React, { useState } from "react";
+import React from "react";
 import { AgentProfile } from "@/types/index";
-import { AutomationExpertiseCard } from "@/components/Dashboard/AutomationExpertiseCard";
-import BussinessCard from "@/components/Dashboard/BusinessDetailsCard";
+import { AutomationCard } from "@/components/Dashboard/ProfileCards/AutomationCard";
+import BusinessCard from "@/components/Dashboard/ProfileCards/BusinessCard";
 import { useToast } from "@/hooks/useToast";
+import { AgentProjectCard } from "./ProfileCards/AgentProjectCard";
 
 interface AgentProfileTabProps {
   profiles: AgentProfile[];
   isCurrentUser?: boolean;
-  onProfileUpdate?: () => Promise<void>;
 }
 
 export function AgentProfileTab({
   profiles,
   isCurrentUser,
-  onProfileUpdate,
 }: AgentProfileTabProps) {
-  const { toast } = useToast();
-  const [localProfile, setLocalProfile] = useState(profiles[0]);
-
   if (!profiles?.length) {
     return (
       <div className="text-center py-8">
@@ -26,72 +22,25 @@ export function AgentProfileTab({
     );
   }
 
-  const handleAutomationExpertiseUpdate = (data: {
-    automationServices: string[];
-    toolsExpertise: string[];
-  }) => {
-    // Update local state immediately
-    setLocalProfile((prev) => ({
-      ...prev,
-      automationExpertise: {
-        ...prev.automationExpertise,
-        automationServices: data.automationServices,
-        toolsExpertise: data.toolsExpertise,
-      },
-    }));
-
-    // Update backend in parallel
-    onProfileUpdate?.().catch((error) => {
-      console.error("Failed to update profile in backend:", error);
-      toast({
-        title: "Warning",
-        description: "Changes saved locally but failed to sync with server",
-        variant: "destructive",
-      });
-    });
-  };
-
-  const handleBusinessDetailsUpdate = (data: {
-    pricingModel?: string;
-    availability?: string;
-    workType?: string;
-    teamSize?: string;
-    projectSizePreferences?: string[];
-  }) => {
-    // Update local state immediately
-    setLocalProfile((prev) => ({
-      ...prev,
-      businessDetails: {
-        ...prev.businessDetails,
-        ...data,
-      },
-    }));
-
-    // Update backend in parallel
-    onProfileUpdate?.().catch((error) => {
-      console.error("Failed to update profile in backend:", error);
-      toast({
-        title: "Warning",
-        description: "Changes saved locally but failed to sync with server",
-        variant: "destructive",
-      });
-    });
-  };
+  const profile = profiles[0];
 
   return (
     <div className="space-y-6">
-      <AutomationExpertiseCard
-        automationExpertise={localProfile.automationExpertise}
+      <AutomationCard
+        automationExpertise={profile.automationExpertise}
         isCurrentUser={isCurrentUser ?? false}
-        profileId={localProfile._id}
-        onExpertiseUpdate={handleAutomationExpertiseUpdate}
+        profileId={profile._id}
       />
 
-      <BussinessCard
-        businessDetails={localProfile.businessDetails}
+      <BusinessCard
+        businessDetails={profile.businessDetails}
         isCurrentUser={isCurrentUser ?? false}
-        profileId={localProfile._id}
-        onBusinessUpdate={handleBusinessDetailsUpdate}
+        profileId={profile._id}
+      />
+      <AgentProjectCard
+        projects={profile.projects || []}
+        isCurrentUser={isCurrentUser ?? false}
+        profileId={profile._id}
       />
     </div>
   );

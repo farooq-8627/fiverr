@@ -8,6 +8,20 @@ import {
   Building2,
   Settings,
 } from "lucide-react";
+import {
+  PRICING_MODELS,
+  AVAILABILITY_OPTIONS,
+  WORK_TYPES,
+  TEAM_SIZES,
+  PROJECT_SIZE_PREFERENCES,
+} from "@/sanity/schemaTypes/constants";
+import {
+  getPricingModelTitle,
+  getAvailabilityOptionTitle,
+  getTeamSizeTitle,
+  getProjectSizePreferenceTitle,
+  formatProjectSizePreferences,
+} from "@/lib/constants-utils";
 
 export interface BusinessDetailInfo {
   title: string;
@@ -27,18 +41,62 @@ const businessDescriptions: Record<string, string> = {
   projectSizePreferences: "Optimal project scope and size preferences",
 };
 
-// Helper function to format array values
-function formatArrayValue(values: string[]): string {
-  return values.map((v) => v.replace(/_/g, " ")).join(", ");
+// Helper function to format array values with proper titles
+function formatArrayValue(type: string, values: string[]): string {
+  if (!values || values.length === 0) return "";
+
+  switch (type) {
+    case "projectSizePreferences": {
+      // Define the order based on PROJECT_SIZE_PREFERENCES
+      const order = [
+        "0-500",
+        "500-1000",
+        "1000-5000",
+        "5000-10000",
+        "10000plus",
+      ];
+
+      // Sort values based on the predefined order
+      const sortedValues = values.sort(
+        (a, b) => order.indexOf(a) - order.indexOf(b)
+      );
+
+      // Map to titles and ensure numbers don't have commas
+      return sortedValues
+        .map((value) => {
+          const title =
+            PROJECT_SIZE_PREFERENCES.find((pref) => pref.value === value)
+              ?.title || value;
+          return title.replace(/,/g, "");
+        })
+        .join(", ");
+    }
+    default:
+      return values.map((v) => v.replace(/_/g, " ")).join(", ");
+  }
 }
 
-// Helper function to format single value
-function formatValue(value: unknown): string {
+// Helper function to format single value with proper title
+function formatValue(type: string, value: unknown): string {
   if (value === null || value === undefined) {
     return "";
   }
   const stringValue = String(value);
-  return stringValue.replace(/_/g, " ");
+
+  switch (type) {
+    case "pricingModel":
+      return getPricingModelTitle(stringValue);
+    case "availability":
+      return getAvailabilityOptionTitle(stringValue);
+    case "workType":
+      return (
+        WORK_TYPES.find((t) => t.value === stringValue)?.title || stringValue
+      );
+    case "teamSize":
+      return getTeamSizeTitle(stringValue);
+    default:
+      return stringValue.replace(/_/g, " ");
+  }
 }
 
 // Helper function to get business detail info
@@ -74,7 +132,9 @@ export function getBusinessDetailInfo(
     title: type
       .replace(/([A-Z])/g, " $1")
       .replace(/^./, (str) => str.toUpperCase()),
-    value: Array.isArray(value) ? formatArrayValue(value) : formatValue(value),
+    value: Array.isArray(value)
+      ? formatArrayValue(type, value)
+      : formatValue(type, value),
     description: businessDescriptions[type] || "",
     icon: icons[type] || Building2,
     category,

@@ -20,23 +20,7 @@ export interface AgentProfile {
     projectSizePreferences?: string[];
     teamSize?: string;
   };
-  projects?: Array<{
-    _id: string;
-    title: string;
-    description: string;
-    projectLink?: string;
-    technologies?: string[];
-    images?: Array<{
-      image: {
-        asset: {
-          url: string;
-        };
-      };
-      alt: string;
-    }>;
-    status?: string;
-    isPortfolioProject?: boolean;
-  }>;
+  projects?: AgentProject[];
   createdAt: string;
   updatedAt: string;
 }
@@ -60,20 +44,65 @@ export interface ClientProfile {
     updateFrequency: string;
     meetingAvailability: string;
   };
-  projects?: Array<{
-    _id: string;
-    title: string;
-    description: string;
-    technologies?: string[];
-    painPoints?: string;
-    budgetRange?: string;
-    timeline?: string;
-    projectComplexity?: string;
-    engagementType?: string;
-    teamSize?: string;
-    experienceLevel?: string;
-    status?: string;
+  projects?: ClientProject[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ProjectStatus =
+  | "planning"
+  | "inProgress"
+  | "completed"
+  | "onHold"
+  | "cancelled";
+
+export interface AgentProject {
+  _id: string;
+  title: string;
+  description: string;
+  projectLink?: string;
+  technologies?: string[];
+  images?: {
+    _key?: string;
+    image: {
+      asset: {
+        url: string;
+      };
+    };
+    alt: string;
+  }[];
+  status: ProjectStatus;
+  testimonial?: string;
+  isPortfolioProject?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ClientProject {
+  _id: string;
+  title: string;
+  description: string;
+  businessDomain?: string;
+  painPoints?: string;
+  budgetRange?: string;
+  timeline?: string;
+  complexity?: string;
+  engagementType?: string;
+  teamSize?: string;
+  experienceLevel?: string;
+  startDate?: string;
+  priority?: string;
+  assignedAgents?: Array<{
+    _ref: string;
+    _type: "reference";
   }>;
+  status:
+    | "draft"
+    | "planning"
+    | "inProgress"
+    | "completed"
+    | "onHold"
+    | "cancelled";
   createdAt: string;
   updatedAt: string;
 }

@@ -12,12 +12,12 @@ interface AutomationExpertiseEditModalProps {
     toolsExpertise: string[];
   };
   isCurrentUser: boolean;
+  title?: string;
+  updateFunction?: (data: any) => Promise<any>;
   onExpertiseUpdate: (data: {
     automationServices: string[];
     toolsExpertise: string[];
   }) => void;
-  title?: string;
-  updateFunction?: (data: any) => Promise<any>;
 }
 
 export function AutomationExpertiseEditModal({
@@ -68,6 +68,7 @@ export function AutomationExpertiseEditModal({
 
     try {
       setIsLoading(true);
+
       const updateFn = updateFunction || updateAgentProfileDetails;
       const response = await updateFn({
         profileId: initialData.profileId,
@@ -77,19 +78,21 @@ export function AutomationExpertiseEditModal({
         },
       });
 
-      if (response.success) {
-        // Update parent component state immediately
-        onExpertiseUpdate({
-          automationServices: formData.automationServices,
-          toolsExpertise: formData.toolsExpertise,
-        });
+      // Update UI immediately for instant feedback
+      onExpertiseUpdate({
+        automationServices: formData.automationServices,
+        toolsExpertise: formData.toolsExpertise,
+      });
 
+      if (response.success) {
         toast({
           title: "Success",
           description: "Automation expertise updated successfully.",
         });
         onClose();
       } else {
+        // Revert the UI update if the API call fails
+
         toast({
           title: "Error",
           description:

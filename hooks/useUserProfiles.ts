@@ -138,7 +138,7 @@ export function useUserProfiles(): UserProfiles {
             "images": images[] {
               "image": {
                 "asset": {
-                  "url": asset->url
+                  "url": image.asset->url
                 }
               },
               alt

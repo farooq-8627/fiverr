@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
 import { backendClient } from "@/sanity/lib/backendClient";
+import { AgentProject } from "@/types";
 
 import {
   handleAsyncImageUploads,
@@ -454,6 +455,316 @@ export async function updateAgentProfileDetails(
     return {
       success: false,
       message: `Update failed: ${error.message || "Unknown error"}`,
+    };
+  }
+}
+
+interface UpdateAgentProjectParams {
+  profileId: string;
+  project: AgentProject;
+}
+
+export async function updateAgentProject(
+  params: UpdateAgentProjectParams
+): Promise<FormState> {
+  try {
+    const { profileId, project } = params;
+
+    const { userId } = await auth();
+    if (!userId) {
+      return {
+        success: false,
+        message: "Authentication required. Please sign in.",
+      };
+    }
+
+    const existingProfile = await backendClient.getDocument(profileId);
+    if (!existingProfile) {
+      return {
+        success: false,
+        message: "Profile not found.",
+      };
+    }
+
+    // Update the project document
+    await backendClient
+      .patch(project._id)
+      .set({
+        ...project,
+        updatedAt: new Date().toISOString(),
+      })
+      .commit();
+
+    // Force studio refresh
+    try {
+      await backendClient
+        .patch(project._id)
+        .set({ _updatedAt: new Date().toISOString() })
+        .commit();
+    } catch (e) {
+      console.log("Studio refresh attempt failed (non-critical):", e);
+    }
+
+    // Revalidate paths
+    revalidatePath("/dashboard", "layout");
+    revalidatePath(`/dashboard/${userId}`, "layout");
+    revalidatePath("/dashboard", "page");
+    revalidatePath(`/dashboard/${userId}`, "page");
+    revalidatePath("/studio", "layout");
+    revalidatePath("/studio", "page");
+
+    return {
+      success: true,
+      message: "Project updated successfully.",
+    };
+  } catch (error: any) {
+    console.error("Error updating project:", error);
+    return {
+      success: false,
+      message: `Failed to update project: ${error.message || "Unknown error"}`,
+    };
+  }
+}
+
+export async function createAgentProject(
+  profileId: string,
+  projectData: FormData
+): Promise<FormState> {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return {
+        success: false,
+        message: "Authentication required. Please sign in.",
+      };
+    }
+
+    const existingProfile = await backendClient.getDocument(profileId);
+    if (!existingProfile) {
+      return {
+        success: false,
+        message: "Profile not found.",
+      };
+    }
+
+    // Parse project data
+    const projectsJSON = projectData.get("projects") as string;
+    if (!projectsJSON) {
+      return {
+        success: false,
+        message: "No project data provided.",
+      };
+    }
+
+    const projects = JSON.parse(projectsJSON);
+    const createdProjects: any[] = [];
+
+    // Process each project
+    for (const project of projects) {
+      const projectKey = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // Collect project image files
+      const projectImageFiles = [];
+      for (let j = 0; j < 10; j++) {
+        const imageKey = `projectImages[0][${j}]`;
+        const image = projectData.get(imageKey) as File;
+        if (image && image.size > 0) {
+          projectImageFiles.push(image);
+        }
+      }
+
+      // Create project document with bi-directional reference
+      const agentProjectData = {
+        _type: "agentProject",
+        title: project.title,
+        description: project.description,
+        projectLink: project.projectLink || "",
+        technologies: project.technologies || [],
+        status: "completed",
+        isPortfolioProject: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      console.log("Creating project document:", agentProjectData);
+      const projectDoc = await backendClient.create(agentProjectData);
+      console.log(`Project document created: ${projectDoc._id}`);
+
+      createdProjects.push({
+        _id: projectDoc._id,
+        title: project.title,
+        imageFiles: projectImageFiles,
+      });
+
+      // CRITICAL FIX: Use array append operation to safely add project reference
+      // This ensures atomic operation and prevents overwriting existing projects
+      try {
+        await backendClient
+          .patch(profileId)
+          .setIfMissing({ projects: [] }) // Initialize projects array if it doesn't exist
+          .append("projects", [
+            {
+              _type: "reference",
+              _key: projectKey,
+              _ref: projectDoc._id,
+            },
+          ])
+          .set({ updatedAt: new Date().toISOString() })
+          .commit();
+
+        console.log(
+          `Successfully added project reference ${projectDoc._id} to agent profile ${profileId}`
+        );
+      } catch (patchError: any) {
+        console.error(
+          "Error updating agent profile with project reference:",
+          patchError
+        );
+
+        // If the patch fails, we should clean up the created project
+        try {
+          await backendClient.delete(projectDoc._id);
+          console.log(
+            `Cleaned up project ${projectDoc._id} due to profile update failure`
+          );
+        } catch (deleteError) {
+          console.error("Failed to clean up project:", deleteError);
+        }
+
+        throw new Error(
+          `Failed to link project to agent profile: ${patchError.message}`
+        );
+      }
+
+      // Verify the bi-directional reference
+      try {
+        const verifyProject = await backendClient.getDocument(projectDoc._id);
+        const verifyProfile = await backendClient.getDocument(profileId);
+
+        console.log(
+          "Verification - Project reference to profile:",
+          verifyProject?.agentProfile
+        );
+        console.log(
+          "Verification - Profile reference to project:",
+          verifyProfile?.projects?.find((p: any) => p._ref === projectDoc._id)
+        );
+
+        // Additional verification: Check if the reference actually exists
+        if (
+          !verifyProject?.agentProfile ||
+          verifyProject.agentProfile._ref !== profileId
+        ) {
+          console.error("Project -> Profile reference verification failed");
+          throw new Error(
+            "Project to profile reference was not created properly"
+          );
+        }
+
+        if (
+          !verifyProfile?.projects?.find((p: any) => p._ref === projectDoc._id)
+        ) {
+          console.error("Profile -> Project reference verification failed");
+          throw new Error(
+            "Profile to project reference was not created properly"
+          );
+        }
+
+        console.log("✅ Bi-directional references verified successfully");
+      } catch (verifyError) {
+        console.error("Reference verification failed:", verifyError);
+        // Don't throw here as the main operation might have succeeded
+      }
+    }
+
+    // Process images asynchronously
+    if (createdProjects.length > 0) {
+      console.log(
+        "Starting background image processing for projects:",
+        createdProjects.length
+      );
+      Promise.all([
+        processProjectImagesAsync(profileId, createdProjects),
+      ]).catch((error) => {
+        console.error("Error in background image processing:", error);
+      });
+    }
+
+    // Force refresh of Sanity Studio to show the new data
+    try {
+      await backendClient
+        .patch(profileId)
+        .set({ _studioRefresh: new Date().toISOString() })
+        .commit();
+    } catch (e) {
+      console.log("Studio refresh attempt failed (non-critical):", e);
+    }
+
+    // Aggressive cache clearing
+    revalidatePath("/dashboard", "layout");
+    revalidatePath(`/dashboard/${userId}`, "layout");
+    revalidatePath("/dashboard", "page");
+    revalidatePath(`/dashboard/${userId}`, "page");
+    revalidatePath("/studio", "layout");
+    revalidatePath("/studio", "page");
+
+    return {
+      success: true,
+      message: `Project${createdProjects.length > 1 ? "s" : ""} created successfully with bi-directional references. Images are being processed in the background.`,
+    };
+  } catch (error: any) {
+    console.error("Error creating project:", error);
+    return {
+      success: false,
+      message: `Failed to create project: ${error.message || "Unknown error"}`,
+    };
+  }
+}
+
+export async function deleteAgentProject(
+  projectId: string
+): Promise<FormState> {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return {
+        success: false,
+        message: "Authentication required. Please sign in.",
+      };
+    }
+
+    // First, find all agent profiles that reference this project
+    const query = `*[_type == "agentProfile" && references($projectId)]`;
+    const agentProfiles = await backendClient.fetch(query, { projectId });
+
+    // Remove the project reference from each agent profile
+    for (const profile of agentProfiles) {
+      await backendClient
+        .patch(profile._id)
+        .unset([`projects[_ref == "${projectId}"]`])
+        .commit();
+    }
+
+    // Delete the project document
+    await backendClient.delete(projectId);
+
+    // Revalidate paths
+    revalidatePath("/dashboard", "layout");
+    revalidatePath(`/dashboard/${userId}`, "layout");
+    revalidatePath("/dashboard", "page");
+    revalidatePath(`/dashboard/${userId}`, "page");
+    revalidatePath("/studio", "layout");
+    revalidatePath("/studio", "page");
+
+    return {
+      success: true,
+      message: "Project deleted successfully.",
+    };
+  } catch (error: any) {
+    console.error("Error deleting project:", error);
+    return {
+      success: false,
+      message: `Failed to delete project: ${error.message || "Unknown error"}`,
     };
   }
 }

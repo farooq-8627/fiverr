@@ -48,17 +48,17 @@ const toolsExpertiseIcons: Record<string, LucideIcon> = {
 const colorSchemes = {
   // For automation services (expertise)
   service: {
-    bg: "bg-violet-500/10",
+    bg: "bg-violet-500/20",
     text: "text-violet-400",
-    border: "border-violet-500/20",
-    hover: "hover:bg-violet-500/20",
+    border: "border-violet-500/30",
+    hover: "hover:bg-violet-500/30",
   },
   // For tools
   tool: {
-    bg: "bg-indigo-500/10",
+    bg: "bg-indigo-500/20",
     text: "text-indigo-400",
-    border: "border-indigo-500/20",
-    hover: "hover:bg-indigo-500/20",
+    border: "border-indigo-500/30",
+    hover: "hover:bg-indigo-500/30",
   },
 };
 
