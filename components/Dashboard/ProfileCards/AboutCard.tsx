@@ -8,9 +8,10 @@ import { cn } from "@/lib/utils";
 
 interface AboutCardProps {
   bio: any; // Using any for now as it could be string or block content
+  isCurrentUser: boolean;
 }
 
-export const AboutCard = ({ bio }: AboutCardProps) => {
+export const AboutCard = ({ bio, isCurrentUser }: AboutCardProps) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentBio, setCurrentBio] = useState(bio);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -44,12 +45,14 @@ export const AboutCard = ({ bio }: AboutCardProps) => {
         <div className="space-y-4 md:px-6">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">About</h2>
-            <Button
-              onClick={() => setIsEditModalOpen(true)}
-              className="h-8 w-8 p-0 bg-white/5 hover:bg-white/10 rounded-full"
-            >
-              <Pencil className="h-4 w-4 text-white" />
-            </Button>
+            {isCurrentUser && (
+              <Button
+                onClick={() => setIsEditModalOpen(true)}
+                className="h-8 w-8 p-0 bg-white/5 hover:bg-white/10 rounded-full"
+              >
+                <Pencil className="h-4 w-4 text-white" />
+              </Button>
+            )}
           </div>
           <div className="prose prose-invert max-w-none">
             <div

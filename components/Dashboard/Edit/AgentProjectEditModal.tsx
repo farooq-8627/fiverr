@@ -8,9 +8,8 @@ import { Input } from "@/components/UI/input";
 import { Textarea } from "@/components/UI/textarea";
 import { Label } from "@/components/UI/label";
 import { Badge } from "@/components/UI/badge";
-import { X, Plus, Loader2, Pencil, Trash, Upload } from "lucide-react";
+import { X, Loader2, Pencil, Trash, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 import {
   Select,
   SelectContent,
@@ -18,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/UI/select";
+import { AGENT_PROJECT_STATUSES } from "@/sanity/schemaTypes/constants";
 
 interface AgentProjectEditModalProps {
   project: AgentProject;
@@ -42,7 +42,6 @@ export function AgentProjectEditModal({
     ...project,
   });
   const [newTech, setNewTech] = useState("");
-  const [showTestimonialForm, setShowTestimonialForm] = useState(false);
   const [hoveredImageIndex, setHoveredImageIndex] = useState<number | null>(
     null
   );
@@ -60,9 +59,6 @@ export function AgentProjectEditModal({
       ...prev,
       status: value,
     }));
-    if (value === "completed") {
-      setShowTestimonialForm(true);
-    }
   };
 
   const handleAddTechnology = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -357,30 +353,14 @@ export function AgentProjectEditModal({
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="planning">Planning</SelectItem>
-                      <SelectItem value="inProgress">In Progress</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="onHold">On Hold</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                      {AGENT_PROJECT_STATUSES.map((status) => (
+                        <SelectItem key={status.value} value={status.value}>
+                          {status.title}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
-
-                {showTestimonialForm && formData.status === "completed" && (
-                  <div className="space-y-4 border-t border-white/10 pt-4 mt-4">
-                    <Label htmlFor="testimonial">
-                      Client Testimonial (Optional)
-                    </Label>
-                    <Textarea
-                      id="testimonial"
-                      name="testimonial"
-                      value={formData.testimonial || ""}
-                      onChange={handleInputChange}
-                      placeholder="Add client testimonial..."
-                      className={cn("mt-1 h-32", inputStyles)}
-                    />
-                  </div>
-                )}
               </div>
             </div>
           </div>

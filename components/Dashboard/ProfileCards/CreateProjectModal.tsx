@@ -4,9 +4,17 @@ import { Input } from "@/components/UI/input";
 import { Textarea } from "@/components/UI/textarea";
 import { Label } from "@/components/UI/label";
 import { useToast } from "@/hooks/useToast";
-import { AgentProject } from "@/types";
+import { AgentProject, ProjectStatus } from "@/types";
 import { createAgentProject } from "@/app/onboarding/agent-profile/actions";
 import { GlassModal } from "@/components/UI/GlassModal";
+import {
+  Select,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+} from "@/components/UI/select";
+import { AGENT_PROJECT_STATUSES } from "@/sanity/schemaTypes/constants";
 
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -28,6 +36,7 @@ export function CreateProjectModal({
   const [technologies, setTechnologies] = useState<string[]>([]);
   const [projectImages, setProjectImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [status, setStatus] = useState("completed");
 
   const handleTechnologiesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const techArray = e.target.value.split(",").map((tech) => tech.trim());
@@ -55,7 +64,7 @@ export function CreateProjectModal({
         description,
         projectLink,
         technologies,
-        status: "completed",
+        status,
         isPortfolioProject: true,
       };
 
@@ -70,23 +79,62 @@ export function CreateProjectModal({
       const response = await createAgentProject(profileId, formData);
 
       if (response.success) {
-        // Pass the new project back to parent
-        onProjectCreated(newProject as AgentProject);
+        try {
+          // Wait for a moment to ensure the project is created and indexed
+          await new Promise((resolve) => setTimeout(resolve, 1000));
 
-        // Reset form
-        setTitle("");
-        setDescription("");
-        setProjectLink("");
-        setTechnologies([]);
-        setProjectImages([]);
+          // Fetch the latest projects
+          const projectsResponse = await fetch(`/api/projects/${profileId}`);
+          if (!projectsResponse.ok) {
+            throw new Error("Failed to fetch updated projects");
+          }
 
-        // Close modal
-        onClose();
+          const projects = await projectsResponse.json();
+          const createdProject = projects[0]; // Get the most recent project
 
-        toast({
-          title: "Success",
-          description: response.message,
-        });
+          if (!createdProject?._id) {
+            throw new Error("Created project not found");
+          }
+
+          // Pass the new project back to parent with the server-generated data
+          onProjectCreated({
+            _id: createdProject._id,
+            title: createdProject.title,
+            description: createdProject.description,
+            projectLink: createdProject.projectLink,
+            technologies: createdProject.technologies,
+            status: createdProject.status as ProjectStatus,
+            images: createdProject.images,
+            isPortfolioProject: createdProject.isPortfolioProject,
+            createdAt: createdProject.createdAt,
+            updatedAt: createdProject.updatedAt,
+          });
+
+          // Reset form
+          setTitle("");
+          setDescription("");
+          setProjectLink("");
+          setTechnologies([]);
+          setProjectImages([]);
+          setStatus("completed");
+
+          // Close modal
+          onClose();
+
+          toast({
+            title: "Success",
+            description: response.message,
+          });
+        } catch (error) {
+          console.error("Error fetching created project:", error);
+          toast({
+            title: "Warning",
+            description:
+              "Project created but failed to refresh the view. Please refresh the page.",
+            variant: "destructive",
+          });
+          onClose();
+        }
       } else {
         throw new Error(response.message);
       }
@@ -146,6 +194,21 @@ export function CreateProjectModal({
               onChange={handleTechnologiesChange}
               placeholder="React, TypeScript, Node.js"
             />
+          </div>
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                {AGENT_PROJECT_STATUSES.map((status) => (
+                  <SelectItem key={status.value} value={status.value}>
+                    {status.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label htmlFor="projectImages">Project Images</Label>

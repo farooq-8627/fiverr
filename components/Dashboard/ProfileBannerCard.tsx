@@ -32,7 +32,7 @@ interface ProfileBannerCardProps {
   socialLinks?: SanityUserSocialLink[];
   extraDetails?: Record<string, any>;
   onSave?: (data: any) => void;
-  isCurrentUser?: boolean; // Add this prop
+  isCurrentUser?: boolean;
 }
 
 export const ProfileBannerCard = ({
@@ -121,12 +121,14 @@ export const ProfileBannerCard = ({
           >
             <Mail className="h-4 w-4" />
           </Button>
-          <Button
-            className="bg-black/40 hover:bg-black/60 text-white border-none p-2 h-9 w-9 rounded-full backdrop-blur-sm transition-all hover:scale-105"
-            onClick={handleOpenEditModal}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
+          {isCurrentUser && (
+            <Button
+              className="bg-black/40 hover:bg-black/60 text-white border-none p-2 h-9 w-9 rounded-full backdrop-blur-sm transition-all hover:scale-105"
+              onClick={handleOpenEditModal}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -224,7 +226,7 @@ export const ProfileBannerCard = ({
               })) || [],
             ...extraDetails,
           }}
-          isCurrentUser={isCurrentUser ?? true} // Add this line
+          isCurrentUser={isCurrentUser ?? false}
         />
       )}
     </GlassCard>

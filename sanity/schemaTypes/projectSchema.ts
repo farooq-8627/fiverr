@@ -102,18 +102,6 @@ export const agentProjectSchema = defineType({
       of: [{ type: "projectImage" }],
     }),
     defineField({
-      name: "clientReference",
-      title: "Client",
-      type: "reference",
-      to: [{ type: "clientProfile" }],
-      description: "If this was a client project, reference the client",
-    }),
-    defineField({
-      name: "testimonial",
-      title: "Client Testimonial",
-      type: "text",
-    }),
-    defineField({
       name: "completionDate",
       title: "Completion Date",
       type: "date",

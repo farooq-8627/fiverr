@@ -71,7 +71,7 @@ export interface UserData {
   updatedAt: string;
 }
 
-export function useUser() {
+export function useUser(username?: string) {
   const { user: clerkUser } = useClerkUser();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,7 +79,7 @@ export function useUser() {
 
   useEffect(() => {
     async function fetchUser() {
-      if (!clerkUser?.id) {
+      if (!clerkUser?.id && !username) {
         setIsLoading(false);
         return;
       }
@@ -88,9 +88,16 @@ export function useUser() {
         setIsLoading(true);
         setError(null);
 
+        // Build the query based on whether we're fetching by clerkId or username
+        const query = username
+          ? `*[_type == "user" && personalDetails.username == $identifier][0]`
+          : `*[_type == "user" && clerkId == $identifier][0]`;
+
+        const params = { identifier: username || clerkUser?.id };
+
         // Fetch user data with linked profiles and companies
         const user = await client.fetch<UserData | null>(
-          `*[_type == "user" && clerkId == $clerkId][0]{
+          `${query}{
             _id,
             clerkId,
             personalDetails {
@@ -140,7 +147,7 @@ export function useUser() {
             createdAt,
             updatedAt
           }`,
-          { clerkId: clerkUser.id }
+          params
         );
 
         setUserData(user);
@@ -154,7 +161,7 @@ export function useUser() {
     }
 
     fetchUser();
-  }, [clerkUser?.id]);
+  }, [clerkUser?.id, username]);
 
   return {
     user: userData,

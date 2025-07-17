@@ -3,7 +3,8 @@ import React from "react";
 import { GlassModal } from "@/components/UI/GlassModal";
 import { motion } from "framer-motion";
 import { AgentProject } from "@/types";
-import { Pencil, Rocket, Trash } from "lucide-react";
+import { Pencil, Rocket, Tag, Trash } from "lucide-react";
+import { Badge } from "@/components/UI/badge";
 
 interface ProjectCardProps {
   project: AgentProject;
@@ -36,7 +37,7 @@ const ProjectCardContent = ({
   };
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-8 p-4">
       {/* Header with Title and Action Buttons */}
       <div className="flex items-start justify-between">
         <h3 className="text-2xl font-bold">{project.title}</h3>
@@ -102,20 +103,26 @@ const ProjectCardContent = ({
       </div>
 
       {/* Description */}
-      <p className="text-base text-muted-foreground whitespace-pre-wrap leading-relaxed">
-        {project.description}
-      </p>
+      <div className="max-h-[200px] overflow-y-auto hide-scrollbar rounded-md bg-black/30 p-2">
+        <p className="text-base text-muted-foreground whitespace-pre-wrap leading-relaxed">
+          {project.description}
+        </p>
+      </div>
 
       {/* Technologies */}
-      <div className="flex flex-wrap gap-2">
-        {project.technologies?.map((tech, idx) => (
-          <span
-            key={idx}
-            className="px-3 py-1 bg-purple-500/10 text-purple-400 rounded-full text-xs font-medium border border-purple-500/20"
-          >
-            {tech}
-          </span>
-        ))}
+      <div className="relative overflow-x-auto hide-scrollbar">
+        <div className="flex flex-wrap gap-2">
+          {project.technologies?.map((tech, idx) => (
+            <Badge
+              key={`${tech}-${idx}`}
+              variant="outline"
+              className="bg-violet-500/10 text-violet-400 border-violet-500/20"
+            >
+              <Tag className="mr-1 h-3 w-3" />
+              {tech}
+            </Badge>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -7,10 +7,11 @@ import { UserCircle2, Users } from "lucide-react";
 import { useState } from "react";
 import React from "react";
 import { AgentProfile, ClientProfile } from "@/types";
-import { useUserProfiles } from "@/hooks/useUserProfiles";
+import { useUserProfilesByUsername } from "@/hooks/useUserProfilesByUsername";
 import { ProfileBannerCard } from "@/components/Dashboard/ProfileBannerCard";
 import { AboutCard } from "@/components/Dashboard/ProfileCards/AboutCard";
 import { useUser } from "@/hooks/useUser";
+import { useUser as useClerkUser } from "@clerk/nextjs";
 
 export default function DashboardPage({
   params,
@@ -19,8 +20,12 @@ export default function DashboardPage({
 }) {
   const unwrappedParams = React.use(params) as { username: string };
   const [activeTab, setActiveTab] = useState("Agent Profile");
-  const { agentProfiles, clientProfiles, loading, error } = useUserProfiles();
-  const { user: userProfile, isLoading: userLoading } = useUser();
+  const { agentProfiles, clientProfiles, loading, error } =
+    useUserProfilesByUsername(unwrappedParams.username);
+  const { user: userProfile, isLoading: userLoading } = useUser(
+    unwrappedParams.username
+  );
+  const { user: currentUser } = useClerkUser();
 
   if (loading || userLoading) {
     return <div>Loading...</div>;
@@ -30,9 +35,8 @@ export default function DashboardPage({
     return <div>Error loading profiles</div>;
   }
 
-  // Check if the current user is viewing their own profile
-  const isCurrentUser =
-    userProfile?.personalDetails?.username === unwrappedParams.username;
+  // Check if the current user is viewing their own profile by comparing usernames
+  const isCurrentUser = currentUser?.username === unwrappedParams.username;
 
   const menuItems = [
     {
@@ -78,7 +82,10 @@ export default function DashboardPage({
       {/* About Section */}
       {userProfile?.coreIdentity?.bio && (
         <div className="mb-8">
-          <AboutCard bio={userProfile.coreIdentity.bio} />
+          <AboutCard
+            bio={userProfile.coreIdentity.bio}
+            isCurrentUser={isCurrentUser}
+          />
         </div>
       )}
 

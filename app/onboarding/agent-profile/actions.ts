@@ -318,11 +318,21 @@ export async function saveAgentProfile(formData: FormData): Promise<FormState> {
 
 interface UpdateAgentProfileDetailsParams {
   profileId: string;
-  pricingModel?: string;
-  availability?: string;
-  workType?: string;
-  teamSize?: string;
-  projectSizePreferences?: string[];
+  businessDetails?: {
+    pricingModel: string;
+    availability: string;
+    workType: string;
+    teamSize: string;
+    projectSizePreferences: string[];
+  };
+  availability?: {
+    currentStatus: string;
+    workingHours: string;
+    timeZone: string;
+    responseTime: string;
+    availabilityHours: string;
+  };
+
   automationExpertise?: {
     automationServices: string[];
     toolsExpertise: string[];
@@ -374,25 +384,41 @@ export async function updateAgentProfileDetails(
     }
 
     if (
-      updateData.pricingModel !== undefined ||
-      updateData.availability !== undefined ||
-      updateData.workType !== undefined ||
-      updateData.teamSize !== undefined ||
-      updateData.projectSizePreferences !== undefined
+      updateData.businessDetails?.pricingModel !== undefined ||
+      updateData.businessDetails?.workType !== undefined ||
+      updateData.businessDetails?.teamSize !== undefined ||
+      updateData.businessDetails?.projectSizePreferences !== undefined
     ) {
       const existingBusinessDetails = existingProfile?.businessDetails || {};
 
       mutations.businessDetails = {
         _type: "agentBusinessDetails",
         pricingModel:
-          updateData.pricingModel || existingBusinessDetails.pricingModel,
+          updateData.businessDetails?.pricingModel ||
+          existingBusinessDetails.pricingModel,
         availability:
-          updateData.availability || existingBusinessDetails.availability,
-        workType: updateData.workType || existingBusinessDetails.workType,
-        teamSize: updateData.teamSize || existingBusinessDetails.teamSize,
+          updateData.businessDetails?.availability ||
+          existingBusinessDetails.availability,
+        workType:
+          updateData.businessDetails?.workType ||
+          existingBusinessDetails.workType,
+        teamSize:
+          updateData.businessDetails?.teamSize ||
+          existingBusinessDetails.teamSize,
         projectSizePreferences:
-          updateData.projectSizePreferences ||
+          updateData.businessDetails?.projectSizePreferences ||
           existingBusinessDetails.projectSizePreferences,
+      };
+    }
+
+    if (updateData.availability !== undefined) {
+      mutations.availability = {
+        _type: "object",
+        currentStatus: updateData.availability.currentStatus,
+        workingHours: updateData.availability.workingHours,
+        timeZone: updateData.availability.timeZone,
+        responseTime: updateData.availability.responseTime,
+        availabilityHours: updateData.availability.availabilityHours,
       };
     }
 
@@ -470,6 +496,7 @@ export async function updateAgentProject(
   try {
     const { profileId, project } = params;
 
+    // Get authenticated user ID
     const { userId } = await auth();
     if (!userId) {
       return {
@@ -478,50 +505,39 @@ export async function updateAgentProject(
       };
     }
 
-    const existingProfile = await backendClient.getDocument(profileId);
-    if (!existingProfile) {
+    // Verify ownership of the profile
+    const profile = await backendClient.getDocument(profileId);
+    if (!profile || profile.userId._ref !== `user-${userId}`) {
       return {
         success: false,
-        message: "Profile not found.",
+        message: "You don't have permission to update this project.",
       };
     }
 
     // Update the project document
-    await backendClient
-      .patch(project._id)
-      .set({
-        ...project,
-        updatedAt: new Date().toISOString(),
-      })
-      .commit();
+    const projectUpdate = {
+      title: project.title,
+      description: project.description,
+      projectLink: project.projectLink || "",
+      technologies: project.technologies || [],
+      status: project.status || "completed",
+      isPortfolioProject: true,
+      updatedAt: new Date().toISOString(),
+    };
 
-    // Force studio refresh
-    try {
-      await backendClient
-        .patch(project._id)
-        .set({ _updatedAt: new Date().toISOString() })
-        .commit();
-    } catch (e) {
-      console.log("Studio refresh attempt failed (non-critical):", e);
-    }
+    await backendClient.patch(project._id).set(projectUpdate).commit();
 
-    // Revalidate paths
-    revalidatePath("/dashboard", "layout");
-    revalidatePath(`/dashboard/${userId}`, "layout");
-    revalidatePath("/dashboard", "page");
-    revalidatePath(`/dashboard/${userId}`, "page");
-    revalidatePath("/studio", "layout");
-    revalidatePath("/studio", "page");
+    revalidatePath("/dashboard/[username]", "page");
 
     return {
       success: true,
-      message: "Project updated successfully.",
+      message: "Project updated successfully",
     };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error updating project:", error);
     return {
       success: false,
-      message: `Failed to update project: ${error.message || "Unknown error"}`,
+      message: "Failed to update project. Please try again.",
     };
   }
 }
@@ -580,7 +596,7 @@ export async function createAgentProject(
         description: project.description,
         projectLink: project.projectLink || "",
         technologies: project.technologies || [],
-        status: "completed",
+        status: project.status || "completed",
         isPortfolioProject: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

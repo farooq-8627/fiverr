@@ -20,6 +20,13 @@ export interface AgentProfile {
     projectSizePreferences?: string[];
     teamSize?: string;
   };
+  availability?: {
+    currentStatus: string;
+    workingHours: string;
+    timeZone: string;
+    responseTime: string;
+    availabilityHours: string;
+  };
   projects?: AgentProject[];
   createdAt: string;
   updatedAt: string;
@@ -72,7 +79,6 @@ export interface AgentProject {
     alt: string;
   }[];
   status: ProjectStatus;
-  testimonial?: string;
   isPortfolioProject?: boolean;
   createdAt: string;
   updatedAt: string;

@@ -109,7 +109,7 @@ export function AgentProjectCard({
           className="overflow-hidden transition-all duration-300 hover:shadow-lg"
         >
           {/* Project Image */}
-          <div className="relative h-48 w-full overflow-hidden">
+          <div className="relative h-32 sm:h-48 w-full overflow-hidden">
             {projectImage ? (
               <div className="relative w-full h-full">
                 <Image
@@ -117,7 +117,7 @@ export function AgentProjectCard({
                   alt={project.title}
                   fill
                   className="object-cover object-top transition-transform duration-300"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  sizes="(max-width: 768px) 280px, 320px"
                   onError={() => setImageError(true)}
                   priority={true}
                 />
@@ -128,7 +128,7 @@ export function AgentProjectCard({
           </div>
 
           {/* Project Info */}
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-semibold line-clamp-1 group-hover:text-violet-400 transition-colors">
@@ -158,44 +158,30 @@ export function AgentProjectCard({
                   )}
                 </div>
               </div>
-              <p className="text-sm text-gray-400 line-clamp-3">
-                {project.description}
-              </p>
+              <div className="h-[4rem] min-h-[4rem]">
+                <p className="text-sm text-gray-400 line-clamp-3">
+                  {project.description}
+                </p>
+              </div>
             </div>
 
             {/* Project Details */}
             {project.technologies && project.technologies.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {project.technologies.map((tech, index) => (
-                  <Badge
-                    key={`${tech}-${index}`}
-                    variant="outline"
-                    className="bg-violet-500/10 text-violet-400 border-violet-500/20"
-                  >
-                    <Tag className="mr-1 h-3 w-3" />
-                    {tech}
-                  </Badge>
-                ))}
+              <div className="relative overflow-x-auto hide-scrollbar">
+                <div className="flex flex-wrap gap-2">
+                  {project.technologies.map((tech, index) => (
+                    <Badge
+                      key={`${tech}-${index}`}
+                      variant="outline"
+                      className="bg-violet-500/10 text-violet-400 border-violet-500/20"
+                    >
+                      <Tag className="mr-1 h-3 w-3" />
+                      {tech}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             )}
-
-            {/* Footer */}
-            <div className="flex items-center justify-between pt-4 border-t border-white/10">
-              <div className="flex items-center gap-4">
-                {project.status === "completed" && (
-                  <div className="flex items-center text-sm text-gray-400">
-                    <Calendar className="mr-1 h-4 w-4" />
-                    {new Date(project.updatedAt).toLocaleDateString()}
-                  </div>
-                )}
-                {project.testimonial && (
-                  <div className="flex items-center text-sm text-gray-400">
-                    <MessageSquare className="mr-1 h-4 w-4" />
-                    Has Testimonial
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         </GlassCard>
       </motion.div>

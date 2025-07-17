@@ -11,6 +11,12 @@ import {
 } from "@/app/onboarding/agent-profile/actions";
 import { useToast } from "@/hooks/useToast";
 import { CreateProjectModal } from "./CreateProjectModal";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@radix-ui/react-tooltip";
 
 interface AgentProjectCardProps {
   projects: AgentProject[];
@@ -108,25 +114,37 @@ export function AgentProjectCard({
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">Projects</h2>
           {isCurrentUser && (
-            <Button
-              variant="outline"
-              onClick={() => setIsCreateModalOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Project
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="p-2 rounded-full hover:bg-purple-500/20 transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Add Project</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {currentProjects.map((project) => (
-            <AgentProjectCardComponent
-              key={project._id}
-              isCurrentUser={isCurrentUser}
-              project={project}
-              onUpdate={handleProjectUpdate}
-              onDelete={handleProjectDelete}
-            />
-          ))}
+        <div className="relative overflow-x-auto pb-4 hide-scrollbar">
+          <div className="flex gap-4 min-w-min">
+            {currentProjects.map((project) => (
+              <AgentProjectCardComponent
+                key={project._id}
+                isCurrentUser={isCurrentUser}
+                project={project}
+                onUpdate={handleProjectUpdate}
+                onDelete={handleProjectDelete}
+                className="w-[280px] sm:w-[320px] flex-shrink-0"
+              />
+            ))}
+          </div>
         </div>
       </div>
 

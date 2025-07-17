@@ -80,9 +80,14 @@ export function BusinessDetailsEditModal({
       setIsLoading(true);
       const response = await updateAgentProfileDetails({
         profileId: initialData.profileId,
-        ...formData,
+        businessDetails: {
+          pricingModel: formData.pricingModel,
+          availability: formData.availability,
+          workType: formData.workType,
+          teamSize: formData.teamSize,
+          projectSizePreferences: formData.projectSizePreferences,
+        },
       });
-
       if (response.success) {
         // Update parent component state immediately
         onSave(formData);
