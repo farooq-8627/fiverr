@@ -16,8 +16,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { ProjectModalCard } from "@/components/Dashboard/ProfileCards/ProjectModalCard";
-import { AgentProjectEditModal } from "@/components/Dashboard/Edit/AgentProjectEditModal";
+import { AgentProjectModalCard } from "@/components/Dashboard/ProfileCards/AgentProfile/AgentProjectModalCard";
+import { AgentProjectEditModal } from "@/components/Dashboard/Edit/AgentProfile/AgentProjectEditModal";
 
 interface AgentProjectCardProps {
   project: AgentProject;
@@ -97,19 +97,15 @@ export function AgentProjectCard({
   return (
     <>
       <motion.div
-        whileHover={{ scale: 1.02 }}
-        transition={{ duration: 0.2 }}
         onClick={handleClick}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
         className={cn("cursor-pointer", className)}
       >
         <GlassCard
           padding="p-0"
-          className="overflow-hidden transition-all duration-300 hover:shadow-lg"
+          className="overflow-hidden transition-all duration-300 w-[270px]"
         >
           {/* Project Image */}
-          <div className="relative h-32 sm:h-48 w-full overflow-hidden">
+          <div className="relative h-36 sm:h-48 w-full overflow-hidden">
             {projectImage ? (
               <div className="relative w-full h-full">
                 <Image
@@ -128,7 +124,7 @@ export function AgentProjectCard({
           </div>
 
           {/* Project Info */}
-          <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
+          <div className="p-4 sm:p-4 space-y-3 sm:space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-semibold line-clamp-1 group-hover:text-violet-400 transition-colors">
@@ -165,15 +161,15 @@ export function AgentProjectCard({
               </div>
             </div>
 
-            {/* Project Details */}
+            {/* Technologies */}
             {project.technologies && project.technologies.length > 0 && (
-              <div className="relative overflow-x-auto hide-scrollbar">
-                <div className="flex flex-wrap gap-2">
+              <div className="relative overflow-x-auto">
+                <div className="flex gap-2 no-wrap overflow-x-auto scrollbar-hide pb-2">
                   {project.technologies.map((tech, index) => (
                     <Badge
                       key={`${tech}-${index}`}
                       variant="outline"
-                      className="bg-violet-500/10 text-violet-400 border-violet-500/20"
+                      className="bg-violet-500/10 text-violet-400 border-violet-500/20 whitespace-nowrap"
                     >
                       <Tag className="mr-1 h-3 w-3" />
                       {tech}
@@ -186,7 +182,7 @@ export function AgentProjectCard({
         </GlassCard>
       </motion.div>
 
-      <ProjectModalCard
+      <AgentProjectModalCard
         project={project}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

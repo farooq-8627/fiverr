@@ -332,10 +332,21 @@ interface UpdateAgentProfileDetailsParams {
     responseTime: string;
     availabilityHours: string;
   };
-
   automationExpertise?: {
     automationServices: string[];
     toolsExpertise: string[];
+  };
+  pricing?: {
+    hourlyRateRange: string;
+    minimumProjectBudget: string;
+    preferredPaymentMethods: string[];
+  };
+  mustHaveRequirements?: {
+    experience: string;
+    dealBreakers: string[];
+    industryDomain: string[];
+    customIndustry?: string[];
+    requirements: string[];
   };
 }
 
@@ -414,11 +425,31 @@ export async function updateAgentProfileDetails(
     if (updateData.availability !== undefined) {
       mutations.availability = {
         _type: "object",
-        currentStatus: updateData.availability.currentStatus,
-        workingHours: updateData.availability.workingHours,
+        availabilityStatus: updateData.availability.currentStatus,
+        workingHoursPreference: updateData.availability.workingHours,
         timeZone: updateData.availability.timeZone,
-        responseTime: updateData.availability.responseTime,
+        responseTimeCommitment: updateData.availability.responseTime,
         availabilityHours: updateData.availability.availabilityHours,
+      };
+    }
+
+    if (updateData.pricing !== undefined) {
+      mutations.pricing = {
+        _type: "pricing",
+        hourlyRateRange: updateData.pricing.hourlyRateRange,
+        minimumProjectBudget: updateData.pricing.minimumProjectBudget,
+        preferredPaymentMethods: updateData.pricing.preferredPaymentMethods,
+      };
+    }
+
+    if (updateData.mustHaveRequirements !== undefined) {
+      mutations.mustHaveRequirements = {
+        _type: "mustHaveRequirements",
+        experience: updateData.mustHaveRequirements.experience,
+        dealBreakers: updateData.mustHaveRequirements.dealBreakers,
+        industryDomain: updateData.mustHaveRequirements.industryDomain,
+        customIndustry: updateData.mustHaveRequirements.customIndustry,
+        requirements: updateData.mustHaveRequirements.requirements,
       };
     }
 

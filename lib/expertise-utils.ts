@@ -19,6 +19,8 @@ import {
 import {
   AGENT_AUTOMATION_SERVICES,
   AGENT_TOOLS_EXPERTISE,
+  CLIENT_AUTOMATION_NEEDS,
+  CLIENT_CURRENT_TOOLS,
 } from "@/sanity/schemaTypes/constants";
 
 // Define icon mappings for automation services
@@ -112,4 +114,24 @@ export function groupExpertiseByCategory(
   });
 
   return Array.from(grouped.entries());
+}
+
+export function getClientAutomationNeedsInfo(value: string): ExpertiseItem {
+  const need = CLIENT_AUTOMATION_NEEDS.find((n) => n.value === value);
+  return {
+    title: need?.title || value,
+    value: value,
+    icon: automationServiceIcons[value] || Blocks,
+    colors: colorSchemes.service, // Always use service colors
+  };
+}
+
+export function getClientToolsInfo(value: string): ExpertiseItem {
+  const tool = CLIENT_CURRENT_TOOLS.find((t) => t.value === value);
+  return {
+    title: tool?.title || value,
+    value: value,
+    icon: toolsExpertiseIcons[value] || Sparkles,
+    colors: colorSchemes.tool, // Always use tool colors
+  };
 }

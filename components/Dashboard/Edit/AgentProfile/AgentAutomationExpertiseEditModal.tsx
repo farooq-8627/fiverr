@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { AutomationExpertiseForm } from "@/components/Dashboard/Edit/AutomationExpertiseForm";
+import { AutomationExpertiseForm } from "@/components/Dashboard/Edit/AgentProfile/AutomationExpertiseForm";
 import { useToast } from "@/hooks/useToast";
 import { updateAgentProfileDetails } from "@/app/onboarding/agent-profile/actions";
 
-interface AutomationExpertiseEditModalProps {
+interface AgentAutomationExpertiseEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialData: {
@@ -20,7 +20,7 @@ interface AutomationExpertiseEditModalProps {
   }) => void;
 }
 
-export function AutomationExpertiseEditModal({
+export function AgentAutomationExpertiseEditModal({
   isOpen,
   onClose,
   initialData,
@@ -28,7 +28,7 @@ export function AutomationExpertiseEditModal({
   onExpertiseUpdate,
   title = "Edit Automation Expertise",
   updateFunction,
-}: AutomationExpertiseEditModalProps) {
+}: AgentAutomationExpertiseEditModalProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({

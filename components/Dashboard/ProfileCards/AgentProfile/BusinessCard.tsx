@@ -7,10 +7,10 @@ import {
 } from "@/lib/business-utils";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
-import { GlassCard } from "../../UI/GlassCard";
-import { Button } from "../../UI/button";
+import { GlassCard } from "../../../UI/GlassCard";
+import { Button } from "../../../UI/button";
 import { Pencil } from "lucide-react";
-import { BusinessDetailsEditModal } from "../Edit/BusinessDetailsEditModal";
+import { BusinessDetailsEditModal } from "../../Edit/AgentProfile/BusinessDetailsEditModal";
 
 interface BusinessDetailCardProps {
   info: BusinessDetailInfo;

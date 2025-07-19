@@ -153,10 +153,10 @@ export const PRICING_MODELS = [
 // Availability Status options
 export const AVAILABILITY_STATUSES = [
   { title: "Available Now", value: "availableNow" },
-  { title: "Available Soon (within 2 weeks)", value: "availableSoon" },
+  { title: "Available Soon", value: "availableSoon" },
   { title: "Limited Availability", value: "limited" },
   { title: "Currently Unavailable", value: "unavailable" },
-  { title: "Booking Projects for Next Month", value: "bookingNextMonth" },
+  { title: "Available Next Month", value: "availableNextMonth" },
 ];
 
 // Working Hours Preference options
@@ -216,7 +216,7 @@ export const UPDATE_FREQUENCIES = [
 
 // Meeting Availability options
 export const MEETING_AVAILABILITIES = [
-  { title: "Regular business hours", value: "businessHours" },
+  { title: "Business hours", value: "businessHours" },
   { title: "Evenings only", value: "evenings" },
   { title: "Weekends only", value: "weekends" },
   { title: "Flexible", value: "flexible" },

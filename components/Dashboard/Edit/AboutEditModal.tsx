@@ -68,18 +68,21 @@ export const AboutEditModal = ({
           placeholder="Write something about yourself..."
           className="min-h-[200px] bg-white/5 border-white/20 text-white"
         />
-        <div className="flex justify-end gap-2 border-t border-white/10 pt-4">
+        <div className="flex justify-end space-x-4 pt-4 border-t border-violet-800/30">
           <Button
             type="button"
+            variant="outline"
             onClick={onClose}
-            className="border-white/20 text-white hover:bg-white/10 p-2"
+            disabled={isSubmitting}
+            className="px-6 py-2 text-violet-200 bg-transparent border-violet-700/50 hover:bg-violet-900/50"
           >
             Cancel
           </Button>
           <Button
-            type="submit"
+            type="button"
+            onClick={handleSubmit}
             disabled={isSubmitting}
-            className="bg-white/10 hover:bg-white/20 p-2"
+            className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white"
           >
             {isSubmitting ? "Saving..." : "Save"}
           </Button>

@@ -23,6 +23,8 @@ interface AutomationExpertiseFormProps {
   onCancel: () => void;
   isLoading: boolean;
   title?: string;
+  automationTitle?: string;
+  toolsTitle?: string;
 }
 
 export function AutomationExpertiseForm({
@@ -36,6 +38,8 @@ export function AutomationExpertiseForm({
   onCancel,
   isLoading,
   title = "Edit Automation Expertise",
+  automationTitle = "Automation Services",
+  toolsTitle = "Tools Expertise",
 }: AutomationExpertiseFormProps) {
   return (
     <GlassModal
@@ -50,7 +54,7 @@ export function AutomationExpertiseForm({
           <div>
             <Label className="text-lg font-semibold mb-2 flex items-center text-violet-200">
               <Zap className="inline-block mr-2 h-5 w-5 text-violet-400" />
-              Automation Services
+              {automationTitle}
             </Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {AGENT_AUTOMATION_SERVICES.map((service) => {
@@ -82,7 +86,7 @@ export function AutomationExpertiseForm({
           <div>
             <Label className="text-lg font-semibold mb-2 flex items-center text-violet-200">
               <Wrench className="inline-block mr-2 h-5 w-5 text-violet-400" />
-              Tools Expertise
+              {toolsTitle}
             </Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {AGENT_TOOLS_EXPERTISE.map((tool) => {

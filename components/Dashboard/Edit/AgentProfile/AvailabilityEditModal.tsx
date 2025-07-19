@@ -1,15 +1,14 @@
 import React, { useState } from "react";
-import { GlassModal } from "../../UI/GlassModal";
-import { Button } from "../../UI/button";
-import { Label } from "../../UI/label";
+import { GlassModal } from "@/components/UI/GlassModal";
+import { Button } from "@/components/UI/button";
+import { Label } from "@/components/UI/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../UI/select";
-import { Clock, Calendar, Globe, MessageCircle } from "lucide-react";
+} from "@/components/UI/select";
 import { useToast } from "@/hooks/useToast";
 import { updateAgentProfileDetails } from "@/app/onboarding/agent-profile/actions";
 import {
@@ -19,23 +18,19 @@ import {
   MEETING_AVAILABILITIES,
 } from "@/sanity/schemaTypes/constants";
 
+interface AvailabilityData {
+  currentStatus: string;
+  workingHours: string;
+  timeZone: string;
+  responseTime: string;
+  availabilityHours: string;
+}
+
 interface AvailabilityEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: {
-    currentStatus?: string;
-    workingHours?: string;
-    timeZone?: string;
-    responseTime?: string;
-    availabilityHours?: string;
-  }) => void;
-  initialData: {
-    currentStatus: string;
-    workingHours: string;
-    timeZone: string;
-    responseTime: string;
-    availabilityHours: string;
-  };
+  onSave: (data: AvailabilityData) => void;
+  initialData: AvailabilityData;
   profileId: string;
 }
 
@@ -167,7 +162,7 @@ export function AvailabilityEditModal({
                 {formData.timeZone || "Select your time zone"}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-[300px] overflow-y-auto">
               {Intl.supportedValuesOf("timeZone").map((zone) => (
                 <SelectItem key={zone} value={zone}>
                   {zone}
@@ -203,12 +198,23 @@ export function AvailabilityEditModal({
         </div>
       </div>
 
-      <div className="flex justify-end gap-4 mt-6">
-        <Button variant="outline" onClick={onClose} disabled={isLoading}>
+      <div className="flex justify-end space-x-4 pt-4 border-t border-violet-800/30">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onClose}
+          disabled={isLoading}
+          className="px-6 py-2 text-violet-200 bg-transparent border-violet-700/50 hover:bg-violet-900/50"
+        >
           Cancel
         </Button>
-        <Button onClick={handleSave} disabled={isLoading}>
-          Save Changes
+        <Button
+          type="button"
+          onClick={handleSave}
+          disabled={isLoading}
+          className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white"
+        >
+          {isLoading ? "Saving..." : "Save"}
         </Button>
       </div>
     </GlassModal>

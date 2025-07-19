@@ -27,6 +27,18 @@ export interface AgentProfile {
     responseTime: string;
     availabilityHours: string;
   };
+  pricing?: {
+    hourlyRateRange: string;
+    minimumProjectBudget: string;
+    preferredPaymentMethods: string[];
+  };
+  mustHaveRequirements?: {
+    experience: string;
+    dealBreakers: string[];
+    industryDomain: string[];
+    customIndustry?: string[];
+    requirements: string[];
+  };
   projects?: AgentProject[];
   createdAt: string;
   updatedAt: string;
@@ -105,6 +117,7 @@ export interface ClientProject {
   status:
     | "draft"
     | "planning"
+    | "openProposals"
     | "inProgress"
     | "completed"
     | "onHold"

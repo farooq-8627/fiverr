@@ -1,10 +1,12 @@
 import React from "react";
 import { AgentProfile } from "@/types/index";
-import { AutomationCard } from "@/components/Dashboard/ProfileCards/AutomationCard";
-import BusinessCard from "@/components/Dashboard/ProfileCards/BusinessCard";
-import { AvailabilityCard } from "@/components/Dashboard/ProfileCards/AvailabilityCard";
+import { AgentAutomationCard } from "@/components/Dashboard/ProfileCards/AgentProfile/AgentAutomationCard";
+import BusinessCard from "@/components/Dashboard/ProfileCards/AgentProfile/BusinessCard";
+import { AvailabilityCard } from "@/components/Dashboard/ProfileCards/AgentProfile/AvailabilityCard";
 import { useToast } from "@/hooks/useToast";
-import { AgentProjectCard } from "./ProfileCards/AgentProjectCard";
+import { AgentProjectCard } from "./ProfileCards/AgentProfile/AgentProjectCard";
+import { PricingCard } from "./ProfileCards/AgentProfile/PricingCard";
+import { RequirementsCard } from "./ProfileCards/AgentProfile/RequirementsCard";
 
 interface AgentProfileTabProps {
   profiles: AgentProfile[];
@@ -27,7 +29,7 @@ export function AgentProfileTab({
 
   return (
     <div className="space-y-4">
-      <AutomationCard
+      <AgentAutomationCard
         automationExpertise={profile.automationExpertise}
         isCurrentUser={isCurrentUser ?? false}
         profileId={profile._id}
@@ -56,6 +58,32 @@ export function AgentProfileTab({
 
       <AgentProjectCard
         projects={profile.projects || []}
+        isCurrentUser={isCurrentUser ?? false}
+        profileId={profile._id}
+      />
+
+      <PricingCard
+        pricing={
+          profile.pricing || {
+            hourlyRateRange: "",
+            minimumProjectBudget: "",
+            preferredPaymentMethods: [],
+          }
+        }
+        isCurrentUser={isCurrentUser ?? false}
+        profileId={profile._id}
+      />
+
+      <RequirementsCard
+        mustHaveRequirements={
+          profile.mustHaveRequirements || {
+            experience: "",
+            dealBreakers: [],
+            industryDomain: [],
+            requirements: [],
+            customIndustry: [],
+          }
+        }
         isCurrentUser={isCurrentUser ?? false}
         profileId={profile._id}
       />

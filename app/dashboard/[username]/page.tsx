@@ -108,7 +108,10 @@ export default function DashboardPage({
             />
           )}
           {activeTab === "Client Profile" && (
-            <ClientProfileTab profiles={clientProfiles as ClientProfile[]} />
+            <ClientProfileTab
+              profiles={clientProfiles as ClientProfile[]}
+              isCurrentUser={isCurrentUser}
+            />
           )}
         </div>
       </div>

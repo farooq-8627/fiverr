@@ -4,13 +4,13 @@ import { GlassCard } from "@/components/UI/GlassCard";
 import { Button } from "@/components/UI/button";
 import { Pencil, Plus } from "lucide-react";
 import { AgentProject } from "@/types/index";
-import { AgentProjectCard as AgentProjectCardComponent } from "@/components/cards/AgentProjectCard";
+import { AgentProjectCard as AgentProjectCardComponent } from "@/components/cards/AgentProjectCardModal";
 import {
   updateAgentProject,
   deleteAgentProject,
 } from "@/app/onboarding/agent-profile/actions";
 import { useToast } from "@/hooks/useToast";
-import { CreateProjectModal } from "./CreateProjectModal";
+import { CreateAgentProjectModal } from "./CreateAgentProjectModal";
 import {
   Tooltip,
   TooltipContent,
@@ -148,7 +148,7 @@ export function AgentProjectCard({
         </div>
       </div>
 
-      <CreateProjectModal
+      <CreateAgentProjectModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onProjectCreated={handleProjectCreated}

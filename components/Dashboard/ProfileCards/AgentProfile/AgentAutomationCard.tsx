@@ -7,7 +7,7 @@ import {
   getAutomationServiceInfo,
   getToolsExpertiseInfo,
 } from "@/lib/expertise-utils";
-import { AutomationExpertiseEditModal } from "../Edit/AutomationExpertiseEditModal";
+import { AgentAutomationExpertiseEditModal } from "@/components/Dashboard/Edit/AgentProfile/AgentAutomationExpertiseEditModal";
 import { cn } from "@/lib/utils";
 import { Easing, motion, Variants } from "framer-motion";
 import { ExpertiseItem } from "@/lib/expertise-utils";
@@ -60,7 +60,7 @@ export function ExpertiseCard({ title, items, className }: ExpertiseCardProps) {
               key={item.value}
               variants={itemChildVariants}
               className={cn(
-                "group flex flex-row items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-3 rounded-lg transition-all duration-300 text-base",
+                "group flex flex-row items-center gap-1 sm:gap-2 px-2 sm:px-2 py-1.5 sm:py-2 rounded-lg transition-all duration-300 text-base",
                 item.colors.bg,
                 item.colors.border,
                 item.colors.hover
@@ -75,7 +75,7 @@ export function ExpertiseCard({ title, items, className }: ExpertiseCardProps) {
                 )}
               >
                 <Icon
-                  className={cn("w-3 h-3 sm:w-5 sm:h-5", item.colors.text)}
+                  className={cn("w-3 h-3 sm:w-4 sm:h-4", item.colors.text)}
                   strokeWidth={1.5}
                 />
               </div>
@@ -116,8 +116,8 @@ export function GroupedExpertise({
 
   return (
     <div className={cn("space-y-1 sm:space-y-2", className)}>
-      <div className="flex flex-row items-center justify-between">
-        <h2 className="text-sm sm:text-lg font-semibold text-violet-200 flex items-center">
+      <div className="flex flex-row items-center justify-between ">
+        <h2 className="text-sm sm:text-base font-semibold text-violet-200 flex items-center">
           <Icon
             className={`inline-block mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 ${iconColor}`}
           />
@@ -137,7 +137,7 @@ export function GroupedExpertise({
   );
 }
 
-interface AutomationCardProps {
+interface AgentAutomationCardProps {
   automationExpertise: {
     automationServices: string[];
     toolsExpertise: string[];
@@ -146,11 +146,11 @@ interface AutomationCardProps {
   profileId: string;
 }
 
-export function AutomationCard({
+export function AgentAutomationCard({
   automationExpertise,
   isCurrentUser,
   profileId,
-}: AutomationCardProps) {
+}: AgentAutomationCardProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentExpertise, setCurrentExpertise] = useState(automationExpertise);
 
@@ -203,7 +203,7 @@ export function AutomationCard({
         </div>
       </GlassCard>
 
-      <AutomationExpertiseEditModal
+      <AgentAutomationExpertiseEditModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         initialData={{

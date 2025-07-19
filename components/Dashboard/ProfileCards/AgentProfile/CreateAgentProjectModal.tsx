@@ -16,19 +16,19 @@ import {
 } from "@/components/UI/select";
 import { AGENT_PROJECT_STATUSES } from "@/sanity/schemaTypes/constants";
 
-interface CreateProjectModalProps {
+interface CreateAgentProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
   onProjectCreated: (project: AgentProject) => void;
   profileId: string;
 }
 
-export function CreateProjectModal({
+export function CreateAgentProjectModal({
   isOpen,
   onClose,
   onProjectCreated,
   profileId,
-}: CreateProjectModalProps) {
+}: CreateAgentProjectModalProps) {
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");

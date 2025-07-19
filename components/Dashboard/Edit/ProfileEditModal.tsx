@@ -202,38 +202,6 @@ export function ProfileEditModal({
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute top-4 right-4 flex gap-2 z-20">
-                      <Button
-                        type="button"
-                        className="bg-black/40 hover:bg-black/60 text-white p-2 h-8 w-8 rounded-full"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // Share functionality
-                        }}
-                      >
-                        <Share2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        className="bg-black/40 hover:bg-black/60 text-white p-2 h-8 w-8 rounded-full"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // Message functionality
-                        }}
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        className="bg-black/40 hover:bg-black/60 text-white p-2 h-8 w-8 rounded-full"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // Follow functionality
-                        }}
-                      >
-                        <UserPlus className="h-4 w-4" />
-                      </Button>
-                    </div>
                   </>
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center group-hover:bg-white/10 transition-colors">
@@ -286,15 +254,15 @@ export function ProfileEditModal({
 
             {/* Basic Info Section */}
             <div className="space-y-4 p-6 border-t border-white/10">
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <User className="h-5 w-5" />
+              <h2 className="text-lg font-semibold text-violet-200 mb-4 flex items-center gap-2">
+                <User className="h-5 w-5 text-violet-400" />
                 Personal Details
               </h2>
 
               <div className="space-y-4 bg-white/5 p-4 rounded-lg">
                 <div className="grid grid-cols-[120px,1fr] items-center gap-4">
-                  <Label className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
+                  <Label className="flex items-center gap-2 text-violet-200 text-sm">
+                    <User className="h-4 w-4 text-violet-400" />
                     Full Name
                   </Label>
                   <Input
@@ -307,8 +275,8 @@ export function ProfileEditModal({
                 </div>
 
                 <div className="grid grid-cols-[120px,1fr] items-center gap-4">
-                  <Label className="flex items-center gap-2">
-                    <Tag className="h-4 w-4" />
+                  <Label className="flex items-center gap-2 text-violet-200 text-sm">
+                    <Tag className="h-4 w-4 text-violet-400 " />
                     Tagline
                   </Label>
                   <Input
@@ -321,8 +289,8 @@ export function ProfileEditModal({
                 </div>
 
                 <div className="grid grid-cols-[120px,1fr] items-center gap-4">
-                  <Label className="flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
+                  <Label className="flex items-center gap-2 text-violet-200 text-sm">
+                    <Globe className="h-4 w-4 text-violet-400" />
                     Website
                   </Label>
                   <Input
@@ -335,8 +303,8 @@ export function ProfileEditModal({
                 </div>
 
                 <div className="grid grid-cols-[120px,1fr] items-center gap-4">
-                  <Label className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
+                  <Label className="flex items-center gap-2 text-violet-200 text-sm">
+                    <MapPin className="h-4 w-4 text-violet-400" />
                     City/State
                   </Label>
                   <Input
@@ -356,8 +324,8 @@ export function ProfileEditModal({
                 </div>
 
                 <div className="grid grid-cols-[120px,1fr] items-center gap-4">
-                  <Label className="flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
+                  <Label className="flex items-center gap-2 text-violet-200 text-sm">
+                    <Globe className="h-4 w-4 text-violet-400" />
                     Country
                   </Label>
                   <Input
@@ -381,8 +349,8 @@ export function ProfileEditModal({
             {/* Social Links Section */}
             <div className="space-y-4 p-6 border-t border-white/10">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <Globe className="h-5 w-5" />
+                <h2 className="text-lg font-semibold text-violet-200 flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-violet-400 " />
                   Social Links
                 </h2>
                 <Button
@@ -460,14 +428,14 @@ export function ProfileEditModal({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="bg-white/5 border-white/10 text-white hover:bg-white/10 p-2"
+              className="px-6 py-2 text-violet-200 bg-transparent border-violet-700/50 hover:bg-violet-900/50"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-blue-500 hover:bg-blue-600 text-white p-2 min-w-[120px] flex items-center justify-center"
+              className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white"
             >
               {isSubmitting ? (
                 <>
@@ -475,7 +443,7 @@ export function ProfileEditModal({
                   Saving...
                 </>
               ) : (
-                "Save Changes"
+                "Save"
               )}
             </Button>
           </div>

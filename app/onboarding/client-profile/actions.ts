@@ -8,6 +8,7 @@ import {
   processProjectImagesAsync,
 } from "@/lib/ImageUploads";
 import { ensureUserDocumentExists } from "@/lib/UserProfiles";
+import { ClientProject } from "@/types";
 export interface FormState {
   success: boolean;
   message: string;
@@ -328,6 +329,296 @@ export async function saveClientProfile(
     return {
       success: false,
       message: `Failed to save your profile: ${error.message || "Unknown error"}`,
+    };
+  }
+}
+
+interface UpdateClientProfileDetailsParams {
+  profileId: string;
+  automationNeeds?: {
+    automationRequirements: string[];
+    currentTools: string[];
+  };
+  project?: ClientProject;
+}
+
+export async function updateClientProfileDetails(
+  params: UpdateClientProfileDetailsParams
+): Promise<FormState> {
+  try {
+    const { profileId, ...updateData } = params;
+
+    console.log("=== DEBUG: Raw input data ===");
+    console.log("profileId:", profileId);
+    console.log("updateData:", JSON.stringify(updateData, null, 2));
+
+    const { userId } = await auth();
+    if (!userId) {
+      return {
+        success: false,
+        message: "Authentication required. Please sign in.",
+      };
+    }
+
+    const existingProfile = await backendClient.getDocument(profileId);
+    if (!existingProfile) {
+      return {
+        success: false,
+        message: "Client profile not found.",
+      };
+    }
+
+    console.log("=== DEBUG: Existing Profile ===");
+    console.log(JSON.stringify(existingProfile, null, 2));
+
+    // Create mutation with proper structure
+    const mutations: any = {};
+
+    // Update automation needs if provided
+    if (updateData.automationNeeds !== undefined) {
+      mutations.automationNeeds = {
+        _type: "automationNeeds",
+        automationRequirements:
+          updateData.automationNeeds.automationRequirements,
+        currentTools: updateData.automationNeeds.currentTools,
+      };
+    }
+
+    // Update project if provided
+    if (updateData.project !== undefined) {
+      const existingProjects = existingProfile.projects || [];
+      const projectIndex = existingProjects.findIndex(
+        (p: any) => p._id === updateData.project?._id
+      );
+
+      if (projectIndex !== -1) {
+        // Update existing project
+        mutations[`projects[${projectIndex}]`] = {
+          _type: "clientProject",
+          ...updateData.project,
+        };
+      } else {
+        // For new projects, we'll use append instead of direct mutation
+        mutations.projects = mutations.projects || [];
+        mutations.projects.push({
+          _type: "clientProject",
+          ...updateData.project,
+        });
+      }
+    }
+
+    mutations.updatedAt = new Date().toISOString();
+
+    console.log("=== DEBUG: Final mutations ===");
+    console.log(JSON.stringify(mutations, null, 2));
+
+    // Update the document
+    try {
+      const result = await backendClient
+        .patch(profileId)
+        .set(mutations)
+        .commit();
+
+      console.log("=== DEBUG: Update result ===");
+      console.log(JSON.stringify(result, null, 2));
+
+      // Verify the update by fetching the document again
+      const updatedDoc = await backendClient.getDocument(profileId);
+      console.log("=== DEBUG: Updated document ===");
+      console.log(JSON.stringify(updatedDoc, null, 2));
+
+      // FORCE STUDIO TO REFRESH by invalidating the document
+      try {
+        await backendClient
+          .patch(profileId)
+          .set({ _updatedAt: new Date().toISOString() })
+          .commit();
+      } catch (e) {
+        console.log("Studio refresh attempt failed (non-critical):", e);
+      }
+
+      // Aggressive cache clearing
+      revalidatePath("/dashboard", "layout");
+      revalidatePath(`/dashboard/${userId}`, "layout");
+      revalidatePath("/dashboard", "page");
+      revalidatePath(`/dashboard/${userId}`, "page");
+      revalidatePath("/studio", "layout");
+      revalidatePath("/studio", "page");
+
+      return {
+        success: true,
+        message:
+          "Profile updated successfully. Please refresh Sanity Studio to see changes.",
+      };
+    } catch (error: any) {
+      console.error("=== ERROR: Sanity Update Failed ===");
+      console.error("Error details:", error);
+      console.error("Error response:", error.response);
+      console.error("Error message:", error.message);
+
+      return {
+        success: false,
+        message: `Update failed: ${error.message || "Unknown error"}`,
+      };
+    }
+  } catch (error: any) {
+    console.error("=== ERROR: General Error ===", error);
+    return {
+      success: false,
+      message: `Update failed: ${error.message || "Unknown error"}`,
+    };
+  }
+}
+
+export async function createClientProject(
+  profileId: string,
+  projectData: ClientProject
+): Promise<FormState> {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return {
+        success: false,
+        message: "Authentication required. Please sign in.",
+      };
+    }
+
+    const existingProfile = await backendClient.getDocument(profileId);
+    if (!existingProfile) {
+      return {
+        success: false,
+        message: "Profile not found.",
+      };
+    }
+
+    // Create project document
+    const clientProjectData = {
+      _type: "clientProject",
+      title: projectData.title,
+      description: projectData.description,
+      businessDomain: projectData.businessDomain,
+      painPoints: projectData.painPoints,
+      budgetRange: projectData.budgetRange,
+      timeline: projectData.timeline,
+      complexity: projectData.complexity,
+      engagementType: projectData.engagementType,
+      teamSize: projectData.teamSize,
+      experienceLevel: projectData.experienceLevel,
+      startDate: projectData.startDate,
+      priority: projectData.priority,
+      status: projectData.status || "draft",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    console.log("Creating project document:", clientProjectData);
+    const projectDoc = await backendClient.create(clientProjectData);
+    console.log(`Project document created: ${projectDoc._id}`);
+
+    // Add the project reference to the client profile
+    try {
+      const projectKey = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      await backendClient
+        .patch(profileId)
+        .setIfMissing({ projects: [] })
+        .append("projects", [
+          {
+            _type: "reference",
+            _key: projectKey,
+            _ref: projectDoc._id,
+          },
+        ])
+        .set({ updatedAt: new Date().toISOString() })
+        .commit();
+
+      console.log(
+        `Successfully added project reference ${projectDoc._id} to client profile ${profileId}`
+      );
+
+      // Force refresh of Sanity Studio
+      try {
+        await backendClient
+          .patch(profileId)
+          .set({ _studioRefresh: new Date().toISOString() })
+          .commit();
+      } catch (e) {
+        console.log("Studio refresh attempt failed (non-critical):", e);
+      }
+
+      // Aggressive cache clearing
+      revalidatePath("/dashboard", "layout");
+      revalidatePath(`/dashboard/${userId}`, "layout");
+      revalidatePath("/dashboard", "page");
+      revalidatePath(`/dashboard/${userId}`, "page");
+      revalidatePath("/studio", "layout");
+      revalidatePath("/studio", "page");
+
+      return {
+        success: true,
+        message: "Project created successfully.",
+      };
+    } catch (patchError: any) {
+      console.error(
+        "Error updating client profile with project reference:",
+        patchError
+      );
+
+      // Clean up the created project if the patch fails
+      try {
+        await backendClient.delete(projectDoc._id);
+        console.log(
+          `Cleaned up project ${projectDoc._id} due to profile update failure`
+        );
+      } catch (deleteError) {
+        console.error("Failed to clean up project:", deleteError);
+      }
+
+      throw new Error(
+        `Failed to link project to client profile: ${patchError.message}`
+      );
+    }
+  } catch (error: any) {
+    console.error("Error creating project:", error);
+    return {
+      success: false,
+      message: `Failed to create project: ${error.message || "Unknown error"}`,
+    };
+  }
+}
+
+export async function deleteClientProject(
+  profileId: string,
+  projectId: string
+) {
+  try {
+    const clientProfile = await backendClient.getDocument(profileId);
+    if (!clientProfile) {
+      return {
+        success: false,
+        message: "Client profile not found.",
+      };
+    }
+    const updatedProfile = await backendClient
+      .patch(profileId)
+      .set({
+        projects: clientProfile.projects.filter(
+          (p: any) => p._id !== projectId
+        ),
+      })
+      .commit();
+
+    console.log("Updated client profile:", updatedProfile);
+
+    return {
+      success: true,
+      message: "Project deleted successfully.",
+    };
+  } catch (error: any) {
+    console.error("Error deleting project:", error);
+    return {
+      success: false,
+      message: `Failed to delete project: ${error.message || "Unknown error"}`,
     };
   }
 }

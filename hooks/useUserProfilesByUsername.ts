@@ -34,6 +34,18 @@ export interface UserProfilesByUsername {
       responseTime: string;
       availabilityHours: string;
     };
+    pricing?: {
+      hourlyRateRange: string;
+      minimumProjectBudget: string;
+      preferredPaymentMethods: string[];
+    };
+    mustHaveRequirements?: {
+      experience: string;
+      dealBreakers: string[];
+      industryDomain: string[];
+      customIndustry?: string[];
+      requirements: string[];
+    };
     projects?: Array<{
       _id: string;
       title: string;
@@ -144,6 +156,18 @@ export function useUserProfilesByUsername(
             timeZone,
             responseTime,
             availabilityHours
+          },
+          pricing {
+            hourlyRateRange,
+            minimumProjectBudget,
+            preferredPaymentMethods
+          },
+          mustHaveRequirements {
+            experience,
+            dealBreakers,
+            industryDomain,
+            customIndustry,
+            requirements
           },
           projects[]-> {
             _id,

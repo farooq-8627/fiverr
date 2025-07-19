@@ -1,14 +1,14 @@
 import React, { useState } from "react";
-import { GlassModal } from "../../UI/GlassModal";
-import { Button } from "../../UI/button";
-import { Label } from "../../UI/label";
+import { GlassModal } from "@/components/UI/GlassModal";
+import { Button } from "@/components/UI/button";
+import { Label } from "@/components/UI/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../UI/select";
+} from "@/components/UI/select";
 import { DollarSign, Clock, Briefcase, Users, Scale } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { updateAgentProfileDetails } from "@/app/onboarding/agent-profile/actions";

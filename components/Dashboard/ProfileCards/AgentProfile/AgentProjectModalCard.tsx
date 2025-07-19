@@ -6,7 +6,7 @@ import { AgentProject } from "@/types";
 import { Pencil, Rocket, Tag, Trash } from "lucide-react";
 import { Badge } from "@/components/UI/badge";
 
-interface ProjectCardProps {
+interface AgentProjectModalCardProps {
   project: AgentProject;
   onDelete?: (id: string) => void;
   onEdit?: (project: AgentProject) => void;
@@ -14,12 +14,12 @@ interface ProjectCardProps {
   onClose: () => void;
 }
 
-const ProjectCardContent = ({
+const AgentProjectModalCardContent = ({
   project,
   onDelete,
   onEdit,
   onClose,
-}: ProjectCardProps) => {
+}: AgentProjectModalCardProps) => {
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onDelete) {
@@ -110,13 +110,13 @@ const ProjectCardContent = ({
       </div>
 
       {/* Technologies */}
-      <div className="relative overflow-x-auto hide-scrollbar">
-        <div className="flex flex-wrap gap-2">
+      <div className="relative overflow-x-auto">
+        <div className="flex gap-2 no-wrap overflow-x-auto scrollbar-hide pb-2">
           {project.technologies?.map((tech, idx) => (
             <Badge
               key={`${tech}-${idx}`}
               variant="outline"
-              className="bg-violet-500/10 text-violet-400 border-violet-500/20"
+              className="bg-violet-500/10 text-violet-400 border-violet-500/20 whitespace-nowrap"
             >
               <Tag className="mr-1 h-3 w-3" />
               {tech}
@@ -128,16 +128,16 @@ const ProjectCardContent = ({
   );
 };
 
-export function ProjectModalCard({
+export function AgentProjectModalCard({
   project,
   onDelete,
   onEdit,
   isOpen,
   onClose,
-}: ProjectCardProps) {
+}: AgentProjectModalCardProps) {
   return (
     <GlassModal isOpen={isOpen} onClose={onClose}>
-      <ProjectCardContent
+      <AgentProjectModalCardContent
         project={project}
         onDelete={onDelete}
         onEdit={onEdit}
