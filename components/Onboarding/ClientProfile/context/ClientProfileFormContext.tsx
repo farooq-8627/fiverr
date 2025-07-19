@@ -143,7 +143,7 @@ export function ClientProfileFormProvider({
       formData.append("engagementType", data.engagementType || "");
       formData.append("teamSizeRequired", data.teamSizeRequired || "");
       formData.append("experienceLevel", data.experienceLevel || "");
-
+      formData.append("priority", data.priority || "");
       // Show loading toast
       toast.loading("Submitting your profile...");
       console.log(

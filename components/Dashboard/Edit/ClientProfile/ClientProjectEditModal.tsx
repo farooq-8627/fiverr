@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/UI/select";
 import { useToast } from "@/hooks/useToast";
-import { updateClientProfileDetails } from "@/app/onboarding/client-profile/actions";
+import { updateClientProject } from "@/app/onboarding/client-profile/actions";
 import { ClientProject } from "@/types";
 import {
   INDUSTRY_DOMAINS,
@@ -38,13 +38,30 @@ export function ClientProjectEditModal({
   isOpen,
   onClose,
   project,
-  profileId,
   onUpdate,
+  profileId,
 }: ClientProjectEditModalProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Initialize form with only the fields we need
   const [formData, setFormData] = useState({
-    ...project,
+    _id: project._id,
+    title: project.title,
+    description: project.description,
+    businessDomain: project.businessDomain,
+    painPoints: project.painPoints,
+    budgetRange: project.budgetRange,
+    timeline: project.timeline,
+    complexity: project.complexity,
+    engagementType: project.engagementType,
+    teamSize: project.teamSize,
+    experienceLevel: project.experienceLevel,
+    startDate: project.startDate,
+    priority: project.priority,
+    status: project.status,
+    createdAt: project.createdAt,
+    updatedAt: project.updatedAt,
   });
 
   const handleChange = (field: string, value: string) => {
@@ -59,10 +76,14 @@ export function ClientProjectEditModal({
     setIsLoading(true);
 
     try {
-      const response = await updateClientProfileDetails({
+      console.log("Form data:", formData);
+
+      const response = await updateClientProject({
         profileId: profileId,
-        project: formData,
+        project: formData as ClientProject,
       });
+
+      console.log("Response:", response);
 
       if (response.success) {
         onUpdate(formData);
@@ -97,10 +118,10 @@ export function ClientProjectEditModal({
       title="Edit Project"
       size="xl"
     >
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-6 max-h-[calc(80vh-8rem)] overflow-y-auto p-1">
+      <form onSubmit={handleSubmit} className="flex flex-col h-[75vh]">
+        <div className="flex-1 overflow-y-auto pr-2">
           {/* Basic Information */}
-          <div className="space-y-4 p-4 bg-white/5 rounded-lg">
+          <div className="space-y-4 p-4 bg-white/5 rounded-lg mb-4">
             <h3 className="text-lg font-medium text-violet-200">
               Basic Information
             </h3>
@@ -343,20 +364,20 @@ export function ClientProjectEditModal({
         </div>
 
         {/* Fixed Footer */}
-        <div className="flex justify-end space-x-4 pt-4 mt-6 border-t border-violet-800/30">
+        <div className="sticky bottom-0 flex justify-end gap-3 pt-4 mt-4 border-t border-violet-800/30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <Button
             type="button"
             variant="outline"
             onClick={onClose}
             disabled={isLoading}
-            className="px-6 py-2 text-violet-200 bg-transparent border-violet-700/50 hover:bg-violet-900/50"
+            className="bg-transparent border-violet-700/50 hover:bg-violet-900/50"
           >
             Cancel
           </Button>
           <Button
             type="submit"
             disabled={isLoading}
-            className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white"
+            className="bg-violet-600 hover:bg-violet-700 text-white"
           >
             {isLoading ? "Saving..." : "Save Changes"}
           </Button>

@@ -17,6 +17,7 @@ import {
   ENGAGEMENT_TYPES,
   TEAM_SIZES,
   EXPERIENCE_LEVELS,
+  PRIORITY_LEVELS,
 } from "@/sanity/schemaTypes/constants";
 import { convertToSelectFormat } from "@/lib/constants-utils";
 import {
@@ -63,6 +64,7 @@ const complexityOptions = convertToSelectFormat(PROJECT_COMPLEXITY);
 const engagementTypes = convertToSelectFormat(ENGAGEMENT_TYPES);
 const teamSizes = convertToSelectFormat(TEAM_SIZES);
 const experienceLevels = convertToSelectFormat(EXPERIENCE_LEVELS);
+const priorityOptions = convertToSelectFormat(PRIORITY_LEVELS);
 
 export function ProjectScopeDetails() {
   const { handleNext, handlePrev, handleSkip } = useClientProfileForm();
@@ -80,7 +82,7 @@ export function ProjectScopeDetails() {
   const engagementType = formData?.engagementType || "";
   const teamSizeRequired = formData?.teamSizeRequired || "";
   const experienceLevel = formData?.experienceLevel || "";
-
+  const priority = formData?.priority || "";
   // Validate and proceed to next step
   const validateAndProceed = () => {
     if (!budgetRange) {
@@ -100,6 +102,11 @@ export function ProjectScopeDetails() {
 
     if (!engagementType) {
       toast.error("Please select an engagement type");
+      return;
+    }
+
+    if (!priority) {
+      toast.error("Please select a priority");
       return;
     }
 
@@ -288,6 +295,27 @@ export function ProjectScopeDetails() {
               {experienceLevels.map((level) => (
                 <SelectItem key={level.value} value={level.value}>
                   {level.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </motion.div>
+
+        {/* Priority */}
+        <motion.div variants={itemVariants}>
+          <Select
+            value={priority}
+            onValueChange={(value) =>
+              setValue("priority", value, { shouldValidate: true })
+            }
+          >
+            <SelectTrigger className="w-full bg-white/5 text-white">
+              <SelectValue placeholder="Select your priority" />
+            </SelectTrigger>
+            <SelectContent>
+              {priorityOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectContent>

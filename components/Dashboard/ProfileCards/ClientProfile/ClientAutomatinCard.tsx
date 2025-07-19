@@ -3,13 +3,15 @@ import { Button } from "@/components/UI/button";
 import { Pencil, Zap, Wrench } from "lucide-react";
 import { GlassCard } from "@/components/UI/GlassCard";
 import {
-  groupExpertiseByCategory,
-  getAutomationServiceInfo,
-  getToolsExpertiseInfo,
+  groupClientExpertiseByCategory,
   getClientAutomationNeedsInfo,
   getClientToolsInfo,
 } from "@/lib/expertise-utils";
-import { ClientAutomationExpertiseEditModal } from "../Edit/ClientProfile/ClientAutomationExpertiseEditModal";
+import {
+  CLIENT_AUTOMATION_NEEDS,
+  CLIENT_CURRENT_TOOLS,
+} from "@/sanity/schemaTypes/constants";
+import { ClientAutomationExpertiseEditModal } from "@/components/Dashboard/Edit/ClientProfile/ClientAutomationExpertiseEditModal";
 import { cn } from "@/lib/utils";
 import { Easing, motion, Variants } from "framer-motion";
 import { ExpertiseItem } from "@/lib/expertise-utils";
@@ -128,11 +130,7 @@ export function GroupedExpertise({
       </div>
       <div className="flex flex-row gap-1 sm:gap-2 overflow-x-auto no-scrollbar">
         {groups.map(([category, items]) => (
-          <ExpertiseCard
-            key={category}
-            title={category.charAt(0).toUpperCase() + category.slice(1)}
-            items={items}
-          />
+          <ExpertiseCard key={category} title={category} items={items} />
         ))}
       </div>
     </div>
@@ -182,8 +180,8 @@ export function ClientAutomationCard({
 
           {/* Services Section */}
           <GroupedExpertise
-            title="Automation Needs "
-            groups={groupExpertiseByCategory(
+            title="Automation Needs"
+            groups={groupClientExpertiseByCategory(
               [...currentExpertise.automationRequirements],
               getClientAutomationNeedsInfo
             )}
@@ -194,7 +192,7 @@ export function ClientAutomationCard({
           {/* Tools Section */}
           <GroupedExpertise
             title="Current Tools"
-            groups={groupExpertiseByCategory(
+            groups={groupClientExpertiseByCategory(
               [...currentExpertise.currentTools],
               getClientToolsInfo
             )}

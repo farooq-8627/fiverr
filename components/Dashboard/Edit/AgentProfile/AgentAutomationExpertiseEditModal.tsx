@@ -123,6 +123,7 @@ export function AgentAutomationExpertiseEditModal({
       onCancel={onClose}
       isLoading={isLoading}
       title={title}
+      userType="agent"
     />
   );
 }

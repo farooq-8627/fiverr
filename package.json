@@ -11,7 +11,9 @@
     "sync-profiles": "ts-node scripts/sync-profiles-to-users.ts",
     "migrate:user-roles": "ts-node scripts/migrate-user-roles.ts",
     "migrate-profiles": "ts-node scripts/migrate-profile-ids.ts",
-    "delete-all-documents": "ts-node scripts/deleteAllDocuments.ts"
+    "delete-all-documents": "ts-node scripts/deleteAllDocuments.ts",
+    "delete-client-profiles": "ts-node scripts/delete-client-profiles.ts",
+    "delete-client-projects": "ts-node scripts/delete-client-projects.ts"
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^4.13.23",
@@ -80,7 +82,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@sanity/client": "^7.6.0",
+    "@sanity/client": "^7.8.0",
     "dotenv": "^17.2.0",
     "partykit": "0.0.115",
     "tailwindcss-animate": "^1.0.7",

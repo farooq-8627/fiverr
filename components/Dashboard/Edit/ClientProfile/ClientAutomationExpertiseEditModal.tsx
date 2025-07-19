@@ -123,6 +123,7 @@ export function ClientAutomationExpertiseEditModal({
       title={title}
       automationTitle="Automation Needs"
       toolsTitle="Current Tools"
+      userType="client"
     />
   );
 }

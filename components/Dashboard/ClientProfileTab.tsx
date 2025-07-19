@@ -1,7 +1,8 @@
 import React from "react";
 import { ClientProfile } from "@/types/index";
-import { ClientAutomationCard } from "@/components/Dashboard/ProfileCards/ClientAutomatinCard";
-import { ClientProjectCard } from "./ProfileCards/ClientProjectCard";
+import { ClientAutomationCard } from "./ProfileCards/ClientProfile/ClientAutomatinCard";
+import { ClientProjectCard } from "@/components/Dashboard/ProfileCards/ClientProfile/ClientProjectCard";
+import { RequirementsCard } from "@/components/Dashboard/ProfileCards/ClientProfile/RequirementsCard";
 
 interface ClientProfileTabProps {
   profiles: ClientProfile[];
@@ -40,11 +41,19 @@ export function ClientProfileTab({
         profileId={profile._id}
       />
 
-      {/* <RequirementsCard
-        requirements={profile.mustHaveRequirements}
+      <RequirementsCard
+        mustHaveRequirements={
+          profile.mustHaveRequirements || {
+            experience: "",
+            dealBreakers: [],
+            industryDomain: [],
+            requirements: [],
+            customIndustry: [],
+          }
+        }
         isCurrentUser={isCurrentUser ?? false}
-        profileId={profile._id} */}
-      {/* /> */}
+        profileId={profile._id}
+      />
     </div>
   );
 }

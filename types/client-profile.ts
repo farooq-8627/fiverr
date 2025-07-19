@@ -92,6 +92,7 @@ export const ClientProfileSchema = z.object({
   engagementType: z.string().min(1, "Engagement type is required"),
   teamSizeRequired: z.string().min(1, "Team size required is required"),
   experienceLevel: z.string().min(1, "Experience level is required"),
+  priority: z.string().min(1, "Priority is required"),
 });
 
 export type ClientProfile = z.infer<typeof ClientProfileSchema>;

@@ -282,21 +282,28 @@ export const LANGUAGE_OPTIONS = [
 
 // Client Automation Needs options
 export const CLIENT_AUTOMATION_NEEDS = [
-  { title: "Lead Generation & Nurturing", value: "lead_gen" },
-  { title: "Email Marketing Campaigns", value: "email" },
-  { title: "Social Media Management", value: "social" },
-  { title: "E-commerce Operations", value: "ecommerce" },
-  { title: "Data Collection & Reporting", value: "data" },
-  { title: "Workflow Automation", value: "workflow" },
-  { title: "Others", value: "others" },
+  { title: "Process Automation", value: "processAutomation" },
+  { title: "Data Integration", value: "dataIntegration" },
+  { title: "Workflow Optimization", value: "workflowOptimization" },
+  { title: "Custom Software Development", value: "customSoftware" },
+  { title: "API Integration", value: "apiIntegration" },
+  { title: "Business Intelligence", value: "businessIntelligence" },
+  { title: "Legacy System Modernization", value: "legacyModernization" },
+  { title: "Cloud Migration", value: "cloudMigration" },
+  { title: "Digital Transformation", value: "digitalTransformation" },
+  { title: "Automation Strategy", value: "automationStrategy" },
 ];
 
 // Client Current Tools options
 export const CLIENT_CURRENT_TOOLS = [
-  { title: "CRM (HubSpot, Salesforce, Pipedrive)", value: "crm" },
-  { title: "Email (Mailchimp, Klaviyo, ActiveCampaign)", value: "email" },
-  { title: "E-commerce (Shopify, WooCommerce, Amazon)", value: "ecommerce" },
-  { title: "Other Business Tools", value: "other" },
+  { title: "Excel/Spreadsheets", value: "excel" },
+  { title: "Email Tools", value: "email" },
+  { title: "CRM Systems", value: "crm" },
+  { title: "Project Management", value: "projectManagement" },
+  { title: "ERP Systems", value: "erp" },
+  { title: "Communication Tools", value: "communication" },
+  { title: "Document Management", value: "documentManagement" },
+  { title: "Custom Software", value: "customSoftware" },
 ];
 
 // Agent Automation Services options

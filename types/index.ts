@@ -64,6 +64,13 @@ export interface ClientProfile {
     meetingAvailability: string;
   };
   projects?: ClientProject[];
+  mustHaveRequirements?: {
+    experience: string;
+    dealBreakers: string[];
+    industryDomain: string[];
+    customIndustry?: string[];
+    requirements: string[];
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -100,28 +107,17 @@ export interface ClientProject {
   _id: string;
   title: string;
   description: string;
-  businessDomain?: string;
-  painPoints?: string;
-  budgetRange?: string;
-  timeline?: string;
-  complexity?: string;
-  engagementType?: string;
-  teamSize?: string;
-  experienceLevel?: string;
-  startDate?: string;
-  priority?: string;
-  assignedAgents?: Array<{
-    _ref: string;
-    _type: "reference";
-  }>;
-  status:
-    | "draft"
-    | "planning"
-    | "openProposals"
-    | "inProgress"
-    | "completed"
-    | "onHold"
-    | "cancelled";
+  businessDomain: string;
+  painPoints: string;
+  budgetRange: string;
+  timeline: string;
+  complexity: string;
+  engagementType: string;
+  teamSize: string;
+  experienceLevel: string;
+  startDate: string;
+  priority: string;
+  status: string;
   createdAt: string;
   updatedAt: string;
 }

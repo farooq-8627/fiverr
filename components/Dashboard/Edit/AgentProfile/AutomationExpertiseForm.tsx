@@ -5,10 +5,14 @@ import { Zap, Wrench } from "lucide-react";
 import {
   AGENT_AUTOMATION_SERVICES,
   AGENT_TOOLS_EXPERTISE,
+  CLIENT_AUTOMATION_NEEDS,
+  CLIENT_CURRENT_TOOLS,
 } from "@/sanity/schemaTypes/constants";
 import {
   getAutomationServiceInfo,
   getToolsExpertiseInfo,
+  getClientAutomationNeedsInfo,
+  getClientToolsInfo,
 } from "@/lib/expertise-utils";
 import { GlassModal } from "@/components/UI/GlassModal";
 
@@ -25,6 +29,7 @@ interface AutomationExpertiseFormProps {
   title?: string;
   automationTitle?: string;
   toolsTitle?: string;
+  userType: "agent" | "client";
 }
 
 export function AutomationExpertiseForm({
@@ -37,19 +42,54 @@ export function AutomationExpertiseForm({
   onSubmit,
   onCancel,
   isLoading,
-  title = "Edit Automation Expertise",
-  automationTitle = "Automation Services",
-  toolsTitle = "Tools Expertise",
+  userType,
+  title = userType === "agent"
+    ? "Edit Automation Expertise"
+    : "Edit Automation Needs",
+  automationTitle = userType === "agent"
+    ? "Automation Services"
+    : "Automation Requirements",
+  toolsTitle = userType === "agent" ? "Tools Expertise" : "Current Tools",
 }: AutomationExpertiseFormProps) {
+  // Determine which options to use based on userType
+  const automationOptions =
+    userType === "agent" ? AGENT_AUTOMATION_SERVICES : CLIENT_AUTOMATION_NEEDS;
+  const toolsOptions =
+    userType === "agent" ? AGENT_TOOLS_EXPERTISE : CLIENT_CURRENT_TOOLS;
+
+  // Get the appropriate info getter function based on userType
+  const getAutomationInfo =
+    userType === "agent"
+      ? getAutomationServiceInfo
+      : getClientAutomationNeedsInfo;
+  const getToolInfo =
+    userType === "agent" ? getToolsExpertiseInfo : getClientToolsInfo;
+
+  // Determine the color scheme based on userType
+  const colorScheme =
+    userType === "agent"
+      ? {
+          primary: "violet",
+          secondary: "indigo",
+        }
+      : {
+          primary: "blue",
+          secondary: "cyan",
+        };
+
   return (
     <GlassModal
       isOpen={isOpen}
       onClose={onClose}
       size="xl"
       title={title}
-      description="Edit your automation services and tools expertise"
+      description={
+        userType === "agent"
+          ? "Edit your automation services and tools expertise"
+          : "Edit your automation requirements and current tools"
+      }
     >
-      <div className="space-y-8 p-2">
+      <div className="space-y-8 p-2 h-[75vh] overflow-y-auto">
         <div className="space-y-6">
           <div>
             <Label className="text-lg font-semibold mb-2 flex items-center text-violet-200">
@@ -57,8 +97,8 @@ export function AutomationExpertiseForm({
               {automationTitle}
             </Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {AGENT_AUTOMATION_SERVICES.map((service) => {
-                const info = getAutomationServiceInfo(service.value);
+              {automationOptions.map((service) => {
+                const info = getAutomationInfo(service.value);
                 return (
                   <div
                     key={service.value}
@@ -89,8 +129,8 @@ export function AutomationExpertiseForm({
               {toolsTitle}
             </Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {AGENT_TOOLS_EXPERTISE.map((tool) => {
-                const info = getToolsExpertiseInfo(tool.value);
+              {toolsOptions.map((tool) => {
+                const info = getToolInfo(tool.value);
                 return (
                   <div
                     key={tool.value}
@@ -115,26 +155,25 @@ export function AutomationExpertiseForm({
             </div>
           </div>
         </div>
-
-        <div className="flex justify-end space-x-4 pt-4 border-t border-violet-800/30">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isLoading}
-            className="px-6 py-2 text-violet-200 bg-transparent border-violet-700/50 hover:bg-violet-900/50"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={onSubmit}
-            disabled={isLoading}
-            className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white"
-          >
-            {isLoading ? "Saving..." : "Save"}
-          </Button>
-        </div>
+      </div>
+      <div className="flex justify-end space-x-4 pt-4 border-t border-violet-800/30 mt-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isLoading}
+          className="px-6 py-2 text-violet-200 bg-transparent border-violet-700/50 hover:bg-violet-900/50"
+        >
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          onClick={onSubmit}
+          disabled={isLoading}
+          className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white"
+        >
+          {isLoading ? "Saving..." : "Save"}
+        </Button>
       </div>
     </GlassModal>
   );

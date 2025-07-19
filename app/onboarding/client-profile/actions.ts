@@ -88,6 +88,7 @@ export async function saveClientProfile(
       engagementType: formData.get("engagementType") as string,
       teamSize: formData.get("teamSizeRequired") as string,
       experienceLevel: formData.get("experienceLevel") as string,
+      priority: formData.get("priority") as string,
       status: "draft",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -339,7 +340,13 @@ interface UpdateClientProfileDetailsParams {
     automationRequirements: string[];
     currentTools: string[];
   };
-  project?: ClientProject;
+  mustHaveRequirements?: {
+    experience: string;
+    dealBreakers: string[];
+    industryDomain: string[];
+    customIndustry?: string[];
+    requirements: string[];
+  };
 }
 
 export async function updateClientProfileDetails(
@@ -384,27 +391,15 @@ export async function updateClientProfileDetails(
       };
     }
 
-    // Update project if provided
-    if (updateData.project !== undefined) {
-      const existingProjects = existingProfile.projects || [];
-      const projectIndex = existingProjects.findIndex(
-        (p: any) => p._id === updateData.project?._id
-      );
-
-      if (projectIndex !== -1) {
-        // Update existing project
-        mutations[`projects[${projectIndex}]`] = {
-          _type: "clientProject",
-          ...updateData.project,
-        };
-      } else {
-        // For new projects, we'll use append instead of direct mutation
-        mutations.projects = mutations.projects || [];
-        mutations.projects.push({
-          _type: "clientProject",
-          ...updateData.project,
-        });
-      }
+    if (updateData.mustHaveRequirements !== undefined) {
+      mutations.mustHaveRequirements = {
+        _type: "mustHaveRequirements",
+        experience: updateData.mustHaveRequirements.experience,
+        dealBreakers: updateData.mustHaveRequirements.dealBreakers,
+        industryDomain: updateData.mustHaveRequirements.industryDomain,
+        customIndustry: updateData.mustHaveRequirements.customIndustry,
+        requirements: updateData.mustHaveRequirements.requirements,
+      };
     }
 
     mutations.updatedAt = new Date().toISOString();
@@ -470,18 +465,16 @@ export async function updateClientProfileDetails(
   }
 }
 
-export async function createClientProject(
-  profileId: string,
-  projectData: ClientProject
+interface UpdateClientProjectParams {
+  profileId: string;
+  project: ClientProject;
+}
+
+export async function updateClientProject(
+  params: UpdateClientProjectParams
 ): Promise<FormState> {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      return {
-        success: false,
-        message: "Authentication required. Please sign in.",
-      };
-    }
+    const { profileId, project } = params;
 
     const existingProfile = await backendClient.getDocument(profileId);
     if (!existingProfile) {
@@ -491,98 +484,137 @@ export async function createClientProject(
       };
     }
 
+    // Check if the project reference exists in the profile's projects array
+    const existingProjectRef = existingProfile.projects?.find(
+      (p: any) => p._ref === project._id
+    );
+
+    if (!existingProjectRef) {
+      return {
+        success: false,
+        message: "Project not found in profile.",
+      };
+    }
+
+    // Only include fields that are defined in the clientProject schema
+    const projectFields = {
+      title: project.title,
+      description: project.description,
+      businessDomain: project.businessDomain,
+      painPoints: project.painPoints,
+      budgetRange: project.budgetRange,
+      timeline: project.timeline,
+      complexity: project.complexity,
+      engagementType: project.engagementType,
+      teamSize: project.teamSize,
+      experienceLevel: project.experienceLevel,
+      startDate: project.startDate,
+      priority: project.priority,
+      status: project.status,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Remove any undefined or null values
+    const cleanedProjectFields = Object.fromEntries(
+      Object.entries(projectFields).filter(([_, value]) => value != null)
+    );
+
+    const updatedProject = await backendClient
+      .patch(project._id)
+      .set(cleanedProjectFields)
+      .commit();
+
+    console.log("Updated project:", updatedProject);
+
+    return {
+      success: true,
+      message: "Project updated successfully.",
+    };
+  } catch (error: any) {
+    console.error("Error updating client project:", error);
+    return {
+      success: false,
+      message: `Failed to update project: ${error.message || "Unknown error"}`,
+    };
+  }
+}
+
+export async function createClientProject(
+  profileId: string,
+  project: ClientProject
+) {
+  try {
     // Create project document
-    const clientProjectData = {
+    const projectDoc = {
       _type: "clientProject",
-      title: projectData.title,
-      description: projectData.description,
-      businessDomain: projectData.businessDomain,
-      painPoints: projectData.painPoints,
-      budgetRange: projectData.budgetRange,
-      timeline: projectData.timeline,
-      complexity: projectData.complexity,
-      engagementType: projectData.engagementType,
-      teamSize: projectData.teamSize,
-      experienceLevel: projectData.experienceLevel,
-      startDate: projectData.startDate,
-      priority: projectData.priority,
-      status: projectData.status || "draft",
+      title: project.title,
+      description: project.description,
+      businessDomain: project.businessDomain,
+      painPoints: project.painPoints,
+      budgetRange: project.budgetRange,
+      timeline: project.timeline,
+      complexity: project.complexity,
+      engagementType: project.engagementType,
+      teamSize: project.teamSize,
+      experienceLevel: project.experienceLevel,
+      startDate: project.startDate,
+      priority: project.priority,
+      status: project.status || "openProposals",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    console.log("Creating project document:", clientProjectData);
-    const projectDoc = await backendClient.create(clientProjectData);
-    console.log(`Project document created: ${projectDoc._id}`);
+    console.log("Creating project document:", projectDoc);
+    const createdProject = await backendClient.create(projectDoc);
+    const projectKey = `project_${createdProject._id}`;
+    console.log("Project document created:", createdProject._id);
 
-    // Add the project reference to the client profile
-    try {
-      const projectKey = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Add project reference to client profile
+    await backendClient
+      .patch(profileId)
+      .setIfMissing({ projects: [] })
+      .insert("before", "projects[0]", [
+        { _type: "reference", _key: projectKey, _ref: createdProject._id },
+      ])
+      .commit();
 
-      await backendClient
-        .patch(profileId)
-        .setIfMissing({ projects: [] })
-        .append("projects", [
-          {
-            _type: "reference",
-            _key: projectKey,
-            _ref: projectDoc._id,
-          },
-        ])
-        .set({ updatedAt: new Date().toISOString() })
-        .commit();
+    console.log(
+      `Successfully added project reference ${createdProject._id} to client profile ${profileId}`
+    );
 
-      console.log(
-        `Successfully added project reference ${projectDoc._id} to client profile ${profileId}`
-      );
+    // Fetch the complete project details to return
+    const fullProject = await backendClient.fetch(
+      `*[_type == "clientProject" && _id == $projectId][0]{
+        _id,
+        title,
+        description,
+        businessDomain,
+        painPoints,
+        budgetRange,
+        timeline,
+        complexity,
+        engagementType,
+        teamSize,
+        experienceLevel,
+        startDate,
+        priority,
+        status,
+        createdAt,
+        updatedAt
+      }`,
+      { projectId: createdProject._id }
+    );
 
-      // Force refresh of Sanity Studio
-      try {
-        await backendClient
-          .patch(profileId)
-          .set({ _studioRefresh: new Date().toISOString() })
-          .commit();
-      } catch (e) {
-        console.log("Studio refresh attempt failed (non-critical):", e);
-      }
-
-      // Aggressive cache clearing
-      revalidatePath("/dashboard", "layout");
-      revalidatePath(`/dashboard/${userId}`, "layout");
-      revalidatePath("/dashboard", "page");
-      revalidatePath(`/dashboard/${userId}`, "page");
-      revalidatePath("/studio", "layout");
-      revalidatePath("/studio", "page");
-
-      return {
-        success: true,
-        message: "Project created successfully.",
-      };
-    } catch (patchError: any) {
-      console.error(
-        "Error updating client profile with project reference:",
-        patchError
-      );
-
-      // Clean up the created project if the patch fails
-      try {
-        await backendClient.delete(projectDoc._id);
-        console.log(
-          `Cleaned up project ${projectDoc._id} due to profile update failure`
-        );
-      } catch (deleteError) {
-        console.error("Failed to clean up project:", deleteError);
-      }
-
-      throw new Error(
-        `Failed to link project to client profile: ${patchError.message}`
-      );
-    }
+    return {
+      success: true,
+      message: "Project created successfully",
+      project: fullProject,
+    };
   } catch (error: any) {
     console.error("Error creating project:", error);
     return {
       success: false,
-      message: `Failed to create project: ${error.message || "Unknown error"}`,
+      message: error.message || "Failed to create project",
     };
   }
 }

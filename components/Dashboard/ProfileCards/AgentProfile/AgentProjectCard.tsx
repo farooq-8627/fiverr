@@ -93,7 +93,7 @@ export function AgentProjectCard({
   const handleProjectCreated = async (newProject: AgentProject) => {
     try {
       // Add the new project to the current projects list
-      setCurrentProjects((prev) => [...prev, newProject]);
+      setCurrentProjects((prev) => [newProject, ...prev]);
 
       toast({
         title: "Success",

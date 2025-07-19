@@ -17,6 +17,11 @@ interface FormState {
   errors?: Record<string, string>;
 }
 
+// Add this interface at the top with other interfaces
+interface FormStateWithProject extends FormState {
+  project?: AgentProject;
+}
+
 // Main function to save agent profile to Sanity
 export async function saveAgentProfile(formData: FormData): Promise<FormState> {
   console.log("Starting saveAgentProfile server action");
@@ -576,7 +581,7 @@ export async function updateAgentProject(
 export async function createAgentProject(
   profileId: string,
   projectData: FormData
-): Promise<FormState> {
+): Promise<FormStateWithProject> {
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -620,7 +625,7 @@ export async function createAgentProject(
         }
       }
 
-      // Create project document with bi-directional reference
+      // Create project document
       const agentProjectData = {
         _type: "agentProject",
         title: project.title,
@@ -643,85 +648,22 @@ export async function createAgentProject(
         imageFiles: projectImageFiles,
       });
 
-      // CRITICAL FIX: Use array append operation to safely add project reference
-      // This ensures atomic operation and prevents overwriting existing projects
-      try {
-        await backendClient
-          .patch(profileId)
-          .setIfMissing({ projects: [] }) // Initialize projects array if it doesn't exist
-          .append("projects", [
-            {
-              _type: "reference",
-              _key: projectKey,
-              _ref: projectDoc._id,
-            },
-          ])
-          .set({ updatedAt: new Date().toISOString() })
-          .commit();
+      // Add project reference to the beginning of the projects array
+      await backendClient
+        .patch(profileId)
+        .setIfMissing({ projects: [] })
+        .insert("before", "projects[0]", [
+          {
+            _type: "reference",
+            _key: projectKey,
+            _ref: projectDoc._id,
+          },
+        ])
+        .commit();
 
-        console.log(
-          `Successfully added project reference ${projectDoc._id} to agent profile ${profileId}`
-        );
-      } catch (patchError: any) {
-        console.error(
-          "Error updating agent profile with project reference:",
-          patchError
-        );
-
-        // If the patch fails, we should clean up the created project
-        try {
-          await backendClient.delete(projectDoc._id);
-          console.log(
-            `Cleaned up project ${projectDoc._id} due to profile update failure`
-          );
-        } catch (deleteError) {
-          console.error("Failed to clean up project:", deleteError);
-        }
-
-        throw new Error(
-          `Failed to link project to agent profile: ${patchError.message}`
-        );
-      }
-
-      // Verify the bi-directional reference
-      try {
-        const verifyProject = await backendClient.getDocument(projectDoc._id);
-        const verifyProfile = await backendClient.getDocument(profileId);
-
-        console.log(
-          "Verification - Project reference to profile:",
-          verifyProject?.agentProfile
-        );
-        console.log(
-          "Verification - Profile reference to project:",
-          verifyProfile?.projects?.find((p: any) => p._ref === projectDoc._id)
-        );
-
-        // Additional verification: Check if the reference actually exists
-        if (
-          !verifyProject?.agentProfile ||
-          verifyProject.agentProfile._ref !== profileId
-        ) {
-          console.error("Project -> Profile reference verification failed");
-          throw new Error(
-            "Project to profile reference was not created properly"
-          );
-        }
-
-        if (
-          !verifyProfile?.projects?.find((p: any) => p._ref === projectDoc._id)
-        ) {
-          console.error("Profile -> Project reference verification failed");
-          throw new Error(
-            "Profile to project reference was not created properly"
-          );
-        }
-
-        console.log("✅ Bi-directional references verified successfully");
-      } catch (verifyError) {
-        console.error("Reference verification failed:", verifyError);
-        // Don't throw here as the main operation might have succeeded
-      }
+      console.log(
+        `Successfully added project reference ${projectDoc._id} to agent profile ${profileId}`
+      );
     }
 
     // Process images asynchronously
@@ -737,33 +679,33 @@ export async function createAgentProject(
       });
     }
 
-    // Force refresh of Sanity Studio to show the new data
-    try {
-      await backendClient
-        .patch(profileId)
-        .set({ _studioRefresh: new Date().toISOString() })
-        .commit();
-    } catch (e) {
-      console.log("Studio refresh attempt failed (non-critical):", e);
-    }
-
-    // Aggressive cache clearing
-    revalidatePath("/dashboard", "layout");
-    revalidatePath(`/dashboard/${userId}`, "layout");
-    revalidatePath("/dashboard", "page");
-    revalidatePath(`/dashboard/${userId}`, "page");
-    revalidatePath("/studio", "layout");
-    revalidatePath("/studio", "page");
+    // Return with the created project
+    const firstCreatedProject = createdProjects[0];
+    const projectsData = JSON.parse(projectsJSON);
+    const firstProjectData = projectsData[0];
 
     return {
       success: true,
-      message: `Project${createdProjects.length > 1 ? "s" : ""} created successfully with bi-directional references. Images are being processed in the background.`,
+      message: "Project created successfully",
+      project: firstCreatedProject
+        ? ({
+            _id: firstCreatedProject._id,
+            title: firstProjectData.title,
+            description: firstProjectData.description,
+            projectLink: firstProjectData.projectLink || "",
+            technologies: firstProjectData.technologies || [],
+            status: firstProjectData.status || "completed",
+            isPortfolioProject: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          } as AgentProject)
+        : undefined,
     };
   } catch (error: any) {
     console.error("Error creating project:", error);
     return {
       success: false,
-      message: `Failed to create project: ${error.message || "Unknown error"}`,
+      message: error.message || "Failed to create project",
     };
   }
 }

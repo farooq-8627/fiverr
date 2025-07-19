@@ -78,65 +78,27 @@ export function CreateAgentProjectModal({
       // Create the project
       const response = await createAgentProject(profileId, formData);
 
-      if (response.success) {
-        try {
-          // Wait for a moment to ensure the project is created and indexed
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (response.success && response.project) {
+        // Update UI with the new project
+        onProjectCreated(response.project);
 
-          // Fetch the latest projects
-          const projectsResponse = await fetch(`/api/projects/${profileId}`);
-          if (!projectsResponse.ok) {
-            throw new Error("Failed to fetch updated projects");
-          }
+        // Reset form
+        setTitle("");
+        setDescription("");
+        setProjectLink("");
+        setTechnologies([]);
+        setProjectImages([]);
+        setStatus("completed");
 
-          const projects = await projectsResponse.json();
-          const createdProject = projects[0]; // Get the most recent project
+        // Close modal
+        onClose();
 
-          if (!createdProject?._id) {
-            throw new Error("Created project not found");
-          }
-
-          // Pass the new project back to parent with the server-generated data
-          onProjectCreated({
-            _id: createdProject._id,
-            title: createdProject.title,
-            description: createdProject.description,
-            projectLink: createdProject.projectLink,
-            technologies: createdProject.technologies,
-            status: createdProject.status as ProjectStatus,
-            images: createdProject.images,
-            isPortfolioProject: createdProject.isPortfolioProject,
-            createdAt: createdProject.createdAt,
-            updatedAt: createdProject.updatedAt,
-          });
-
-          // Reset form
-          setTitle("");
-          setDescription("");
-          setProjectLink("");
-          setTechnologies([]);
-          setProjectImages([]);
-          setStatus("completed");
-
-          // Close modal
-          onClose();
-
-          toast({
-            title: "Success",
-            description: response.message,
-          });
-        } catch (error) {
-          console.error("Error fetching created project:", error);
-          toast({
-            title: "Warning",
-            description:
-              "Project created but failed to refresh the view. Please refresh the page.",
-            variant: "destructive",
-          });
-          onClose();
-        }
+        toast({
+          title: "Success",
+          description: response.message,
+        });
       } else {
-        throw new Error(response.message);
+        throw new Error(response.message || "Failed to create project");
       }
     } catch (error: any) {
       toast({

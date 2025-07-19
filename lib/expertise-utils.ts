@@ -135,3 +135,22 @@ export function getClientToolsInfo(value: string): ExpertiseItem {
     colors: colorSchemes.tool, // Always use tool colors
   };
 }
+
+// Helper function specifically for grouping client expertise items by category
+export function groupClientExpertiseByCategory(
+  items: string[],
+  getInfo: (value: string) => ExpertiseItem
+) {
+  const grouped = new Map<string, ExpertiseItem[]>();
+
+  items.forEach((item) => {
+    const info = getInfo(item);
+    const category = info.value.split("_")[0]; // Use the first part of the value as category
+    if (!grouped.has(category)) {
+      grouped.set(category, []);
+    }
+    grouped.get(category)?.push(info);
+  });
+
+  return Array.from(grouped.entries());
+}

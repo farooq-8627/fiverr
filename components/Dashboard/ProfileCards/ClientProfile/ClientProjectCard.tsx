@@ -20,7 +20,7 @@ import {
 import { Badge } from "@/components/UI/badge";
 import { GlassModal } from "@/components/UI/GlassModal";
 import { ClientProjectCardModal } from "@/components/cards/ClientProjectCardModal";
-import { ClientProjectEditModal } from "../Edit/ClientProjectEditModal";
+import { ClientProjectEditModal } from "../../Edit/ClientProfile/ClientProjectEditModal";
 import { PROJECT_STATUSES } from "@/sanity/schemaTypes/constants";
 
 interface ClientProjectCardProps {
@@ -32,9 +32,9 @@ interface ClientProjectCardProps {
 interface ProjectItemProps {
   project: ClientProject;
   isCurrentUser: boolean;
-  onUpdate: (project: ClientProject) => Promise<void>;
   onDelete: (projectId: string) => Promise<void>;
   className?: string;
+  onUpdate: (project: ClientProject) => Promise<void>;
 }
 
 const ProjectCard = ({
@@ -126,10 +126,10 @@ const ProjectCard = ({
 function ProjectItem({
   project,
   isCurrentUser,
-  onUpdate,
   onDelete,
   className = "",
   profileId,
+  onUpdate,
 }: ProjectItemProps & { profileId: string }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -204,37 +204,6 @@ export function ClientProjectCard({
   );
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const handleProjectUpdate = async (updatedProject: ClientProject) => {
-    try {
-      const response = await createClientProject(
-        profileId,
-        updatedProject as ClientProject
-      );
-
-      if (response.success) {
-        setCurrentProjects((prev) =>
-          prev.map((p) => (p._id === updatedProject._id ? updatedProject : p))
-        );
-        toast({
-          title: "Success",
-          description: "Project updated successfully.",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: response.message || "Failed to update project.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleProjectDelete = async (projectId: string) => {
     try {
       const response = await deleteClientProject(profileId, projectId);
@@ -266,7 +235,8 @@ export function ClientProjectCard({
       if (!newProject?._id) {
         throw new Error("Invalid project data");
       }
-      setCurrentProjects((prev) => [...prev, newProject]);
+      // Add new project at the beginning of the list
+      setCurrentProjects((prev) => [newProject, ...prev]);
       toast({
         title: "Success",
         description: "Project created successfully.",
@@ -275,6 +245,29 @@ export function ClientProjectCard({
       toast({
         title: "Error",
         description: "Failed to create project.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleProjectUpdate = async (updatedProject: ClientProject) => {
+    try {
+      if (!updatedProject?._id) {
+        throw new Error("Invalid project data");
+      }
+      setCurrentProjects((prev) =>
+        prev.map((project) =>
+          project._id === updatedProject._id ? updatedProject : project
+        )
+      );
+      toast({
+        title: "Success",
+        description: "Project updated successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update project.",
         variant: "destructive",
       });
     }
@@ -312,10 +305,10 @@ export function ClientProjectCard({
                   key={project._id}
                   project={project}
                   isCurrentUser={isCurrentUser}
-                  onUpdate={handleProjectUpdate}
                   onDelete={handleProjectDelete}
                   className="w-[280px] sm:w-[320px] flex-shrink-0"
                   profileId={profileId}
+                  onUpdate={handleProjectUpdate}
                 />
               ) : null
             )}

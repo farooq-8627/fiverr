@@ -59,8 +59,6 @@ export function CreateClientProjectModal({
     status: "draft",
   });
 
-  const [projectImages, setProjectImages] = useState<File[]>([]);
-
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -68,83 +66,45 @@ export function CreateClientProjectModal({
     }));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      setProjectImages(files);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append("projects", JSON.stringify([formData]));
-
-      // Append images
-      projectImages.forEach((file, index) => {
-        formDataToSend.append(`projectImages[0][${index}]`, file);
-      });
-
       const response = await createClientProject(
         profileId,
         formData as ClientProject
       );
 
-      if (response.success) {
-        try {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          const projectsResponse = await fetch(`/api/projects/${profileId}`);
-          if (!projectsResponse.ok) {
-            throw new Error("Failed to fetch updated projects");
-          }
+      if (response.success && response.project) {
+        // Update UI with the new project
+        onProjectCreated(response.project);
 
-          const projects = await projectsResponse.json();
-          const createdProject = projects[0];
+        // Reset form
+        setFormData({
+          title: "",
+          description: "",
+          businessDomain: "",
+          painPoints: "",
+          budgetRange: "",
+          timeline: "",
+          complexity: "",
+          engagementType: "",
+          teamSize: "",
+          experienceLevel: "",
+          startDate: "",
+          priority: "",
+          status: "draft",
+        });
 
-          if (!createdProject?._id) {
-            throw new Error("Created project not found");
-          }
+        onClose();
 
-          onProjectCreated(createdProject);
-
-          // Reset form
-          setFormData({
-            title: "",
-            description: "",
-            businessDomain: "",
-            painPoints: "",
-            budgetRange: "",
-            timeline: "",
-            complexity: "",
-            engagementType: "",
-            teamSize: "",
-            experienceLevel: "",
-            startDate: "",
-            priority: "",
-            status: "draft",
-          });
-          setProjectImages([]);
-          onClose();
-
-          toast({
-            title: "Success",
-            description: response.message,
-          });
-        } catch (error) {
-          console.error("Error fetching created project:", error);
-          toast({
-            title: "Warning",
-            description:
-              "Project created but failed to refresh the view. Please refresh the page.",
-            variant: "destructive",
-          });
-          onClose();
-        }
+        toast({
+          title: "Success",
+          description: "Project created successfully",
+        });
       } else {
-        throw new Error(response.message);
+        throw new Error(response.message || "Failed to create project");
       }
     } catch (error: any) {
       toast({
@@ -163,49 +123,51 @@ export function CreateClientProjectModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Create New Project"
-      size="lg"
+      size="xl"
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-4">
+      <form onSubmit={handleSubmit} className="flex flex-col h-[75vh]">
+        <div className="flex-1 overflow-y-auto pr-2">
           {/* Basic Information */}
-          <div className="space-y-4 p-4 bg-white/5 rounded-lg">
+          <div className="space-y-4 p-4 bg-white/5 rounded-lg mb-4">
             <h3 className="text-lg font-medium text-violet-200">
               Basic Information
             </h3>
-            <div>
-              <Label htmlFor="title">Project Title</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => handleChange("title", e.target.value)}
-                required
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="description">Project Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleChange("description", e.target.value)}
-                required
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="painPoints">Pain Points</Label>
-              <Textarea
-                id="painPoints"
-                value={formData.painPoints}
-                onChange={(e) => handleChange("painPoints", e.target.value)}
-                placeholder="Describe the challenges you're facing..."
-                className="mt-1"
-              />
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="title">Project Title</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => handleChange("title", e.target.value)}
+                  required
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Project Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => handleChange("description", e.target.value)}
+                  required
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="painPoints">Pain Points</Label>
+                <Textarea
+                  id="painPoints"
+                  value={formData.painPoints}
+                  onChange={(e) => handleChange("painPoints", e.target.value)}
+                  placeholder="Describe the challenges you're facing..."
+                  className="mt-1"
+                />
+              </div>
             </div>
           </div>
 
           {/* Project Details */}
-          <div className="space-y-4 p-4 bg-white/5 rounded-lg">
+          <div className="space-y-4 p-4 bg-white/5 rounded-lg mb-4">
             <h3 className="text-lg font-medium text-violet-200">
               Project Details
             </h3>
@@ -404,45 +366,23 @@ export function CreateClientProjectModal({
               </div>
             </div>
           </div>
-
-          {/* Project Images */}
-          <div className="space-y-4 p-4 bg-white/5 rounded-lg">
-            <h3 className="text-lg font-medium text-violet-200">
-              Project Images
-            </h3>
-            <div>
-              <Label htmlFor="projectImages">Upload Images</Label>
-              <Input
-                id="projectImages"
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleImageChange}
-                className="cursor-pointer mt-1"
-              />
-              {projectImages.length > 0 && (
-                <div className="mt-2 text-sm text-violet-200">
-                  {projectImages.length} image(s) selected
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
-        <div className="flex justify-end space-x-4 pt-4 border-t border-violet-800/30">
+        {/* Fixed Footer */}
+        <div className="sticky bottom-0 flex justify-end gap-3 pt-4 mt-4 border-t border-violet-800/30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <Button
             type="button"
             variant="outline"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-6 py-2 text-violet-200 bg-transparent border-violet-700/50 hover:bg-violet-900/50"
+            className="bg-transparent border-violet-700/50 hover:bg-violet-900/50"
           >
             Cancel
           </Button>
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-2 bg-violet-600 hover:bg-violet-700 text-white"
+            className="bg-violet-600 hover:bg-violet-700 text-white"
           >
             {isSubmitting ? "Creating..." : "Create Project"}
           </Button>
