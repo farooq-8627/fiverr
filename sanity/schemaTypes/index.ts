@@ -23,11 +23,11 @@ import userProfileDetails from "./userProfileDetails";
 
 // Import the new social feed schemas
 import {
-  FeedPostSchema,
-  FeedMediaSchema,
-  FeedCommentSchema,
-  FeedLikeSchema,
-} from "./socialFeedSchema";
+  PostSchema,
+  MediaSchema,
+  CommentSchema,
+  LikeSchema,
+} from "./feedSchema";
 
 export const schema: { types: SchemaTypeDefinition[] } = {
   types: [
@@ -46,10 +46,10 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     userProfileDetails,
 
     // Social Feed schemas
-    FeedPostSchema,
-    FeedMediaSchema,
-    FeedCommentSchema,
-    FeedLikeSchema,
+    PostSchema,
+    MediaSchema,
+    CommentSchema,
+    LikeSchema,
 
     // Component schemas
 

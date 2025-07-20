@@ -132,6 +132,12 @@ export const userSchema = defineType({
       type: "array",
       of: [{ type: "reference", to: [{ type: "clientProfile" }] }],
     }),
+    defineField({
+      name: "posts",
+      title: "Posts",
+      type: "array",
+      of: [{ type: "reference", to: [{ type: "post" }] }],
+    }),
     // System Fields
     defineField({
       name: "createdAt",

@@ -12,6 +12,8 @@ import { ProfileBannerCard } from "@/components/Dashboard/ProfileBannerCard";
 import { AboutCard } from "@/components/Dashboard/ProfileCards/AboutCard";
 import { useUser } from "@/hooks/useUser";
 import { useUser as useClerkUser } from "@clerk/nextjs";
+import { PostSection } from "@/components/Dashboard/ProfileCards/Feed/PostSection";
+import { FeedPost } from "@/types/Posts";
 
 export default function DashboardPage({
   params,
@@ -88,7 +90,13 @@ export default function DashboardPage({
           />
         </div>
       )}
-
+      {userProfile && (
+        <PostSection
+          post={userProfile.posts?.[0] as unknown as FeedPost}
+          isCurrentUser={isCurrentUser}
+          profileId={userProfile._id}
+        />
+      )}
       {/* Profile Tabs using Glow Menu */}
       <div className="w-full mb-8">
         <div className="max-w-2xl mx-auto mb-8">

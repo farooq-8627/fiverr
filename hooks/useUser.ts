@@ -67,6 +67,31 @@ export interface UserData {
       current: string;
     };
   }>;
+  posts?: Array<{
+    _id: string;
+    title: string;
+    content: string;
+    media: Array<{
+      _key: string;
+      type: string;
+      file: {
+        asset: {
+          _ref: string;
+          _type: string;
+        };
+        url: string;
+      };
+      caption: string;
+      altText: string;
+    }>;
+    tags: string[];
+    author: string;
+    authorType: string;
+    isAchievement: boolean;
+    achievementType: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -143,6 +168,19 @@ export function useUser(username?: string) {
             clientProfiles[]-> {
               _id,
               profileId
+            },
+            posts[]-> {
+              _id,
+              title,
+              content,
+              media,
+              tags,
+              author,
+              authorType,
+              isAchievement,
+              achievementType,
+              createdAt,
+              updatedAt
             },
             createdAt,
             updatedAt

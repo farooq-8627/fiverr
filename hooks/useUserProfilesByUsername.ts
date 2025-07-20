@@ -77,11 +77,12 @@ export interface UserProfilesByUsername {
       automationRequirements: string[];
       currentTools: string[];
     };
-    communicationPreferences: {
-      languagesSpoken: string[];
-      timeZone: string;
-      updateFrequency: string;
-      meetingAvailability: string;
+    mustHaveRequirements?: {
+      experience: string;
+      dealBreakers: string[];
+      industryDomain: string[];
+      customIndustry?: string[];
+      requirements: string[];
     };
     projects?: Array<{
       _id: string;
@@ -201,11 +202,12 @@ export function useUserProfilesByUsername(
             automationRequirements,
             currentTools,
           },
-          communicationPreferences {
-            languagesSpoken,
-            preferredContactMethod,
-            updateFrequency,
-            meetingAvailability
+          mustHaveRequirements {
+            experience,
+            dealBreakers,
+            industryDomain,
+            customIndustry,
+            requirements
           },
           projects[]-> {
             _id,

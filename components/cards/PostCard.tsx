@@ -588,6 +588,7 @@ export function PostCard({ post, className }: PostCardProps) {
               isLiked ? "text-red-500" : "text-gray-400 hover:text-white"
             }`}
             onClick={() => setIsLiked(!isLiked)}
+            variant="ghost"
           >
             {isLiked ? (
               <HeartFilled weight="fill" className="h-5 w-5" />
@@ -599,15 +600,22 @@ export function PostCard({ post, className }: PostCardProps) {
           <Button
             className="flex items-center gap-2 text-gray-400 hover:text-white"
             onClick={() => setIsModalOpen(true)}
+            variant="ghost"
           >
             <MessageCircle className="h-5 w-5" />
             Comment
           </Button>
-          <Button className="flex items-center gap-2 text-gray-400 hover:text-white">
+          <Button
+            className="flex items-center gap-2 text-gray-400 hover:text-white"
+            variant="ghost"
+          >
             <Repeat2 className="h-5 w-5" />
             Repost
           </Button>
-          <Button className="flex items-center gap-2 text-gray-400 hover:text-white">
+          <Button
+            className="flex items-center gap-2 text-gray-400 hover:text-white"
+            variant="ghost"
+          >
             <Send className="h-5 w-5" />
             Share
           </Button>

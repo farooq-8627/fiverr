@@ -15,6 +15,14 @@ import {
   SelectContent,
 } from "@/components/UI/select";
 import { AGENT_PROJECT_STATUSES } from "@/sanity/schemaTypes/constants";
+import {
+  ImagePlus,
+  BriefcaseBusiness,
+  FileText,
+  Link,
+  Code,
+  CheckCircle,
+} from "lucide-react";
 
 interface CreateAgentProjectModalProps {
   isOpen: boolean;
@@ -122,7 +130,13 @@ export function CreateAgentProjectModal({
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
           <div>
-            <Label htmlFor="title">Project Title</Label>
+            <Label
+              className="text-violet-200 mb-2 flex items-center gap-2"
+              htmlFor="title"
+            >
+              <BriefcaseBusiness className="h-4 w-4 text-violet-400 " />
+              Project Title
+            </Label>
             <Input
               id="title"
               value={title}
@@ -131,7 +145,13 @@ export function CreateAgentProjectModal({
             />
           </div>
           <div>
-            <Label htmlFor="description">Description</Label>
+            <Label
+              className="text-violet-200 mb-2 flex items-center gap-2"
+              htmlFor="description"
+            >
+              <FileText className="h-4 w-4 text-violet-400" />
+              Description
+            </Label>
             <Textarea
               id="description"
               value={description}
@@ -140,7 +160,13 @@ export function CreateAgentProjectModal({
             />
           </div>
           <div>
-            <Label htmlFor="projectLink">Project Link (Optional)</Label>
+            <Label
+              className="text-violet-200 mb-2 flex items-center gap-2"
+              htmlFor="projectLink"
+            >
+              <Link className="h-4 w-4 text-violet-400" />
+              Project Link (Optional)
+            </Label>
             <Input
               id="projectLink"
               value={projectLink}
@@ -149,7 +175,13 @@ export function CreateAgentProjectModal({
             />
           </div>
           <div>
-            <Label htmlFor="technologies">Technologies (comma-separated)</Label>
+            <Label
+              className="text-violet-200 mb-2 flex items-center gap-2"
+              htmlFor="technologies"
+            >
+              <Code className="h-4 w-4 text-violet-400" />
+              Technologies (comma-separated)
+            </Label>
             <Input
               id="technologies"
               value={technologies.join(", ")}
@@ -158,7 +190,13 @@ export function CreateAgentProjectModal({
             />
           </div>
           <div>
-            <Label htmlFor="status">Status</Label>
+            <Label
+              className="text-violet-200 mb-2 flex items-center gap-2"
+              htmlFor="status"
+            >
+              <CheckCircle className="h-4 w-4 text-violet-400" />
+              Status
+            </Label>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
@@ -173,7 +211,13 @@ export function CreateAgentProjectModal({
             </Select>
           </div>
           <div>
-            <Label htmlFor="projectImages">Project Images</Label>
+            <Label
+              className="text-violet-200 flex items-center gap-2 mb-2"
+              htmlFor="projectImages"
+            >
+              <ImagePlus className="h-4 w-4 text-violet-400" />
+              Project Images
+            </Label>
             <Input
               id="projectImages"
               type="file"

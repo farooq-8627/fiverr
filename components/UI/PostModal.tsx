@@ -101,12 +101,12 @@ export function PostModal({
     switch (currentMedia.type) {
       case "image":
         return (
-          <div className="relative w-full h-full my-4">
+          <div className="relative w-full h-full">
             <Image
               src={currentMedia.file.asset.url}
               alt={currentMedia.altText || currentMedia.caption || "Post image"}
               fill
-              className="object-contain"
+              className="object-contain border-2 border-white"
               priority
             />
           </div>

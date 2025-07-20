@@ -209,7 +209,9 @@ export function AgentProjectEditModal({
             <div className="p-2 space-y-6">
               {/* Images Section */}
               <div>
-                <Label>Project Images (Max 6)</Label>
+                <Label className="text-violet-200">
+                  Project Images (Max 6)
+                </Label>
                 <div className="mt-2 grid grid-cols-2 lg:grid-cols-3 gap-4">
                   {formData.images?.map((image, index) => (
                     <div
@@ -279,7 +281,9 @@ export function AgentProjectEditModal({
               {/* Form Fields */}
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="title">Project Title</Label>
+                  <Label className="text-violet-200" htmlFor="title">
+                    Project Title
+                  </Label>
                   <Input
                     id="title"
                     name="title"
@@ -291,7 +295,9 @@ export function AgentProjectEditModal({
                 </div>
 
                 <div>
-                  <Label htmlFor="description">Description</Label>
+                  <Label className="text-violet-200" htmlFor="description">
+                    Description
+                  </Label>
                   <Textarea
                     id="description"
                     name="description"
@@ -303,7 +309,9 @@ export function AgentProjectEditModal({
                 </div>
 
                 <div>
-                  <Label htmlFor="projectLink">Project Link</Label>
+                  <Label className="text-violet-200" htmlFor="projectLink">
+                    Project Link
+                  </Label>
                   <Input
                     id="projectLink"
                     name="projectLink"
@@ -315,7 +323,7 @@ export function AgentProjectEditModal({
                 </div>
 
                 <div>
-                  <Label>Technologies</Label>
+                  <Label className="text-violet-200">Technologies</Label>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {formData.technologies?.map((tech) => (
                       <Badge
@@ -344,7 +352,9 @@ export function AgentProjectEditModal({
                 </div>
 
                 <div>
-                  <Label htmlFor="status">Project Status</Label>
+                  <Label className="text-violet-200" htmlFor="status">
+                    Project Status
+                  </Label>
                   <Select
                     value={formData.status}
                     onValueChange={handleStatusChange}

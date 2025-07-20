@@ -329,6 +329,22 @@ export const AGENT_TOOLS_EXPERTISE = [
   { title: "Other Tools", value: "others" },
 ];
 
+// Achievement Type options
+export const ACHIEVEMENT_TYPES = [
+  { title: "Project Completion", value: "projectCompletion" },
+  { title: "Milestone", value: "milestone" },
+  { title: "Award", value: "award" },
+  { title: "Certification", value: "certification" },
+  { title: "Other", value: "other" },
+];
+
+// Media Type options
+export const MEDIA_TYPES = [
+  { title: "Image", value: "image" },
+  { title: "Video", value: "video" },
+  { title: "PDF", value: "pdf" },
+];
+
 // Export a function to get industry title by value
 export const getIndustryTitleByValue = (value: string): string => {
   const industry = INDUSTRY_DOMAINS.find(

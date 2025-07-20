@@ -1,10 +1,10 @@
 import { defineField, defineType } from "sanity";
-import { INDUSTRY_DOMAINS } from "./constants";
+import { ACHIEVEMENT_TYPES, MEDIA_TYPES } from "./constants";
 
 // Media Schema for different types of media in a post
-export const FeedMediaSchema = defineType({
-  name: "feedMedia",
-  title: "Feed Media",
+export const MediaSchema = defineType({
+  name: "media",
+  title: "Media",
   type: "object",
   fields: [
     defineField({
@@ -12,11 +12,7 @@ export const FeedMediaSchema = defineType({
       title: "Media Type",
       type: "string",
       options: {
-        list: [
-          { title: "Image", value: "image" },
-          { title: "Video", value: "video" },
-          { title: "PDF", value: "pdf" },
-        ],
+        list: MEDIA_TYPES,
       },
       validation: (Rule) => Rule.required(),
     }),
@@ -44,16 +40,16 @@ export const FeedMediaSchema = defineType({
 });
 
 // Comment Schema with nested replies
-export const FeedCommentSchema = defineType({
-  name: "feedComment",
-  title: "Feed Comment",
+export const CommentSchema = defineType({
+  name: "comment",
+  title: "Comment",
   type: "object",
   fields: [
     defineField({
       name: "author",
       title: "Author",
       type: "reference",
-      to: [{ type: "agentProfile" }, { type: "clientProfile" }],
+      to: [{ type: "user" }],
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -89,23 +85,23 @@ export const FeedCommentSchema = defineType({
       name: "replies",
       title: "Replies",
       type: "array",
-      of: [{ type: "feedComment" }],
+      of: [{ type: "comment" }],
       description: "Nested comment replies",
     }),
   ],
 });
 
 // Like Schema
-export const FeedLikeSchema = defineType({
-  name: "feedLike",
-  title: "Feed Like",
+export const LikeSchema = defineType({
+  name: "like",
+  title: "Like",
   type: "object",
   fields: [
     defineField({
-      name: "userId",
-      title: "User ID",
-      type: "string",
-      description: "Clerk User ID",
+      name: "user",
+      title: "User",
+      type: "reference",
+      to: [{ type: "user" }],
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -118,9 +114,9 @@ export const FeedLikeSchema = defineType({
 });
 
 // Social Feed Post Schema
-export const FeedPostSchema = defineType({
-  name: "feedPost",
-  title: "Feed Post",
+export const PostSchema = defineType({
+  name: "post",
+  title: "Post",
   type: "document",
   fields: [
     defineField({
@@ -138,7 +134,7 @@ export const FeedPostSchema = defineType({
       name: "author",
       title: "Author",
       type: "reference",
-      to: [{ type: "agentProfile" }, { type: "clientProfile" }],
+      to: [{ type: "user" }],
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -157,7 +153,7 @@ export const FeedPostSchema = defineType({
       name: "media",
       title: "Media",
       type: "array",
-      of: [{ type: "feedMedia" }],
+      of: [{ type: "media" }],
       description: "Multiple media types can be added to a single post",
     }),
     defineField({
@@ -172,13 +168,7 @@ export const FeedPostSchema = defineType({
       title: "Achievement Type",
       type: "string",
       options: {
-        list: [
-          { title: "Project Completion", value: "projectCompletion" },
-          { title: "Milestone", value: "milestone" },
-          { title: "Award", value: "award" },
-          { title: "Certification", value: "certification" },
-          { title: "Other", value: "other" },
-        ],
+        list: ACHIEVEMENT_TYPES,
       },
       hidden: ({ parent }) => !parent?.isAchievement,
     }),
@@ -209,9 +199,9 @@ export const FeedPostSchema = defineType({
           name: "like",
           fields: [
             {
-              name: "profile",
+              name: "user",
               type: "reference",
-              to: [{ type: "agentProfile" }, { type: "clientProfile" }],
+              to: [{ type: "user" }],
               validation: (Rule) => Rule.required(),
             },
             {
@@ -227,7 +217,7 @@ export const FeedPostSchema = defineType({
       name: "comments",
       title: "Comments",
       type: "array",
-      of: [{ type: "feedComment" }],
+      of: [{ type: "comment" }],
     }),
     defineField({
       name: "createdAt",

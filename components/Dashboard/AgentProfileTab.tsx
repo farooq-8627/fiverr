@@ -3,7 +3,6 @@ import { AgentProfile } from "@/types/index";
 import { AgentAutomationCard } from "@/components/Dashboard/ProfileCards/AgentProfile/AgentAutomationCard";
 import BusinessCard from "@/components/Dashboard/ProfileCards/AgentProfile/BusinessCard";
 import { AvailabilityCard } from "@/components/Dashboard/ProfileCards/AgentProfile/AvailabilityCard";
-import { useToast } from "@/hooks/useToast";
 import { AgentProjectCard } from "./ProfileCards/AgentProfile/AgentProjectCard";
 import { PricingCard } from "./ProfileCards/AgentProfile/PricingCard";
 import { RequirementsCard } from "./ProfileCards/AgentProfile/RequirementsCard";

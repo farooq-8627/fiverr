@@ -133,7 +133,7 @@ export function AgentProjectCard({
           )}
         </div>
         <div className="relative overflow-x-auto pb-4 hide-scrollbar">
-          <div className="flex gap-4 min-w-min">
+          <div className="flex min-w-min">
             {currentProjects.map((project) => (
               <AgentProjectCardComponent
                 key={project._id}

@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
 import { backendClient } from "@/sanity/lib/backendClient";
 import { randomUUID } from "crypto";
+import { FeedPost } from "@/types/Posts";
+import { uploadImageToSanity } from "@/lib/ImageUploads";
+import { client } from "@/sanity/lib/client";
+import { uploadMediaToSanity, handleMediaUploads } from "@/lib/mediaUploads";
+import { handleAsyncImageUploads } from "@/lib/ImageUploads";
 
 export interface FormState {
   success: boolean;
@@ -12,122 +17,6 @@ export interface FormState {
     profileImage?: string;
     bannerImage?: string;
   };
-}
-
-// Helper function to upload an image to Sanity's asset store
-async function uploadImageToSanity(file: File) {
-  try {
-    // Convert File to ArrayBuffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Log file details for debugging
-    console.log(
-      `Uploading image: ${file.name}, size: ${file.size} bytes, type: ${file.type}`
-    );
-
-    // Upload to Sanity with retry logic
-    let attempts = 0;
-    const maxAttempts = 3;
-
-    while (attempts < maxAttempts) {
-      try {
-        const result = await backendClient.assets.upload("image", buffer, {
-          filename: file.name,
-          contentType: file.type,
-        });
-
-        console.log(
-          `Successfully uploaded image: ${file.name}, id: ${result._id}`
-        );
-        return result;
-      } catch (error) {
-        attempts++;
-        console.error(
-          `Upload attempt ${attempts} failed for ${file.name}:`,
-          error
-        );
-
-        if (attempts >= maxAttempts) {
-          throw error;
-        }
-
-        // Wait before retrying
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-    }
-  } catch (error) {
-    console.error(`Failed to upload image ${file.name}:`, error);
-    throw error;
-  }
-}
-
-// Async function to handle image uploads with retries
-async function handleAsyncImageUploads(
-  userId: string,
-  files: {
-    type: string;
-    file: File;
-    path: string;
-    additionalData?: any;
-  }[]
-) {
-  for (const { type, file, path, additionalData } of files) {
-    if (!file || file.size === 0) continue;
-
-    let retries = 0;
-    const maxRetries = 3;
-    let success = false;
-
-    while (!success && retries < maxRetries) {
-      try {
-        console.log(
-          `Uploading image ${file.name} (attempt ${retries + 1}/${maxRetries})...`
-        );
-        const imageAsset = await uploadImageToSanity(file);
-
-        if (imageAsset) {
-          // Create image reference
-          const imageRef = {
-            _type: "image",
-            asset: {
-              _type: "reference",
-              _ref: imageAsset._id,
-            },
-          };
-
-          // Patch the document with the new image
-          await backendClient
-            .patch(`user-${userId}`)
-            .set({ [path]: imageRef })
-            .commit();
-
-          console.log(
-            `Successfully added ${file.name} to document user-${userId} at path: ${path}`
-          );
-          success = true;
-        } else {
-          throw new Error("Image asset upload failed");
-        }
-      } catch (error) {
-        retries++;
-        console.error(
-          `Attempt ${retries}/${maxRetries} failed for ${file.name}:`,
-          error
-        );
-
-        if (retries >= maxRetries) {
-          console.error(
-            `Failed to upload and attach image ${file.name} after ${maxRetries} attempts:`,
-            error
-          );
-        } else {
-          const delay = Math.min(1000 * Math.pow(2, retries), 10000);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-        }
-      }
-    }
-  }
 }
 
 // Main function to save user profile to Sanity
@@ -527,6 +416,135 @@ export async function updateUserProfileDetails(formData: {
     return {
       success: false,
       message: `Failed to update profile: ${error.message || "Unknown error"}`,
+    };
+  }
+}
+
+export interface CreatePostData {
+  title?: string;
+  content: string;
+  authorId: string;
+  authorType: "agent" | "client";
+  media?: File[];
+  id?: string; // Optional ID field for the post
+  tags?: string[];
+  isAchievement?: boolean;
+  achievementType?: string;
+}
+
+export async function createPost(data: CreatePostData) {
+  try {
+    // First create the post document
+    const doc = await backendClient.create({
+      _type: "post",
+      title: data.title,
+      content: data.content,
+      author: {
+        _type: "reference",
+        _ref: data.authorId,
+      },
+      authorType: data.authorType,
+      tags: data.tags || [],
+      isAchievement: data.isAchievement || false,
+      achievementType: data.achievementType,
+      media: [], // Initialize empty media array
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      likes: [],
+      comments: [],
+    });
+
+    // Handle media uploads if any exist
+    if (data.media && data.media.length > 0) {
+      try {
+        // Upload all media files and collect their references
+        const mediaPromises = data.media.map(async (file) => {
+          // Use uploadMediaToSanity for all file types
+          const result = await uploadMediaToSanity(file);
+          console.log("Media Asset Result:", result);
+
+          if (!result) {
+            throw new Error(`Failed to upload media: ${file.name}`);
+          }
+
+          // Return consistent structure for all media types
+          return {
+            _type: "media",
+            _key: Math.random().toString(36).substr(2, 9),
+            type: file.type.startsWith("image/")
+              ? "image"
+              : file.type.startsWith("video/")
+                ? "video"
+                : "pdf",
+            file: {
+              asset: {
+                _ref: result.file.asset._ref,
+                _type: "reference",
+              },
+              url: result.file.url,
+            },
+            caption: file.name,
+            altText: file.name,
+          };
+        });
+
+        // Wait for all uploads to complete
+        const mediaAssets = await Promise.all(mediaPromises);
+        console.log("Final Media Assets Array:", mediaAssets);
+
+        // Update the document with all media assets at once
+        await backendClient.patch(doc._id).set({ media: mediaAssets }).commit();
+      } catch (error) {
+        console.error("Error uploading media:", error);
+        return {
+          success: false,
+          message: "Failed to upload media files",
+        };
+      }
+    }
+
+    // Update the user's posts array
+    try {
+      await backendClient
+        .patch(data.authorId)
+        .setIfMissing({ posts: [] })
+        .append("posts", [
+          {
+            _type: "reference",
+            _ref: doc._id,
+          },
+        ])
+        .commit();
+
+      // Revalidate the feed page and user profile
+      revalidatePath("/dashboard/[username]");
+      revalidatePath("/user-details");
+
+      return {
+        success: true,
+        data: {
+          ...doc,
+          likes: [],
+          comments: [],
+        },
+      };
+    } catch (error) {
+      console.error("Error updating user posts array:", error);
+      // Even if updating user's posts array fails, the post was created successfully
+      return {
+        success: true,
+        data: {
+          ...doc,
+          likes: [],
+          comments: [],
+        },
+      };
+    }
+  } catch (error) {
+    console.error("Error creating post:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Failed to create post",
     };
   }
 }

@@ -17,6 +17,7 @@ import {
   RESPONSE_TIME_COMMITMENTS,
   MEETING_AVAILABILITIES,
 } from "@/sanity/schemaTypes/constants";
+import { BriefcaseBusiness, Clock, Globe } from "lucide-react";
 
 interface AvailabilityData {
   currentStatus: string;
@@ -79,7 +80,10 @@ export function AvailabilityEditModal({
     >
       <div className="space-y-6 py-4">
         <div className="space-y-2">
-          <Label>Current Status</Label>
+          <Label className="text-violet-200 flex items-center gap-2">
+            <BriefcaseBusiness className="h-4 w-4 text-violet-400" />
+            Current Status
+          </Label>
           <Select
             value={formData.currentStatus}
             onValueChange={(value) =>
@@ -104,7 +108,10 @@ export function AvailabilityEditModal({
         </div>
 
         <div className="space-y-2">
-          <Label>Working Hours</Label>
+          <Label className="text-violet-200 flex items-center gap-2">
+            <Clock className="h-4 w-4 text-violet-400" />
+            Working Hours
+          </Label>
           <Select
             value={formData.workingHours}
             onValueChange={(value) =>
@@ -129,7 +136,10 @@ export function AvailabilityEditModal({
         </div>
 
         <div className="space-y-2">
-          <Label>Availability Hours</Label>
+          <Label className="text-violet-200 flex items-center gap-2">
+            <Clock className="h-4 w-4 text-violet-400" />
+            Availability Hours
+          </Label>
           <Select
             value={formData.availabilityHours}
             onValueChange={(value) =>
@@ -150,7 +160,10 @@ export function AvailabilityEditModal({
         </div>
 
         <div className="space-y-2">
-          <Label>Time Zone</Label>
+          <Label className="text-violet-200 flex items-center gap-2">
+            <Globe className="h-4 w-4 text-violet-400" />
+            Time Zone
+          </Label>
           <Select
             value={formData.timeZone}
             onValueChange={(value) =>
@@ -173,7 +186,10 @@ export function AvailabilityEditModal({
         </div>
 
         <div className="space-y-2">
-          <Label>Response Time</Label>
+          <Label className="text-violet-200 flex items-center gap-2">
+            <Clock className="h-4 w-4 text-violet-400" />
+            Response Time
+          </Label>
           <Select
             value={formData.responseTime}
             onValueChange={(value) =>
