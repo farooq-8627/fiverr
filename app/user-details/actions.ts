@@ -434,7 +434,7 @@ export interface CreatePostData {
 
 export async function createPost(data: CreatePostData) {
   try {
-    // First create the post document
+    // First create the post document without media
     const doc = await backendClient.create({
       _type: "post",
       title: data.title,
@@ -454,92 +454,102 @@ export async function createPost(data: CreatePostData) {
       comments: [],
     });
 
+    // Update the user's posts array immediately
+    await backendClient
+      .patch(data.authorId)
+      .setIfMissing({ posts: [] })
+      .append("posts", [
+        {
+          _type: "reference",
+          _ref: doc._id,
+        },
+      ])
+      .commit();
+
+    // Track media uploads to process in background
+    const mediaPromises: Promise<void>[] = [];
+
     // Handle media uploads if any exist
     if (data.media && data.media.length > 0) {
-      try {
-        // Upload all media files and collect their references
-        const mediaPromises = data.media.map(async (file) => {
-          // Use uploadMediaToSanity for all file types
-          const result = await uploadMediaToSanity(file);
-          console.log("Media Asset Result:", result);
+      data.media.forEach((file) => {
+        mediaPromises.push(
+          (async () => {
+            try {
+              console.log(`Starting upload for ${file.name}`);
+              const result = await uploadMediaToSanity(file);
 
-          if (!result) {
-            throw new Error(`Failed to upload media: ${file.name}`);
-          }
+              if (!result) {
+                console.error(`Failed to upload media: ${file.name}`);
+                return;
+              }
 
-          // Return consistent structure for all media types
-          return {
-            _type: "media",
-            _key: Math.random().toString(36).substr(2, 9),
-            type: file.type.startsWith("image/")
-              ? "image"
-              : file.type.startsWith("video/")
-                ? "video"
-                : "pdf",
-            file: {
-              asset: {
-                _ref: result.file.asset._ref,
-                _type: "reference",
-              },
-              url: result.file.url,
-            },
-            caption: file.name,
-            altText: file.name,
-          };
+              console.log(
+                `Successfully uploaded ${file.name}, updating Sanity`
+              );
+
+              // Create media asset object
+              const mediaAsset = {
+                _type: "media",
+                _key: Math.random().toString(36).substr(2, 9),
+                type: file.type.startsWith("image/")
+                  ? "image"
+                  : file.type.startsWith("video/")
+                    ? "video"
+                    : "pdf",
+                file: {
+                  asset: {
+                    _ref: result.file.asset._ref,
+                    _type: "reference",
+                  },
+                  url: result.file.url,
+                },
+                caption: file.name,
+                altText: file.name,
+              };
+
+              // Update Sanity immediately after successful upload
+              await backendClient
+                .patch(doc._id)
+                .setIfMissing({ media: [] })
+                .append("media", [mediaAsset])
+                .commit();
+
+              console.log(`Updated Sanity with ${file.name}`);
+            } catch (error) {
+              console.error(`Error processing ${file.name}:`, error);
+            }
+          })()
+        );
+      });
+
+      // Start all media uploads in parallel without awaiting
+      if (mediaPromises.length > 0) {
+        console.log(
+          `Starting ${mediaPromises.length} media uploads in parallel`
+        );
+        Promise.all(mediaPromises).catch((error) => {
+          console.error("Error in background media processing:", error);
         });
-
-        // Wait for all uploads to complete
-        const mediaAssets = await Promise.all(mediaPromises);
-        console.log("Final Media Assets Array:", mediaAssets);
-
-        // Update the document with all media assets at once
-        await backendClient.patch(doc._id).set({ media: mediaAssets }).commit();
-      } catch (error) {
-        console.error("Error uploading media:", error);
-        return {
-          success: false,
-          message: "Failed to upload media files",
-        };
       }
     }
 
-    // Update the user's posts array
-    try {
-      await backendClient
-        .patch(data.authorId)
-        .setIfMissing({ posts: [] })
-        .append("posts", [
-          {
-            _type: "reference",
-            _ref: doc._id,
-          },
-        ])
-        .commit();
+    // Revalidate paths
+    revalidatePath("/dashboard/[username]");
+    revalidatePath("/user-details");
 
-      // Revalidate the feed page and user profile
-      revalidatePath("/dashboard/[username]");
-      revalidatePath("/user-details");
-
-      return {
-        success: true,
-        data: {
-          ...doc,
-          likes: [],
-          comments: [],
-        },
-      };
-    } catch (error) {
-      console.error("Error updating user posts array:", error);
-      // Even if updating user's posts array fails, the post was created successfully
-      return {
-        success: true,
-        data: {
-          ...doc,
-          likes: [],
-          comments: [],
-        },
-      };
-    }
+    // Return success immediately with the created post
+    return {
+      success: true,
+      data: {
+        ...doc,
+        likes: [],
+        comments: [],
+      },
+      message:
+        mediaPromises.length > 0
+          ? "Post created! Media files are being processed in the background."
+          : "Post created successfully!",
+    };
   } catch (error) {
     console.error("Error creating post:", error);
     return {
