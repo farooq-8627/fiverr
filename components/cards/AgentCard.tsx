@@ -6,22 +6,53 @@ import { GlassCard } from "@/components/UI/GlassCard";
 import { Badge } from "@/components/UI/badge";
 import { Button } from "@/components/UI/button";
 import { ExternalLink, MessageSquare } from "lucide-react";
-import type { AgentProfile } from "@/hooks/useUserProfile";
 import Image from "next/image";
 
+interface UserProfile {
+  personalDetails: {
+    username?: string;
+    website?: string;
+    socialLinks?: Array<{ platform: string; url: string }>;
+    profilePicture?: { asset: { url: string } };
+    bannerImage?: { asset: { url: string } };
+  };
+  coreIdentity: {
+    fullName?: string;
+    tagline?: string;
+    bio?: string;
+  };
+  companyDetails?: {
+    name?: string;
+    bio?: string;
+    logo?: { asset: { url: string } };
+  };
+}
+
+interface AgentProfile {
+  automationExpertise: {
+    automationServices: string[];
+  };
+  availability: {
+    currentStatus: string;
+  };
+  pricing: {
+    hourlyRateRange: string;
+  };
+}
+
 interface AgentCardProps {
-  profile: AgentProfile;
+  userProfile: UserProfile;
+  agentProfile: AgentProfile;
   className?: string;
 }
 
-export function AgentCard({ profile, className }: AgentCardProps) {
-  const {
-    personalDetails,
-    coreIdentity,
-    automationExpertise,
-    availability,
-    businessDetails,
-  } = profile;
+export function AgentCard({
+  userProfile,
+  agentProfile,
+  className,
+}: AgentCardProps) {
+  const { personalDetails, coreIdentity, companyDetails } = userProfile;
+  const { automationExpertise, availability, pricing } = agentProfile;
 
   // Select profile image or use placeholder
   const profileImage =
@@ -33,46 +64,43 @@ export function AgentCard({ profile, className }: AgentCardProps) {
 
   // Format social links
   const website = personalDetails?.website || "";
-  const socialLinks = personalDetails?.socialLinks || [];
 
   return (
-    <GlassCard className="">
-      {/* Banner and Profile Image Section */}
-      <div className="relative h-24">
-        <div className="absolute inset-0 rounded-t-xl overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50">
-            {bannerImage ? (
-              <Image
-                src={bannerImage}
-                alt="Profile Banner"
-                fill
-                className="object-cover"
-              />
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/50">
-                Banner Image
-              </div>
-            )}
-          </div>
+    <GlassCard className="overflow-hidden">
+      {/* Banner Section */}
+      <div className="relative h-32">
+        <Image
+          src={bannerImage}
+          alt="Profile Banner"
+          fill
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/60" />
+      </div>
+
+      {/* Profile Section */}
+      <div className="relative px-6 pb-6">
+        {/* Profile Image */}
+        <div className="absolute -top-10 w-20 h-20 rounded-full border-4 border-black overflow-hidden">
+          <Image
+            src={profileImage}
+            alt={personalDetails?.username || "Agent"}
+            fill
+            className="object-cover"
+          />
         </div>
 
-        {/* Profile Image and Name Section - Aligned horizontally */}
-        <div className="absolute -bottom-12 left-6 flex items-end">
-          <div className="relative h-20 w-20 shrink-0 rounded-full overflow-hidden border-2 border-white shadow-xl backdrop-blur-sm">
-            <Image
-              src={profileImage}
-              alt={personalDetails?.username || "Agent"}
-              fill
-              className="object-cover"
-            />
-          </div>
-
-          {/* Name and Website - Right of profile image */}
-          <div className="ml-4">
-            <h2 className="text-xl font-bold text-white line-clamp-1">
-              {coreIdentity?.fullName || personalDetails?.username || "Agent"}
-            </h2>
-
+        {/* Name and Title Section */}
+        <div className="pt-12 mb-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-white">
+                {coreIdentity?.fullName || personalDetails?.username || "Agent"}
+              </h2>
+              {coreIdentity?.tagline && (
+                <p className="text-sm text-gray-300">{coreIdentity.tagline}</p>
+              )}
+            </div>
             {website && (
               <Link
                 href={
@@ -88,106 +116,95 @@ export function AgentCard({ profile, className }: AgentCardProps) {
             )}
           </div>
         </div>
-      </div>
 
-      {/* Content Section */}
-      <div className="pt-14 pb-2">
-        <div className="flex flex-col min-h-[180px]">
-          {/* Bio Section */}
-          <div className="text-sm text-gray-300 flex-grow">
-            <p
-              className={`${
-                coreIdentity?.hasCompany ? "line-clamp-4" : "line-clamp-6"
-              }`}
-            >
-              {(coreIdentity?.hasCompany && coreIdentity?.companyDescription) ||
-                "Automation expert ready to help with your project needs. Specializing in creating efficient and reliable automated solutions for businesses of all sizes. We are a company of ecommerce. John Doe Inc. is a company that does things. We are a company of ecommerce. John Doe Inc. is a company that does things. We are a company of ecommerce."}
-            </p>
-          </div>
-
-          <div className="mt-auto">
-            {/* Expertise Tags */}
-            {automationExpertise?.automationServices && (
-              <div className="mb-2">
-                <div className="flex flex-nowrap gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-hide">
-                  {automationExpertise.automationServices.map(
-                    (service, index) => (
-                      <Badge
-                        key={index}
-                        variant="outline"
-                        className="bg-purple-900/30 border-purple-500/40 text-purple-200 hover:bg-purple-800/40 shrink-0"
-                      >
-                        {service}
-                      </Badge>
-                    )
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Company Info (if available) */}
-            {coreIdentity?.hasCompany && (
-              <Button className="flex items-center gap-2 w-full text-sm text-gray-300 border border-white/40 hover:bg-white/5 p-2">
-                {coreIdentity.hasCompany && (
-                  <div className="w-8 h-8 relative shrink-0">
-                    <Image
-                      src={
-                        coreIdentity.logo?.asset?.url ||
-                        "/images/placeholder-profile.png"
-                      }
-                      alt={coreIdentity.fullName || "Independent Consultant"}
-                      fill
-                      className="rounded-full object-cover"
-                    />
-                  </div>
-                )}
-                <div className="flex flex-col justify-start items-start overflow-hidden">
-                  <span className="text-sm font-medium truncate w-full text-left">
-                    {coreIdentity.companyName || "Independent Consultant"}
-                  </span>
-                  <span className="text-xs text-gray-400 line-clamp-1 overflow-hidden text-left w-fit">
-                    {coreIdentity.companyDescription ||
-                      "Independent Consultant"}
-                  </span>
-                </div>
-              </Button>
-            )}
-          </div>
+        {/* Bio Section */}
+        <div className="mb-6">
+          <p className="text-sm text-gray-300 line-clamp-3">
+            {coreIdentity?.bio || "No bio available"}
+          </p>
         </div>
 
-        {/* Bottom Info Section: Rate & Availability */}
-        <div className="flex justify-between items-center mt-3 pt-4 border-t border-white/10 gap-4">
-          {/* Pricing if available */}
-          {profile.pricing && (
-            <div className="text-sm">
-              <span className="text-gray-400 block text-xs">Rate</span>
-              <span className="font-medium text-white">
-                {profile.pricing.hourlyRateRange}
-              </span>
+        {/* Expertise Tags */}
+        {automationExpertise?.automationServices && (
+          <div className="mb-6">
+            <div className="flex flex-wrap gap-2">
+              {automationExpertise.automationServices.map((service, index) => (
+                <Badge
+                  key={index}
+                  variant="outline"
+                  className="bg-purple-900/30 border-purple-500/40 text-purple-200 hover:bg-purple-800/40"
+                >
+                  {service}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Company Info */}
+        {companyDetails && (
+          <div className="mb-6">
+            <Button
+              variant="outline"
+              className="w-full flex items-center gap-3 h-auto p-3"
+            >
+              <div className="w-10 h-10 relative shrink-0">
+                <Image
+                  src={
+                    companyDetails.logo?.asset?.url ||
+                    "/images/placeholder-profile.png"
+                  }
+                  alt={companyDetails.name || "Company"}
+                  fill
+                  className="rounded-full object-cover"
+                />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-medium text-white">{companyDetails.name}</p>
+                <p className="text-sm text-gray-400 line-clamp-1">
+                  {companyDetails.bio}
+                </p>
+              </div>
+            </Button>
+          </div>
+        )}
+
+        {/* Bottom Info */}
+        <div className="flex items-center justify-between pt-4 border-t border-white/10">
+          {/* Rate */}
+          {pricing?.hourlyRateRange && (
+            <div>
+              <span className="text-xs text-gray-400">Rate</span>
+              <p className="text-sm font-medium text-white">
+                {pricing.hourlyRateRange}
+              </p>
             </div>
           )}
 
-          {/* Availability if available */}
-          {availability && (
-            <div className="text-sm">
-              <span className="text-gray-400 block text-xs">Availability</span>
-              <span
-                className={`font-medium ${
-                  availability.availabilityStatus === "Available"
+          {/* Availability */}
+          {availability?.currentStatus && (
+            <div>
+              <span className="text-xs text-gray-400">Availability</span>
+              <p
+                className={`text-sm font-medium ${
+                  availability.currentStatus === "Available"
                     ? "text-green-400"
-                    : availability.availabilityStatus === "Limited"
+                    : availability.currentStatus === "Limited"
                       ? "text-yellow-400"
                       : "text-red-400"
                 }`}
               >
-                {availability.availabilityStatus || "Available"}
-              </span>
+                {availability.currentStatus}
+              </p>
             </div>
           )}
 
           {/* Message Button */}
-          <Button className="ml-auto border border-blue-600/50 bg-blue-900/20 text-blue-300 hover:bg-blue-800/30 px-2 py-1 text-sm rounded-md">
-            <MessageSquare className="h-4 w-4 mr-1" /> Message
+          <Button
+            variant="outline"
+            className="ml-auto border-blue-600/50 bg-blue-900/20 text-blue-300 hover:bg-blue-800/30 p-2 rounded-full"
+          >
+            <MessageSquare className="h-4 w-4 " />
           </Button>
         </div>
       </div>

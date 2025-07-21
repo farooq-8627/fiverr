@@ -4,11 +4,8 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
 import { backendClient } from "@/sanity/lib/backendClient";
 import { randomUUID } from "crypto";
-import { FeedPost } from "@/types/Posts";
 import { uploadImageToSanity } from "@/lib/ImageUploads";
-import { client } from "@/sanity/lib/client";
-import { uploadMediaToSanity, handleMediaUploads } from "@/lib/mediaUploads";
-import { handleAsyncImageUploads } from "@/lib/ImageUploads";
+import { uploadMediaToSanity } from "@/lib/mediaUploads";
 
 export interface FormState {
   success: boolean;
@@ -238,7 +235,7 @@ export async function saveUserProfile(formData: FormData): Promise<FormState> {
       }
 
       // Revalidate cached data
-      revalidatePath("/dashboard");
+      revalidatePath("/onboarding");
       revalidatePath("/profile");
 
       return {
