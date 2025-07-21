@@ -85,7 +85,7 @@ export function RequirementsCard({
   return (
     <>
       <GlassCard>
-        <div className="px-6 py-4 space-y-8">
+        <div className="md:px-6 py-4 space-y-8">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-violet-50">
               Requirements & Preferences
@@ -144,7 +144,7 @@ export function RequirementsCard({
                   <AlertCircle className="w-4 h-4 text-violet-400" />
                   <h3 className="font-medium">Deal Breakers</h3>
                 </div>
-                <p className="text-gray-400 text-sm mb-3">
+                <p className="text-gray-400 text-xs mb-3">
                   Non-negotiable requirements that must be met for project
                   consideration
                 </p>
@@ -161,7 +161,7 @@ export function RequirementsCard({
                   <Briefcase className="w-4 h-4 text-violet-400" />
                   <h3 className="font-medium">Industry Domains</h3>
                 </div>
-                <p className="text-gray-400 text-sm mb-3">
+                <p className="text-gray-400 text-xs mb-3">
                   Industries and sectors where I have expertise or prefer to
                   work
                 </p>
@@ -184,7 +184,7 @@ export function RequirementsCard({
                   <FileText className="w-4 h-4 text-violet-400" />
                   <h3 className="font-medium">Project Requirements</h3>
                 </div>
-                <p className="text-gray-400 text-sm mb-3">
+                <p className="text-gray-400 text-xs mb-3">
                   Specific technical or project-related requirements I work with
                 </p>
               </div>

@@ -83,8 +83,11 @@ export function Navbar() {
   const pathname = usePathname();
 
   // Handle navigation with username for dashboard
-  const handleItemClick = (item: any) => {
-    setActiveItem(item.label);
+  const handleItemClick = (label: string) => {
+    setActiveItem(label);
+    const item = SignedInItems.find((i) => i.label === label);
+    if (!item) return;
+
     if (item.href === "/dashboard" && user) {
       const username =
         user.username || user.primaryEmailAddress?.emailAddress.split("@")[0];

@@ -17,22 +17,7 @@ export default function Home() {
       <AgentProfileExample />
       <ClientCardExample /> */}
 
-      <Button onClick={() => router.push("/dashboard/" + userId)}>
-        Dashboard
-      </Button>
-      <Button
-        variant="outline"
-        onClick={() => router.push("/agent-profile/" + userId)}
-      >
-        Agent Profile
-      </Button>
-      <Button variant="ghost" onClick={() => router.push("/clientprojects")}>
-        Client Profile
-      </Button>
-      <Button variant="link" onClick={() => router.push("/post/" + userId)}>
-        Post
-      </Button>
-      <Button variant="destructive">Click me</Button>
+      <Navbar />
       <PostCardExample />
     </main>
   );
