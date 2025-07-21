@@ -15,6 +15,7 @@ interface GlassModalProps {
   className?: string;
   showCloseButton?: boolean;
   size?: "sm" | "md" | "lg" | "xl" | "full";
+  padding?: string;
 }
 
 const sizeClasses = {
@@ -33,6 +34,7 @@ export function GlassModal({
   children,
   className,
   showCloseButton = true,
+  padding = "p-6",
   size = "md",
 }: GlassModalProps) {
   return (
@@ -66,7 +68,7 @@ export function GlassModal({
             </div>
           )}
 
-          <div className={cn("p-6", !title && "pt-4")}>{children}</div>
+          <div className={cn(padding, !title && "pt-4")}>{children}</div>
         </GlassCard>
       </ModalContent>
     </Modal>

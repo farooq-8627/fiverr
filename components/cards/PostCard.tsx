@@ -23,6 +23,7 @@ import {
   Globe,
   CheckCircle2,
   ShieldCheck,
+  Clock,
 } from "lucide-react";
 import { Heart as HeartFilled } from "@phosphor-icons/react";
 import { PostModal } from "@/components/UI/PostModal";
@@ -60,7 +61,7 @@ interface Post {
         url: string;
       };
     };
-    title?: string;
+    tagline?: string;
     verified?: boolean;
     roles?: string[];
   };
@@ -181,6 +182,7 @@ export function PostCard({ post, className }: PostCardProps) {
   // Handle content expansion
   const shouldTruncate = post.content.length > 180;
   const displayContent = isExpanded ? post.content : post.content.slice(0, 180);
+  const showTags = !shouldTruncate || isExpanded;
 
   // Calculate aspect ratio for images
   const calculateAspectRatio = (url: string): Promise<number> => {
@@ -451,85 +453,97 @@ export function PostCard({ post, className }: PostCardProps) {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const handleAuthorClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click from triggering
+    window.location.href = `/dashboard/${post.author.username}`;
+  };
+
   return (
     <GlassCard className={cn("overflow-hidden", className)}>
-      <div className="">
+      <div>
         {/* Author Section */}
         <div className="flex items-start gap-3">
-          <Avatar className="h-10 w-10">
+          <Avatar
+            className="h-10 w-10 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={handleAuthorClick}
+          >
             <AvatarImage src={post.author.profilePicture.asset.url} />
             <AvatarFallback>{post.author.name[0]}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="font-semibold truncate">
+                <span
+                  className="font-semibold truncate cursor-pointer hover:text-blue-400 transition-colors"
+                  onClick={handleAuthorClick}
+                >
                   {post.author.name}
                 </span>
-                {post.author.verified && (
-                  <ShieldCheck className="h-4 w-4 text-blue-400" />
-                )}
+                <ShieldCheck className="h-5 w-5 text-violet-400" />
               </div>
+              {/* Move Author Type Badge to the right */}
               <div className="flex gap-1">
-                {post.author.roles?.includes("agent") && (
-                  <span className="px-1.5 py-0.5 bg-purple-500/10 text-purple-500 rounded text-xs font-medium">
-                    A
+                {post.author.roles?.map((role) => (
+                  <span
+                    key={role}
+                    className={cn(
+                      "px-2 py-0.5 rounded-md text-xs font-semibold",
+                      role === "agent"
+                        ? "bg-purple-500/20 text-purple-400"
+                        : "bg-blue-500/20 text-blue-400"
+                    )}
+                  >
+                    {role === "agent" ? "A" : "C"}
                   </span>
-                )}
-                {post.author.roles?.includes("client") && (
-                  <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-500 rounded text-xs font-medium">
-                    C
-                  </span>
-                )}
+                ))}
               </div>
             </div>
-            {post.author.title && (
-              <p className="text-xs text-gray-400 line-clamp-1">
-                {post.author.title}
-              </p>
-            )}
-            <span className="text-gray-400 text-xs flex items-center gap-1">
-              <Globe className="h-3 w-3" /> {formattedTime}
-            </span>
+            {/* Time */}
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-gray-400 text-xs flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {formattedTime}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Title Section */}
         {post.title && (
-          <h2 className="text-base font-semibold mt-3 text-gray-100">
+          <h2 className="text-lg font-semibold mt-4 text-gray-100">
             {post.title}
           </h2>
         )}
 
         {/* Content Section */}
-        <div className="mt-2">
-          <p className="whitespace-pre-wrap text-xs text-gray-200">
+        <div className="mt-3">
+          <p className="whitespace-pre-wrap text-sm text-gray-200">
             {displayContent}
             {shouldTruncate && !isExpanded && "..."}
           </p>
-
-          {/* Tags Section - Only show when expanded */}
-          {isExpanded && post.tags && post.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {post.tags.map((tag, index) => (
-                <span
-                  key={`tag-${index}`}
-                  className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full cursor-pointer hover:bg-blue-500/20"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
 
           {/* Read More Button */}
           {shouldTruncate && (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="text-xs text-blue-400 hover:text-blue-300 mt-1"
+              className="text-sm text-blue-400 hover:text-blue-300 mt-2 font-medium"
             >
               {isExpanded ? "Show less" : "Read more"}
             </button>
+          )}
+
+          {/* Tags Section - Show only when text fits or is expanded */}
+          {showTags && post.tags && post.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {post.tags.map((tag, index) => (
+                <span
+                  key={`tag-${index}`}
+                  className="text-xs bg-blue-500/10 text-blue-400 px-2.5 py-1 rounded-full cursor-pointer hover:bg-blue-500/20 font-medium"
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
           )}
         </div>
 

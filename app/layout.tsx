@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Navbar } from "@/components/Root/Navbar";
 import { Toaster } from "@/components/UI/toaster";
+import { PostProvider } from "@/lib/context/PostContext";
 
 export const metadata: Metadata = {
   title: "Fiverr",
@@ -48,13 +49,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider>
+    <ClerkProvider appearance={clerkAppearanceObject}>
       <html lang="en" className="[color-scheme:dark]" suppressHydrationWarning>
         <body
           className={`${inter.className} ${geistSans.variable} ${geistMono.variable} min-h-screen bg-black text-white bg-gradient-to-b from-black to-violet-900`}
         >
-          {children}
-          <Toaster />
+          <PostProvider>
+            <Navbar />
+            {children}
+            <Toaster />
+          </PostProvider>
         </body>
       </html>
     </ClerkProvider>
