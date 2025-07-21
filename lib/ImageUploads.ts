@@ -1,11 +1,6 @@
-<<<<<<< HEAD
 import { backendClient } from "@/sanity/lib/backendClient";
 
 // Helper function to upload an image to Sanity's asset store
-=======
-import { backendClient } from "@/sanity/lib/backendClinet";
-
->>>>>>> main
 export async function uploadImageToSanity(file: File) {
   try {
     // Convert File to ArrayBuffer
@@ -111,20 +106,10 @@ export async function handleAsyncImageUploads(
                 if (additionalData && additionalData._type === "projectImage") {
                   // For projectImage type, we need to structure it according to the schema
                   newItem = {
-<<<<<<< HEAD
                     _type: "projectImage",
                     _key: additionalData._key,
                     alt: additionalData.alt || "Project image",
                     image: imageRef, // Nest the image reference inside the 'image' field
-=======
-                    _type: "image",
-                    _key: additionalData._key,
-                    alt: additionalData.alt || "Project image",
-                    asset: {
-                      _type: "reference",
-                      _ref: imageAsset._id,
-                    },
->>>>>>> main
                   };
                 } else {
                   // For regular images, just add the imageRef with additionalData

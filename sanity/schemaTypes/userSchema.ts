@@ -1,8 +1,5 @@
 import { defineField, defineType } from "sanity";
-<<<<<<< HEAD
 import userProfileDetails from "./userProfileDetails";
-=======
->>>>>>> main
 
 export const userSchema = defineType({
   name: "user",
@@ -101,7 +98,6 @@ export const userSchema = defineType({
         },
       ],
     }),
-<<<<<<< HEAD
     // Profile Details
     defineField({
       name: "profileDetails",
@@ -109,8 +105,6 @@ export const userSchema = defineType({
       type: "object",
       fields: userProfileDetails.fields,
     }),
-=======
->>>>>>> main
     // Company Details
     defineField({
       name: "hasCompany",
@@ -138,15 +132,12 @@ export const userSchema = defineType({
       type: "array",
       of: [{ type: "reference", to: [{ type: "clientProfile" }] }],
     }),
-<<<<<<< HEAD
     defineField({
       name: "posts",
       title: "Posts",
       type: "array",
       of: [{ type: "reference", to: [{ type: "post" }] }],
     }),
-=======
->>>>>>> main
     // System Fields
     defineField({
       name: "createdAt",
