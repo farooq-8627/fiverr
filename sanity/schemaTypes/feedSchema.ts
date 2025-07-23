@@ -219,7 +219,9 @@ export const PostSchema = defineType({
       validation: (Rule) =>
         Rule.custom((likes) => {
           if (!likes) return true;
-          const usernames = likes.map((like) => like.personalDetails?.username);
+          const usernames = likes.map(
+            (like: any) => like.personalDetails?.username
+          );
           const uniqueUsernames = new Set(usernames);
           return (
             usernames.length === uniqueUsernames.size ||
