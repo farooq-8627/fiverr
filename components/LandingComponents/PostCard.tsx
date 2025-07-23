@@ -1,4 +1,4 @@
-import { PostCard } from "../cards/PostCard";
+import { PostCard } from "../cards/Feed/PostCard";
 
 const examplePosts = [
   {

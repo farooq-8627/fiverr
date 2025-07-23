@@ -290,7 +290,10 @@ export function CreatePostModal({
               id="tags"
               value={formData.currentTag}
               onChange={(e) =>
-                setFormData((prev) => ({ ...prev, currentTag: e.target.value }))
+                setFormData((prev) => ({
+                  ...prev,
+                  currentTag: e.target.value.replace(/#/g, ""),
+                }))
               }
               onKeyDown={handleTagAdd}
               placeholder="Add tags (press Enter to add)"

@@ -88,6 +88,12 @@ export const CommentSchema = defineType({
       of: [{ type: "comment" }],
       description: "Nested comment replies",
     }),
+    defineField({
+      name: "isEdited",
+      title: "Is Edited",
+      type: "boolean",
+      initialValue: false,
+    }),
   ],
 });
 
@@ -98,11 +104,22 @@ export const LikeSchema = defineType({
   type: "object",
   fields: [
     defineField({
-      name: "user",
-      title: "User",
-      type: "reference",
-      to: [{ type: "user" }],
-      validation: (Rule) => Rule.required(),
+      name: "personalDetails",
+      title: "Personal Details",
+      type: "object",
+      fields: [
+        defineField({
+          name: "username",
+          title: "Username",
+          type: "string",
+          validation: (Rule) => Rule.required(),
+        }),
+        defineField({
+          name: "profilePicture",
+          title: "Profile Picture",
+          type: "string",
+        }),
+      ],
     }),
     defineField({
       name: "likedAt",
@@ -111,12 +128,18 @@ export const LikeSchema = defineType({
       validation: (Rule) => Rule.required(),
     }),
   ],
+  preview: {
+    select: {
+      title: "personalDetails.username",
+      subtitle: "likedAt",
+    },
+  },
 });
 
 // Social Feed Post Schema
 export const PostSchema = defineType({
   name: "post",
-  title: "Post",
+  title: "Posts",
   type: "document",
   fields: [
     defineField({
@@ -193,25 +216,17 @@ export const PostSchema = defineType({
       name: "likes",
       title: "Likes",
       type: "array",
-      of: [
-        {
-          type: "object",
-          name: "like",
-          fields: [
-            {
-              name: "user",
-              type: "reference",
-              to: [{ type: "user" }],
-              validation: (Rule) => Rule.required(),
-            },
-            {
-              name: "likedAt",
-              type: "datetime",
-              validation: (Rule) => Rule.required(),
-            },
-          ],
-        },
-      ],
+      validation: (Rule) =>
+        Rule.custom((likes) => {
+          if (!likes) return true;
+          const usernames = likes.map((like) => like.personalDetails?.username);
+          const uniqueUsernames = new Set(usernames);
+          return (
+            usernames.length === uniqueUsernames.size ||
+            "Each user can only like once"
+          );
+        }),
+      of: [{ type: "like" }],
     }),
     defineField({
       name: "comments",
@@ -235,7 +250,7 @@ export const PostSchema = defineType({
     select: {
       title: "title",
       subtitle: "content",
-      media: "media.0.file",
+      media: "media.0.file.asset",
     },
     prepare(selection) {
       const { title, subtitle, media } = selection;

@@ -1,6 +1,6 @@
 import { Button } from "@/components/UI/button";
 import { GlassCard } from "@/components/UI/GlassCard";
-import { PostCard } from "@/components/cards/PostCard";
+import { PostCard } from "@/components/cards/Feed/PostCard";
 import { FeedPost } from "@/types/Posts";
 import { Plus } from "lucide-react";
 import { useState } from "react";

@@ -2,23 +2,25 @@
 
 import React, { useEffect, useState } from "react";
 import { usePosts } from "@/hooks/usePosts";
-import { PostCard, Media } from "@/components/cards/PostCard";
+import { PostCard, Media } from "@/components/cards/Feed/PostCard";
 import { useUser } from "@clerk/nextjs";
 import { Post } from "@/types/post";
 
 interface PostCardPost {
-  id: string;
+  _id: string;
   title: string;
   content: string;
   tags: string[];
   createdAt: string;
-  likes: number;
+  likes: string[]; // Array of user IDs who liked the post
   comments: number;
   reposts: number;
   media?: Media[];
   author: {
+    _id: string;
     name: string;
     username: string;
+    portfolio?: string;
     profilePicture: {
       asset: {
         url: string;
@@ -71,29 +73,34 @@ export default function FeedPage() {
       }));
 
     // Handle author profile picture with null check
-    const profilePicture = post.author.personalDetails.profilePicture || {
+    const profilePicture = post.author.personalDetails?.profilePicture || {
       asset: {
         url: "/default-avatar.png",
       },
     };
 
     return {
-      id: post._id,
+      _id: post._id,
       title: post.title || "",
       content: post.content,
       tags: post.tags || [],
       createdAt: post.createdAt,
-      likes: post.likes?.length || 0,
+      likes: post.likes || [], // Pass the likes array directly
       comments: post.comments?.length || 0,
       reposts: 0,
       media: transformedMedia,
       author: {
-        name: post.author.coreIdentity.fullName,
-        username: post.author.personalDetails.username,
-        profilePicture,
-        tagline: post.author.coreIdentity.tagline,
+        _id: post.author._id,
+        name: post.author.coreIdentity?.fullName || "",
+        username: post.author.personalDetails?.username || "",
+        profilePicture: {
+          asset: {
+            url: profilePicture.asset?.url || "",
+          },
+        },
+        tagline: post.author.personalDetails?.tagline || "",
         verified: false,
-        roles: [post.authorType], // Use the actual author type from the post
+        roles: [post.author.authorType || "user"],
       },
     };
   };

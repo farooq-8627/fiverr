@@ -27,7 +27,37 @@ const postProjection = `{
         "url": file.asset->url
       }
     }
-  }
+  },
+  comments[] {
+    _key,
+    text,
+    createdAt,
+    "author": author->{
+      _id,
+      personalDetails {
+        username,
+        profilePicture {
+          asset-> {
+            url
+          }
+        }
+      },
+      coreIdentity {
+        fullName
+      }
+    },
+  },
+    likes[] {
+      _id,
+      personalDetails {
+        username,
+        profilePicture {
+          asset-> {
+            url
+          }
+        }
+      }
+    }
 }`;
 
 export const postQueries = {
@@ -88,5 +118,74 @@ export const postQueries = {
 
   getPopularPosts: (limit: number = 10) => {
     return `*[_type == "post"] | order(length(likes) desc, createdAt desc)[0...${limit}]${postProjection}`;
+  },
+
+  getPostComments: (postId: string) => {
+    console.log("Building comment query for post:", postId);
+    const authorProjection = `{
+      "_id": _id,
+      "personalDetails": {
+        "username": personalDetails.username,
+        "profilePicture": personalDetails.profilePicture {
+          "asset": {
+            "url": asset->url
+          }
+        }
+      },
+      "coreIdentity": {
+        "fullName": coreIdentity.fullName
+      }
+    }`;
+
+    const query = `*[_type == "post" && _id == "${postId}"][0] {
+      "comments": comments[] {
+        _key,
+        "text": coalesce(content, text),
+        createdAt,
+        isEdited,
+        updatedAt,
+        "author": coalesce(
+          author->${authorProjection},
+          {
+            "_id": author._id,
+            "personalDetails": author.personalDetails,
+            "coreIdentity": author.coreIdentity
+          }
+        ),
+        "replies": replies[] {
+          _key,
+          "text": coalesce(content, text),
+          createdAt,
+          isEdited,
+          updatedAt,
+          "author": coalesce(
+            author->${authorProjection},
+            {
+              "_id": author._id,
+              "personalDetails": author.personalDetails,
+              "coreIdentity": author.coreIdentity
+            }
+          )
+        }
+      }
+    }`;
+    console.log("Generated GROQ query:", query);
+    return query;
+  },
+
+  getPostLikes: (postId: string) => {
+    return `*[_type == "post" && _id == "${postId}"][0] {
+      "likes": likes[] {
+        _id,
+        "personalDetails": personalDetails {
+          username,
+          profilePicture {
+            asset-> {
+              url
+            }
+          }
+        }
+      }
+    }`;
   },
 };

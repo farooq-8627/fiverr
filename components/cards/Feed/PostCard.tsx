@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { GlassCard } from "@/components/UI/GlassCard";
@@ -26,10 +26,17 @@ import {
   Clock,
 } from "lucide-react";
 import { Heart as HeartFilled } from "@phosphor-icons/react";
-import { PostModal } from "@/components/UI/PostModal";
+import { PostModal } from "@/components/cards/Feed/PostModal";
 import { formatPostTime } from "@/lib/formatPostTime";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/UI/avatar";
 import { cn } from "@/lib/utils";
+import { usePosts } from "@/hooks/usePosts";
+import type { Comment } from "@/types/post";
+import { postQueries } from "@/lib/queries/post";
+import { client } from "@/sanity/lib/client";
+import { useUser } from "@clerk/nextjs";
+import { usePost } from "@/lib/context/PostContext";
+import { Like } from "@/types/post";
 
 export interface Media {
   type: "image" | "video" | "pdf";
@@ -43,41 +50,57 @@ export interface Media {
   aspectRatio?: number;
 }
 
-interface Post {
-  id: string;
-  title: string;
-  content: string;
-  tags: string[];
-  createdAt: string;
-  likes: number;
-  comments: number;
-  reposts: number;
-  media?: Media[];
-  author: {
-    name: string;
-    username: string;
-    profilePicture: {
-      asset: {
-        url: string;
-      };
-    };
-    tagline?: string;
-    verified?: boolean;
-    roles?: string[];
-  };
-}
-
 interface PostCardProps {
-  post: Post;
+  post: {
+    _id: string;
+    title: string;
+    content: string;
+    tags: string[];
+    createdAt: string;
+    likes: Like[];
+    comments: number;
+    reposts: number;
+    media?: Media[];
+    author: {
+      _id: string;
+      name: string;
+      username: string;
+      profilePicture: {
+        asset: {
+          url: string;
+        };
+      };
+      tagline?: string;
+      verified?: boolean;
+      roles?: string[];
+    };
+  };
   className?: string;
+  onCommentAdded?: (postId: string, comment: Comment) => void;
+  onCommentDeleted?: (postId: string, commentKey: string) => void;
 }
 
-export function PostCard({ post, className }: PostCardProps) {
+export function PostCard({
+  post: initialPost,
+  className,
+  onCommentAdded,
+  onCommentDeleted,
+}: PostCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
-  const [mediaItems, setMediaItems] = useState<Media[]>(post.media || []);
+  const [mediaItems, setMediaItems] = useState<Media[]>(
+    initialPost.media || []
+  );
+  const [post, setPost] = useState(initialPost);
+  const { user } = useUser();
+  const { likePost } = usePost();
+
+  // Add memoized isLiked check
+  const isLiked = useMemo(() => {
+    if (!user?.id || !post.likes) return false;
+    return post.likes.some((like) => like._id === user.id);
+  }, [user?.id, post.likes]);
 
   // Video player states
   const [isPlaying, setIsPlaying] = useState(false);
@@ -172,18 +195,6 @@ export function PostCard({ post, className }: PostCardProps) {
     handleSeek(e);
   };
 
-  const handleMediaClick = (index: number) => {
-    setSelectedMediaIndex(index);
-    setIsModalOpen(true);
-  };
-
-  const formattedTime = formatPostTime(post.createdAt);
-
-  // Handle content expansion
-  const shouldTruncate = post.content.length > 180;
-  const displayContent = isExpanded ? post.content : post.content.slice(0, 180);
-  const showTags = !shouldTruncate || isExpanded;
-
   // Calculate aspect ratio for images
   const calculateAspectRatio = (url: string): Promise<number> => {
     return new Promise<number>((resolve) => {
@@ -221,6 +232,18 @@ export function PostCard({ post, className }: PostCardProps) {
 
     updateAspectRatios();
   }, [post.media]);
+
+  const handleMediaClick = (index: number) => {
+    setSelectedMediaIndex(index);
+    setIsModalOpen(true);
+  };
+
+  const formattedTime = formatPostTime(post.createdAt);
+
+  // Handle content expansion
+  const shouldTruncate = post.content.length > 180;
+  const displayContent = isExpanded ? post.content : post.content.slice(0, 180);
+  const showTags = !shouldTruncate || isExpanded;
 
   // Get media grid layout class and container classes based on number of items
   const getMediaLayout = (count: number, media: Media[], index: number) => {
@@ -302,10 +325,7 @@ export function PostCard({ post, className }: PostCardProps) {
         );
       case "video":
         return (
-          <div
-            className={`${containerClasses} bg-gray-800 cursor-pointer`}
-            onClick={() => handleMediaClick(index)}
-          >
+          <div className={`${containerClasses} bg-gray-800 cursor-pointer`}>
             {media.file.asset.url ? (
               renderVideo(media)
             ) : (
@@ -321,7 +341,10 @@ export function PostCard({ post, className }: PostCardProps) {
       case "pdf":
         return (
           <div className={containerClasses}>
-            <div className="absolute inset-0 bg-gray-800 flex flex-col items-center justify-center group hover:bg-gray-700 transition-colors">
+            <div
+              className="absolute inset-0 bg-gray-800 flex flex-col items-center justify-center group hover:bg-gray-700 transition-colors cursor-pointer"
+              onClick={() => handleMediaClick(index)}
+            >
               <FileText className="w-12 h-12 text-gray-400 group-hover:text-gray-300" />
               {media.caption && (
                 <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white p-2 text-sm truncate">
@@ -458,9 +481,46 @@ export function PostCard({ post, className }: PostCardProps) {
     window.location.href = `/dashboard/${post.author.username}`;
   };
 
+  const handleLike = async () => {
+    if (!user?.id) return;
+
+    // Create optimistic like object
+    const optimisticLike: Like = {
+      _id: user.id,
+      _key: `${user.id}-${Date.now()}`,
+      likedAt: new Date().toISOString(),
+      personalDetails: {
+        username: user.username || user.id,
+      },
+    };
+
+    // Optimistically update the UI
+    const updatedLikes = isLiked
+      ? post.likes.filter((like) => like._id !== user.id)
+      : [...post.likes, optimisticLike];
+
+    // Update local state immediately
+    const updatedPost = {
+      ...post,
+      likes: updatedLikes,
+    };
+
+    // Update the UI immediately
+    setPost(updatedPost);
+
+    try {
+      // Make the backend call
+      await likePost(post._id, user.id);
+    } catch (error) {
+      // If there's an error, revert the optimistic update
+      console.error("Error handling like:", error);
+      setPost(post); // Revert to original state
+    }
+  };
+
   return (
     <GlassCard className={cn("overflow-hidden", className)}>
-      <div>
+      <div className="cursor-pointer">
         {/* Author Section */}
         <div className="flex items-start gap-3">
           <Avatar
@@ -474,7 +534,7 @@ export function PostCard({ post, className }: PostCardProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span
-                  className="font-semibold truncate cursor-pointer hover:text-blue-400 transition-colors"
+                  className="font-semibold truncate cursor-pointer hover:text-violet-300 transition-colors"
                   onClick={handleAuthorClick}
                 >
                   {post.author.name}
@@ -510,13 +570,19 @@ export function PostCard({ post, className }: PostCardProps) {
 
         {/* Title Section */}
         {post.title && (
-          <h2 className="text-lg font-semibold mt-4 text-gray-100">
+          <h2
+            className="text-lg font-semibold mt-4 text-gray-100 cursor-pointer"
+            onClick={() => setIsModalOpen(true)}
+          >
             {post.title}
           </h2>
         )}
 
         {/* Content Section */}
-        <div className="mt-3">
+        <div
+          className="mt-3 cursor-pointer"
+          onClick={() => setIsModalOpen(true)}
+        >
           <p className="whitespace-pre-wrap text-sm text-gray-200">
             {displayContent}
             {shouldTruncate && !isExpanded && "..."}
@@ -580,28 +646,28 @@ export function PostCard({ post, className }: PostCardProps) {
         )}
 
         {/* Engagement Section */}
-        <div className="flex items-center gap-6 mt-4 text-sm text-gray-400">
+        <div
+          className="flex items-center gap-6 mt-4 text-sm text-gray-400 cursor-pointer"
+          onClick={() => setIsModalOpen(true)}
+        >
           <div className="flex items-center gap-1">
-            <span>{post.likes}</span>
+            <span>{post.likes.length}</span>
             <span>likes</span>
           </div>
           <div className="flex items-center gap-1">
             <span>{post.comments}</span>
             <span>comments</span>
           </div>
-          <div className="flex items-center gap-1">
-            <span>{post.reposts}</span>
-            <span>reposts</span>
-          </div>
         </div>
 
         {/* Action Buttons */}
         <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
           <Button
-            className={`flex items-center gap-2 ${
-              isLiked ? "text-red-500" : "text-gray-400 hover:text-white"
-            }`}
-            onClick={() => setIsLiked(!isLiked)}
+            className={cn(
+              "flex items-center gap-2",
+              isLiked ? "text-violet-400" : "text-gray-400 hover:text-white"
+            )}
+            onClick={handleLike}
             variant="ghost"
           >
             {isLiked ? (
@@ -623,13 +689,6 @@ export function PostCard({ post, className }: PostCardProps) {
             className="flex items-center gap-2 text-gray-400 hover:text-white"
             variant="ghost"
           >
-            <Repeat2 className="h-5 w-5" />
-            Repost
-          </Button>
-          <Button
-            className="flex items-center gap-2 text-gray-400 hover:text-white"
-            variant="ghost"
-          >
             <Send className="h-5 w-5" />
             Share
           </Button>
@@ -640,7 +699,7 @@ export function PostCard({ post, className }: PostCardProps) {
       <PostModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        post={post}
+        post={post} // Use the current post state instead of the initial post
         selectedMediaIndex={selectedMediaIndex}
       />
     </GlassCard>

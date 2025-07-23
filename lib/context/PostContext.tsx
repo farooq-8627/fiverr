@@ -1,8 +1,9 @@
 "use client";
 import React, { createContext, useContext, useState, useCallback } from "react";
-import { Post, PostFilter, Comment } from "@/types/post";
+import { Post, PostFilter, Like } from "@/types/post";
 import { postQueries } from "../queries/post";
 import { client } from "@/sanity/lib/client";
+import { likePost as likePostAction } from "@/lib/actions/post";
 
 interface PostContextType {
   posts: Post[];
@@ -22,13 +23,13 @@ interface PostContextType {
   deletePost: (postId: string) => Promise<void>;
   likePost: (postId: string, userId: string) => Promise<void>;
   unlikePost: (postId: string, userId: string) => Promise<void>;
-  addComment: (
+  addComment: (postId: string, text: string, author: any) => Promise<any>;
+  deleteComment: (postId: string, commentKey: string) => Promise<any>;
+  updateComment: (
     postId: string,
-    comment: string,
-    userId: string,
-    author: Comment["author"]
-  ) => Promise<void>;
-  deleteComment: (postId: string, commentId: string) => Promise<void>;
+    commentKey: string,
+    text: string
+  ) => Promise<any>;
 }
 
 const PostContext = createContext<PostContextType | undefined>(undefined);
@@ -46,9 +47,8 @@ export function PostProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       setError(null);
-      const query = postQueries.getAllPosts(filter);
-      const result = await client.fetch<Post[]>(query);
-      setPosts(result);
+      const fetchedPosts = await client.fetch(postQueries.getAllPosts(filter));
+      setPosts(fetchedPosts);
     } catch (err) {
       setError("Failed to fetch posts");
       console.error("Error fetching posts:", err);
@@ -61,9 +61,10 @@ export function PostProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       setError(null);
-      const query = postQueries.getUserPosts(username);
-      const result = await client.fetch<Post[]>(query);
-      setUserPosts(result);
+      const fetchedPosts = await client.fetch(
+        postQueries.getUserPosts(username)
+      );
+      setUserPosts(fetchedPosts);
     } catch (err) {
       setError("Failed to fetch user posts");
       console.error("Error fetching user posts:", err);
@@ -76,9 +77,10 @@ export function PostProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       setError(null);
-      const query = postQueries.getUserAchievements(username);
-      const result = await client.fetch<Post[]>(query);
-      setAchievementPosts(result);
+      const fetchedPosts = await client.fetch(
+        postQueries.getUserAchievements(username)
+      );
+      setAchievementPosts(fetchedPosts);
     } catch (err) {
       setError("Failed to fetch achievement posts");
       console.error("Error fetching achievement posts:", err);
@@ -91,9 +93,8 @@ export function PostProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       setError(null);
-      const query = postQueries.getLatestPosts();
-      const result = await client.fetch<Post[]>(query);
-      setLatestPosts(result);
+      const fetchedPosts = await client.fetch(postQueries.getLatestPosts());
+      setLatestPosts(fetchedPosts);
     } catch (err) {
       setError("Failed to fetch latest posts");
       console.error("Error fetching latest posts:", err);
@@ -106,9 +107,8 @@ export function PostProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoading(true);
       setError(null);
-      const query = postQueries.getPopularPosts();
-      const result = await client.fetch<Post[]>(query);
-      setPopularPosts(result);
+      const fetchedPosts = await client.fetch(postQueries.getPopularPosts());
+      setPopularPosts(fetchedPosts);
     } catch (err) {
       setError("Failed to fetch popular posts");
       console.error("Error fetching popular posts:", err);
@@ -156,129 +156,167 @@ export function PostProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const likePost = useCallback(async (postId: string, userId: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      await client
-        .patch(postId)
-        .setIfMissing({ likes: [] })
-        .append("likes", [userId])
-        .commit();
+  const likePost = useCallback(
+    async (postId: string, userId: string) => {
+      try {
+        // Find the post and check if it's already liked
+        const post = posts.find((p) => p._id === postId);
+        if (!post) return;
 
-      // Update posts state to reflect the like
-      setPosts((prevPosts) =>
-        prevPosts.map((post) =>
-          post._id === postId
-            ? { ...post, likes: [...(post.likes || []), userId] }
-            : post
-        )
-      );
-    } catch (err) {
-      setError("Failed to like post");
-      console.error("Error liking post:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+        const isLiked = post.likes.some(
+          (like) => like?.personalDetails?.username === userId
+        );
+        const action = isLiked ? "unlike" : "like";
+
+        // Make the backend call first since we need user details
+        console.log("Calling likePost server action...");
+        const result = await likePostAction(postId, userId);
+        console.log("Server action result:", result);
+
+        if (!result.success) {
+          throw new Error(result.error || "Failed to like/unlike post");
+        }
+
+        // Update UI after successful backend call
+        const updatePostsState = (prevPosts: Post[]): Post[] =>
+          prevPosts.map((post): Post => {
+            if (post._id !== postId) return post;
+
+            const updatedLikes =
+              action === "unlike"
+                ? post.likes.filter(
+                    (like) => like?.personalDetails?.username !== userId
+                  )
+                : post.likes;
+
+            return {
+              ...post,
+              likes: updatedLikes,
+            };
+          });
+
+        // Update all post states
+        setPosts(updatePostsState);
+        setUserPosts(updatePostsState);
+        setAchievementPosts(updatePostsState);
+        setLatestPosts(updatePostsState);
+        setPopularPosts(updatePostsState);
+      } catch (err) {
+        console.error("Error in likePost:", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to like/unlike post"
+        );
+      }
+    },
+    [posts]
+  );
 
   const unlikePost = useCallback(async (postId: string, userId: string) => {
     try {
       setLoading(true);
       setError(null);
-      await client
-        .patch(postId)
-        .unset([`likes[@ == "${userId}"]`])
-        .commit();
 
-      // Update posts state to reflect the unlike
-      setPosts((prevPosts) =>
-        prevPosts.map((post) =>
+      const result = await likePostAction(postId, userId);
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      // Update posts state based on the action
+      const updatePostsState = (posts: Post[]) =>
+        posts.map((post) =>
           post._id === postId
-            ? { ...post, likes: post.likes.filter((id) => id !== userId) }
+            ? {
+                ...post,
+                likes:
+                  result.action === "unlike"
+                    ? post.likes.filter((like) => like._id !== userId)
+                    : [...(post.likes || []), userId],
+              }
             : post
-        )
-      );
+        );
     } catch (err) {
-      setError("Failed to unlike post");
-      console.error("Error unliking post:", err);
+      setError("Failed to like/unlike post");
+      console.error("Error in unlikePost:", err);
     } finally {
       setLoading(false);
     }
   }, []);
 
   const addComment = useCallback(
-    async (
-      postId: string,
-      text: string,
-      userId: string,
-      author: Comment["author"]
-    ) => {
+    async (postId: string, text: string, author: any) => {
       try {
         setLoading(true);
         setError(null);
-        const newComment: Comment = {
-          _key: new Date().toISOString(),
-          text,
-          author,
+        const result = await client.create({
+          _type: "comment",
+          post: { _type: "reference", _ref: postId },
+          text: text,
+          author: { _type: "reference", _ref: author._id },
           createdAt: new Date().toISOString(),
-        };
-
-        await client
-          .patch(postId)
-          .setIfMissing({ comments: [] })
-          .append("comments", [newComment])
-          .commit();
-
-        // Update posts state to reflect the new comment
-        setPosts((prevPosts) =>
-          prevPosts.map((post) =>
-            post._id === postId
-              ? { ...post, comments: [...(post.comments || []), newComment] }
-              : post
-          )
-        );
+        });
+        // Refresh posts to include the new comment
+        await fetchPosts();
+        return result;
       } catch (err) {
         setError("Failed to add comment");
         console.error("Error adding comment:", err);
+        return { success: false, error: "Failed to add comment" };
       } finally {
         setLoading(false);
       }
     },
-    []
+    [fetchPosts]
   );
 
   const deleteComment = useCallback(
-    async (postId: string, commentId: string) => {
+    async (postId: string, commentKey: string) => {
       try {
         setLoading(true);
         setError(null);
-        await client
-          .patch(postId)
-          .unset([`comments[_key == "${commentId}"]`])
-          .commit();
-
-        // Update posts state to reflect the deleted comment
-        setPosts((prevPosts) =>
-          prevPosts.map((post) =>
-            post._id === postId
-              ? {
-                  ...post,
-                  comments: post.comments.filter(
-                    (comment) => comment._key !== commentId
-                  ),
-                }
-              : post
-          )
-        );
+        const result = await client.delete(commentKey);
+        // Refresh posts to remove the deleted comment
+        await fetchPosts();
+        return result;
       } catch (err) {
         setError("Failed to delete comment");
         console.error("Error deleting comment:", err);
+        return { success: false, error: "Failed to delete comment" };
       } finally {
         setLoading(false);
       }
     },
-    []
+    [fetchPosts]
+  );
+
+  const updateComment = useCallback(
+    async (postId: string, commentKey: string, text: string) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const result = await client
+          .patch(postId)
+          .setIfMissing({ comments: [] })
+          .insert("after", "comments[-1]", [
+            {
+              _key: commentKey,
+              _type: "comment",
+              text: text,
+            },
+          ])
+          .commit();
+        // Refresh posts to update the comment
+        await fetchPosts();
+        return result;
+      } catch (err) {
+        setError("Failed to update comment");
+        console.error("Error updating comment:", err);
+        return { success: false, error: "Failed to update comment" };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchPosts]
   );
 
   const value = {
@@ -300,6 +338,7 @@ export function PostProvider({ children }: { children: React.ReactNode }) {
     unlikePost,
     addComment,
     deleteComment,
+    updateComment,
   };
 
   return <PostContext.Provider value={value}>{children}</PostContext.Provider>;

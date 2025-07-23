@@ -2,24 +2,23 @@ import { SanityDocument } from "sanity";
 
 export interface Author {
   _id: string;
-  personalDetails: {
-    username: string;
+  authorType?: string;
+  personalDetails?: {
+    username?: string;
+    tagline?: string;
     profilePicture?: {
-      asset: {
-        url: string;
+      asset?: {
+        url?: string;
       };
     };
   };
-  coreIdentity: {
-    fullName: string;
-    tagline?: string;
-    bio?: string;
+  coreIdentity?: {
+    fullName?: string;
   };
 }
 
-export interface MediaAsset {
-  _key: string;
-  type: "pdf" | "video" | "image";
+export interface Media {
+  type: "image" | "video" | "pdf";
   file: {
     asset: {
       url: string;
@@ -27,58 +26,57 @@ export interface MediaAsset {
   };
   caption?: string;
   altText?: string;
+  aspectRatio?: number;
 }
 
 export interface Comment {
   _key: string;
   text: string;
-  author: Author;
   createdAt: string;
+  updatedAt?: string;
+  isEdited?: boolean;
+  author: Author;
+  replies?: Comment[];
+}
+
+export interface Like {
+  _id: string;
+  _key: string;
+  likedAt: string;
+  personalDetails?: {
+    username: string;
+    profilePicture?: {
+      asset: {
+        url: string;
+      };
+    };
+  };
 }
 
 export interface Post {
   _id: string;
-  _type: "post";
   title?: string;
   content: string;
-  author: Author;
-  authorType: "agent" | "client";
-  media?: MediaAsset[];
-  likes: string[]; // Array of user IDs who liked the post
-  comments: Comment[];
   tags?: string[];
-  isAchievement?: boolean;
   createdAt: string;
-  _rev: string;
+  likes: Like[];
+  comments: Comment[];
+  media?: Media[];
+  author: Author;
+  isAchievement?: boolean;
+  achievementType?: string;
 }
 
-export interface PostFilter {
+export type PostFilter = {
   username?: string;
   limit?: number;
   sortBy?: "latest" | "popular";
   tag?: string;
   achievementOnly?: boolean;
-}
-
-export type PostWithAuthor = Post & {
-  author: {
-    _id: string;
-    personalDetails: {
-      username: string;
-      profilePicture?: {
-        asset: {
-          url: string;
-        };
-      };
-    };
-    coreIdentity: {
-      fullName: string;
-    };
-  };
 };
 
-export type PostActionResult = {
+export interface PostActionResult {
   success: boolean;
-  message?: string;
+  error?: string;
   data?: any;
-};
+}

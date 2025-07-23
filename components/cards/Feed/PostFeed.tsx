@@ -84,7 +84,7 @@ export function PostFeed({
   const handleAddComment = async (postId: string, text: string) => {
     if (!user?.id) return;
 
-    await addComment(postId, text, user.id, {
+    await addComment(postId, text, {
       _id: user.id,
       personalDetails: {
         username: user.username || "",
@@ -112,19 +112,21 @@ export function PostFeed({
         <article key={post._id} className="bg-white rounded-lg shadow p-6">
           {/* Author info */}
           <div className="flex items-center mb-4">
-            {post.author.personalDetails.profilePicture && (
+            {post.author.personalDetails?.profilePicture?.asset?.url && (
               <img
                 src={post.author.personalDetails.profilePicture.asset.url}
-                alt={post.author.coreIdentity.fullName}
+                alt={post.author.coreIdentity?.fullName || "User"}
                 className="w-10 h-10 rounded-full mr-3"
               />
             )}
             <div>
               <h3 className="font-semibold">
-                {post.author.coreIdentity.fullName}
+                {post.author.coreIdentity?.fullName ||
+                  post.author.personalDetails?.username ||
+                  "Anonymous"}
               </h3>
               <p className="text-sm text-gray-500">
-                @{post.author.personalDetails.username}
+                @{post.author.personalDetails?.username || "anonymous"}
               </p>
             </div>
           </div>
@@ -138,9 +140,9 @@ export function PostFeed({
           {/* Media */}
           {post.media && post.media.length > 0 && (
             <div className="grid grid-cols-2 gap-2 mb-4">
-              {post.media.map((media) => (
+              {post.media.map((media, index) => (
                 <img
-                  key={media._key}
+                  key={index}
                   src={media.file.asset.url}
                   alt="Post media"
                   className="rounded-lg"
@@ -173,19 +175,21 @@ export function PostFeed({
                 key={comment._key}
                 className="flex items-start gap-2 text-sm"
               >
-                {comment.author.personalDetails.profilePicture && (
+                {comment.author.personalDetails?.profilePicture?.asset?.url && (
                   <img
                     src={
                       comment.author.personalDetails.profilePicture.asset.url
                     }
-                    alt={comment.author.coreIdentity.fullName}
+                    alt={comment.author.coreIdentity?.fullName || "User"}
                     className="w-8 h-8 rounded-full"
                   />
                 )}
                 <div className="flex-1 bg-gray-50 rounded-lg p-3">
                   <div className="flex items-center justify-between">
                     <h4 className="font-semibold">
-                      {comment.author.coreIdentity.fullName}
+                      {comment.author.coreIdentity?.fullName ||
+                        comment.author.personalDetails?.username ||
+                        "Anonymous"}
                     </h4>
                     {user?.id === comment.author._id && (
                       <button
