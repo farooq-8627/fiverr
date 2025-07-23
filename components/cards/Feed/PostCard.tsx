@@ -98,9 +98,11 @@ export function PostCard({
 
   // Add memoized isLiked check
   const isLiked = useMemo(() => {
-    if (!user?.id || !post.likes) return false;
-    return post.likes.some((like) => like._id === user.id);
-  }, [user?.id, post.likes]);
+    if (!user?.username || !post.likes) return false;
+    return post.likes.some(
+      (like) => like.personalDetails?.username === user.username
+    );
+  }, [user?.username, post.likes]);
 
   // Video player states
   const [isPlaying, setIsPlaying] = useState(false);
@@ -482,7 +484,7 @@ export function PostCard({
   };
 
   const handleLike = async () => {
-    if (!user?.id) return;
+    if (!user?.id || !user?.username) return;
 
     // Create optimistic like object
     const optimisticLike: Like = {
@@ -490,13 +492,22 @@ export function PostCard({
       _key: `${user.id}-${Date.now()}`,
       likedAt: new Date().toISOString(),
       personalDetails: {
-        username: user.username || user.id,
+        username: user.username,
+        profilePicture: user.imageUrl
+          ? {
+              asset: {
+                url: user.imageUrl,
+              },
+            }
+          : undefined,
       },
     };
 
     // Optimistically update the UI
     const updatedLikes = isLiked
-      ? post.likes.filter((like) => like._id !== user.id)
+      ? post.likes.filter(
+          (like) => like.personalDetails?.username !== user.username
+        )
       : [...post.likes, optimisticLike];
 
     // Update local state immediately
