@@ -91,6 +91,8 @@ export function PostCard({ post: initialPost, className }: PostCardProps) {
   // Add memoized isLiked check
   const isLiked = useMemo(() => {
     if (!user?.username || !post.likes) return false;
+    // Ensure post.likes is an array before calling .some()
+    if (!Array.isArray(post.likes)) return false;
     return post.likes.some(
       (like) => like.personalDetails?.username === user.username
     );

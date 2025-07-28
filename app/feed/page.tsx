@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import { usePosts } from "@/hooks/usePosts";
 import { PostCard, Media } from "@/components/cards/Feed/PostCard";
 import { useUser } from "@clerk/nextjs";
@@ -48,16 +54,15 @@ export default function FeedPage() {
   const [activeTab, setActiveTab] = useState<"all" | "latest" | "popular">(
     "all"
   );
-
-  useEffect(() => {
-    // Fetch all types of posts when the component mounts
-    fetchPosts();
-    fetchLatestPosts();
-    fetchPopularPosts();
-  }, [fetchPosts, fetchLatestPosts, fetchPopularPosts]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [allLoadedPosts, setAllLoadedPosts] = useState<Post[]>([]);
+  const observerTarget = useRef<HTMLDivElement>(null);
+  const POSTS_PER_PAGE = 5;
 
   // Transform Sanity post data to match PostCard component's expected format
-  const transformPost = (post: Post): PostCardPost => {
+  const transformPost = useCallback((post: Post): PostCardPost => {
     // Handle media transformation with null checks
     const transformedMedia = post.media
       ?.filter((media) => media && media.type && media.file?.asset?.url)
@@ -103,50 +108,153 @@ export default function FeedPage() {
         roles: [post.author.authorType || "user"],
       },
     };
-  };
+  }, []);
 
-  const displayPosts = () => {
-    if (loading) {
-      return <div className="text-center py-8">Loading posts...</div>;
+  // Load more posts for infinite scroll
+  const loadMorePosts = useCallback(async () => {
+    if (!hasMore || isLoadingMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      // Simulate pagination by slicing existing posts
+      // In a real app, you'd make an API call with page parameter
+      let postsToUse: Post[] = [];
+      switch (activeTab) {
+        case "latest":
+          postsToUse = latestPosts;
+          break;
+        case "popular":
+          postsToUse = popularPosts;
+          break;
+        default:
+          postsToUse = posts;
+      }
+
+      const startIndex = (page - 1) * POSTS_PER_PAGE;
+      const endIndex = startIndex + POSTS_PER_PAGE;
+      const newPosts = postsToUse.slice(startIndex, endIndex);
+
+      if (newPosts.length < POSTS_PER_PAGE || endIndex >= postsToUse.length) {
+        setHasMore(false);
+      }
+
+      if (page === 1) {
+        setAllLoadedPosts(newPosts);
+      } else {
+        setAllLoadedPosts((prev) => [...prev, ...newPosts]);
+      }
+
+      setPage((prev) => prev + 1);
+    } catch (err) {
+      console.error("Error loading more posts:", err);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [
+    activeTab,
+    page,
+    hasMore,
+    isLoadingMore,
+    posts,
+    latestPosts,
+    popularPosts,
+  ]);
+
+  // Reset pagination when tab changes
+  const handleTabChange = useCallback((tab: "all" | "latest" | "popular") => {
+    setActiveTab(tab);
+    setPage(1);
+    setHasMore(true);
+    setAllLoadedPosts([]);
+  }, []);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+          loadMorePosts();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => {
+      if (observerTarget.current) {
+        observer.unobserve(observerTarget.current);
+      }
+    };
+  }, [hasMore, isLoadingMore, loadMorePosts]);
+
+  // Initial data fetch
+  useEffect(() => {
+    // Fetch all types of posts when the component mounts
+    fetchPosts();
+    fetchLatestPosts();
+    fetchPopularPosts();
+  }, [fetchPosts, fetchLatestPosts, fetchPopularPosts]);
+
+  // Load initial posts when data is available or tab changes
+  useEffect(() => {
+    if (
+      (posts.length > 0 || latestPosts.length > 0 || popularPosts.length > 0) &&
+      allLoadedPosts.length === 0
+    ) {
+      loadMorePosts();
+    }
+  }, [
+    posts,
+    latestPosts,
+    popularPosts,
+    activeTab,
+    allLoadedPosts.length,
+    loadMorePosts,
+  ]);
+
+  // Memoize the posts to display to prevent unnecessary re-renders
+  const displayPosts = useMemo(() => {
+    if (loading && allLoadedPosts.length === 0) {
+      return null; // Show loading state
     }
 
     if (error) {
-      return (
-        <div className="text-center py-8 text-red-500">Error: {error}</div>
-      );
+      return null; // Show error state
     }
 
-    let postsToDisplay: Post[] = [];
-    switch (activeTab) {
-      case "latest":
-        postsToDisplay = latestPosts;
-        break;
-      case "popular":
-        postsToDisplay = popularPosts;
-        break;
-      default:
-        postsToDisplay = posts;
-    }
-
-    if (!postsToDisplay?.length) {
-      return <div className="text-center py-8">No posts found</div>;
+    if (!allLoadedPosts?.length) {
+      return null; // Show no posts state
     }
 
     return (
       <div className="space-y-6">
-        {postsToDisplay.map((post) => (
+        {allLoadedPosts.map((post) => (
           <PostCard key={post._id} post={transformPost(post)} />
         ))}
+        {isLoadingMore && (
+          <div className="text-center py-4">Loading more posts...</div>
+        )}
+        {!isLoadingMore && hasMore && (
+          <div ref={observerTarget} className="h-10" />
+        )}
+        {!hasMore && allLoadedPosts.length > 0 && (
+          <div className="text-center py-4 text-gray-500">
+            No more posts to load
+          </div>
+        )}
       </div>
     );
-  };
+  }, [allLoadedPosts, transformPost, isLoadingMore, hasMore]);
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       {/* Feed Tabs */}
       <div className="flex gap-4 mb-6">
         <button
-          onClick={() => setActiveTab("all")}
+          onClick={() => handleTabChange("all")}
           className={`px-4 py-2 rounded-lg transition-colors ${
             activeTab === "all"
               ? "bg-blue-500 text-white"
@@ -156,7 +264,7 @@ export default function FeedPage() {
           All Posts
         </button>
         <button
-          onClick={() => setActiveTab("latest")}
+          onClick={() => handleTabChange("latest")}
           className={`px-4 py-2 rounded-lg transition-colors ${
             activeTab === "latest"
               ? "bg-blue-500 text-white"
@@ -166,7 +274,7 @@ export default function FeedPage() {
           Latest
         </button>
         <button
-          onClick={() => setActiveTab("popular")}
+          onClick={() => handleTabChange("popular")}
           className={`px-4 py-2 rounded-lg transition-colors ${
             activeTab === "popular"
               ? "bg-blue-500 text-white"
@@ -178,7 +286,19 @@ export default function FeedPage() {
       </div>
 
       {/* Posts Display */}
-      {displayPosts()}
+      {loading && allLoadedPosts.length === 0 && (
+        <div className="text-center py-8">Loading posts...</div>
+      )}
+
+      {error && (
+        <div className="text-center py-8 text-red-500">Error: {error}</div>
+      )}
+
+      {!loading && !error && allLoadedPosts.length === 0 && (
+        <div className="text-center py-8">No posts found</div>
+      )}
+
+      {displayPosts}
     </div>
   );
 }
