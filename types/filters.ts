@@ -63,4 +63,5 @@ export interface FilterModalProps {
   entityType: EntityType;
   onApplyFilters: (filters: FilterState) => void;
   currentFilters?: FilterState;
+  onResetFilters?: () => void;
 }

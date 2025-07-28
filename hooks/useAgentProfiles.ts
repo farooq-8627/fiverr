@@ -8,6 +8,7 @@ import {
   AGENT_TOOLS_EXPERTISE,
   AVAILABILITY_STATUSES,
   HOURLY_RATE_RANGES,
+  INDUSTRY_DOMAINS,
 } from "@/sanity/schemaTypes/constants";
 
 const client = createClient({
@@ -45,6 +46,7 @@ export interface AgentWithProfile {
       name?: string;
       bio?: string;
       logo?: { asset: { url: string } };
+      industry?: string;
     };
   };
   agentProfile: {
@@ -58,6 +60,9 @@ export interface AgentWithProfile {
     pricing: {
       hourlyRateRange: string;
     };
+    mustHaveRequirements?: {
+      industryDomain: string[];
+    };
   };
 }
 
@@ -68,19 +73,122 @@ interface AgentProfilesResponse {
   refetch: () => Promise<void>;
 }
 
-export function useAgentProfiles(): AgentProfilesResponse {
+interface UseAgentProfilesOptions {
+  filters?: Record<string, any>;
+  search?: string;
+  sort?: { field: string; order: "asc" | "desc" };
+}
+
+export function useAgentProfiles(
+  options: UseAgentProfilesOptions = {}
+): AgentProfilesResponse {
   const { user } = useClerkUser();
+  const { filters = {}, search = "", sort } = options;
   const [state, setState] = useState<Omit<AgentProfilesResponse, "refetch">>({
     data: [],
     loading: true,
     error: null,
   });
 
-  const fetchProfiles = async () => {
-    try {
-      setState((prev) => ({ ...prev, loading: true }));
+  const buildFilteredQuery = () => {
+    let baseQuery = `*[_type == "user" && references(*[_type == "agentProfile"]._id)`;
+    const filterConditions: string[] = [];
 
-      const query = `*[_type == "user" && references(*[_type == "agentProfile"]._id)] {
+    // Add search condition
+    if (search) {
+      filterConditions.push(`(
+        coreIdentity.fullName match "*${search}*" ||
+        coreIdentity.tagline match "*${search}*" ||
+        coreIdentity.bio match "*${search}*" ||
+        personalDetails.username match "*${search}*"
+      )`);
+    }
+
+    // Add filter conditions based on the agentProfile data
+    Object.entries(filters).forEach(([key, value]) => {
+      if (!value) return;
+
+      switch (key) {
+        case "availability":
+          if (value) {
+            filterConditions.push(
+              `*[_type == "agentProfile" && references(^._id)][0].availability.currentStatus == "available"`
+            );
+          }
+          break;
+        case "industry":
+          if (Array.isArray(value) && value.length > 0) {
+            const industryConditions = value
+              .map(
+                (v) =>
+                  `"${v}" in *[_type == "agentProfile" && references(^._id)][0].mustHaveRequirements.industryDomain`
+              )
+              .join(" || ");
+            filterConditions.push(`(${industryConditions})`);
+          }
+          break;
+        case "automationServices":
+          if (Array.isArray(value) && value.length > 0) {
+            const serviceConditions = value
+              .map(
+                (v) =>
+                  `"${v}" in *[_type == "agentProfile" && references(^._id)][0].automationExpertise.automationServices`
+              )
+              .join(" || ");
+            filterConditions.push(`(${serviceConditions})`);
+          }
+          break;
+        case "toolsExpertise":
+          if (Array.isArray(value) && value.length > 0) {
+            const toolConditions = value
+              .map(
+                (v) =>
+                  `"${v}" in *[_type == "agentProfile" && references(^._id)][0].automationExpertise.toolsExpertise`
+              )
+              .join(" || ");
+            filterConditions.push(`(${toolConditions})`);
+          }
+          break;
+        case "hourlyRate":
+          if (Array.isArray(value)) {
+            const [min, max] = value;
+            const rateRanges = [];
+
+            // Map hourly rate ranges to their values based on the constants
+            if (min <= 25) rateRanges.push('"under25"');
+            if (min <= 25 && max >= 25) rateRanges.push('"25to50"');
+            if (min <= 50 && max >= 50) rateRanges.push('"50to100"');
+            if (max >= 100) rateRanges.push('"over100"');
+
+            if (rateRanges.length > 0) {
+              const rateCondition = rateRanges
+                .map(
+                  (range) =>
+                    `*[_type == "agentProfile" && references(^._id)][0].pricing.hourlyRateRange == ${range}`
+                )
+                .join(" || ");
+              filterConditions.push(`(${rateCondition})`);
+            }
+          }
+          break;
+      }
+    });
+
+    // Add filter conditions to base query
+    if (filterConditions.length > 0) {
+      baseQuery += ` && (${filterConditions.join(" && ")})`;
+    }
+
+    baseQuery += `]`;
+
+    // Add sorting
+    if (sort) {
+      baseQuery += ` | order(${sort.field} ${sort.order})`;
+    }
+
+    return (
+      baseQuery +
+      ` {
         "userProfile": {
           "_id": _id,
           "personalDetails": {
@@ -111,7 +219,8 @@ export function useAgentProfiles(): AgentProfilesResponse {
                 "asset": {
                   "url": companies[0]->logo.asset->url
                 }
-              }
+              },
+              "industry": coalesce(companies[0]->industry, "other")
             },
             null
           )
@@ -126,13 +235,23 @@ export function useAgentProfiles(): AgentProfilesResponse {
           },
           "pricing": {
             "hourlyRateRange": coalesce(pricing.hourlyRateRange, "under25")
+          },
+          "mustHaveRequirements": {
+            "industryDomain": coalesce(mustHaveRequirements.industryDomain, [])
           }
         }
-      }`;
+      }`
+    );
+  };
 
+  const fetchProfiles = async () => {
+    try {
+      setState((prev) => ({ ...prev, loading: true }));
+
+      const query = buildFilteredQuery();
       const result = await client.fetch(query);
 
-      // Transform the values to titles
+      // Transform the values to titles for UI display
       const transformedData = (result || []).map((agent: AgentWithProfile) => ({
         ...agent,
         agentProfile: {
@@ -159,6 +278,13 @@ export function useAgentProfiles(): AgentProfilesResponse {
               agent.agentProfile?.pricing?.hourlyRateRange || "under25"
             ),
           },
+          mustHaveRequirements: {
+            industryDomain: (
+              agent.agentProfile?.mustHaveRequirements?.industryDomain || []
+            ).map((industry: string) =>
+              getTitleByValue(INDUSTRY_DOMAINS, industry)
+            ),
+          },
         },
       }));
 
@@ -168,23 +294,23 @@ export function useAgentProfiles(): AgentProfilesResponse {
         error: null,
       });
     } catch (error) {
+      console.error("Error fetching agent profiles:", error);
       setState({
         data: [],
         loading: false,
-        error:
-          error instanceof Error
-            ? error
-            : new Error("Failed to fetch profiles"),
+        error: error as Error,
       });
     }
   };
 
   useEffect(() => {
     fetchProfiles();
-  }, []);
+  }, [filters, search, sort]); // Add dependencies to trigger refetch
 
   return {
-    ...state,
+    data: state.data,
+    loading: state.loading,
+    error: state.error,
     refetch: fetchProfiles,
   };
 }

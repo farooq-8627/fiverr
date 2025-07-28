@@ -165,7 +165,7 @@ export function Navbar() {
             </div>
 
             {/* Center - Navigation Items (Desktop) */}
-            <div className="hidden md:flex flex-1 justify-center">
+            <div className="hidden lg:flex flex-1 justify-center">
               <MenuBar
                 items={SignedInItems}
                 activeItem={activeItem}
@@ -174,36 +174,57 @@ export function Navbar() {
             </div>
 
             {/* Right - Auth Buttons */}
-            <div className="flex items-center gap-4 flex-shrink-0">
+            <div className="flex items-center gap-4">
               {isSignedIn ? (
-                <UserButton afterSignOutUrl="/" />
+                <>
+                  {/* Mobile Menu Button */}
+                  <button
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="lg:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
+                  >
+                    {isMobileMenuOpen ? (
+                      <X className="h-5 w-5" />
+                    ) : (
+                      <Menu className="h-5 w-5" />
+                    )}
+                  </button>
+
+                  {/* Desktop User Button */}
+                  <div className="hidden lg:block">
+                    <UserButton
+                      appearance={{
+                        elements: {
+                          avatarBox: "h-8 w-8",
+                        },
+                      }}
+                    />
+                  </div>
+
+                  {/* Mobile User Button */}
+                  <div className="lg:hidden">
+                    <UserButton
+                      appearance={{
+                        elements: {
+                          avatarBox: "h-8 w-8",
+                        },
+                      }}
+                    />
+                  </div>
+                </>
               ) : (
                 <div className="flex items-center gap-2">
                   <SignInButton mode="modal">
-                    <button className="text-sm font-medium text-white hover:text-white/80 hidden sm:block">
+                    <button className="px-4 py-2 text-sm text-white hover:text-gray-300 transition-colors">
                       Sign In
                     </button>
                   </SignInButton>
                   <SignUpButton mode="modal">
-                    <button className=" font-medium bg-white text-black px-3 py-1.5 sm:px-4 sm:py-2 rounded-full hover:bg-white/90 text-xs sm:text-sm">
+                    <button className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm rounded-lg transition-colors">
                       Sign Up
                     </button>
                   </SignUpButton>
                 </div>
               )}
-
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
-                aria-label="Toggle menu"
-              >
-                {isMobileMenuOpen ? (
-                  <X className="h-5 w-5" />
-                ) : (
-                  <Menu className="h-5 w-5" />
-                )}
-              </button>
             </div>
           </div>
         </div>
@@ -211,7 +232,7 @@ export function Navbar() {
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
+        <div className="fixed inset-0 z-40 lg:hidden">
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
@@ -247,15 +268,15 @@ export function Navbar() {
 
               {/* Mobile Auth Section */}
               {!isSignedIn && (
-                <div className="mt-6 pt-6 border-t border-white/10">
-                  <div className="flex flex-col gap-3">
+                <div className="mt-6 pt-4 border-t border-white/20">
+                  <div className="space-y-3">
                     <SignInButton mode="modal">
-                      <button className="w-full py-3 text-center text-white font-medium border border-white/20 rounded-lg hover:bg-white/5 transition-colors">
+                      <button className="w-full p-3 text-white border border-white/20 rounded-lg hover:bg-white/5 transition-colors">
                         Sign In
                       </button>
                     </SignInButton>
                     <SignUpButton mode="modal">
-                      <button className="w-full py-3 text-center bg-white text-black font-medium rounded-lg hover:bg-white/90 transition-colors">
+                      <button className="w-full p-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors">
                         Sign Up
                       </button>
                     </SignUpButton>

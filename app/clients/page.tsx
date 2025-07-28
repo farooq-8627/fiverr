@@ -1,61 +1,52 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useCallback } from "react";
 import { ClientCard } from "@/components/cards/ClientCard";
 import {
   useClientProfiles,
   ClientWithProfile,
 } from "@/hooks/useClientProfiles";
+import { ProfilesPageLayout } from "@/components/shared/ProfilesPageLayout";
+import { FilterState } from "@/types/filters";
 
 export default function ClientsPage() {
-  const { data: clients, loading, error } = useClientProfiles();
+  const [filters, setFilters] = useState<FilterState>({});
+  const [search, setSearch] = useState("");
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black p-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-white mb-8">
-            Loading Clients...
-          </h1>
-        </div>
-      </div>
-    );
-  }
+  const {
+    data: clients,
+    loading,
+    error,
+  } = useClientProfiles({
+    filters,
+    search,
+  });
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black p-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-white mb-8">
-            Error loading clients
-          </h1>
-          <p className="text-red-400">{error.message}</p>
-        </div>
-      </div>
-    );
-  }
+  const handleFiltersChange = useCallback(
+    (newFilters: FilterState, searchQuery: string) => {
+      setFilters(newFilters);
+      setSearch(searchQuery);
+    },
+    []
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black p-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-white mb-8">
-          Automation Clients
-        </h1>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {clients?.map((client: ClientWithProfile) => (
-            <ClientCard
-              key={client.userProfile._id}
-              userProfile={client.userProfile}
-              clientProfile={client.clientProfile}
-            />
-          ))}
-        </div>
-
-        {clients?.length === 0 && (
-          <p className="text-gray-400 text-center py-12">No clients found</p>
-        )}
-      </div>
-    </div>
+    <ProfilesPageLayout
+      title="Automation Clients"
+      subtitle="Discover businesses seeking automation solutions to streamline their operations and unlock new levels of productivity."
+      data={clients || []}
+      loading={loading}
+      error={error}
+      entityType="client"
+      renderCard={(client: ClientWithProfile) => (
+        <ClientCard
+          key={client.userProfile._id}
+          userProfile={client.userProfile}
+          clientProfile={client.clientProfile}
+        />
+      )}
+      emptyStateMessage="No automation clients found"
+      onFiltersChange={handleFiltersChange}
+    />
   );
 }

@@ -81,6 +81,9 @@ export interface ClientWithProfile {
       teamSize?: string;
       experienceLevel?: string;
     };
+    mustHaveRequirements?: {
+      industryDomain: string[];
+    };
     activeProjects?: Array<{
       _id: string;
       title: string;
@@ -101,19 +104,112 @@ interface ClientProfilesResponse {
   refetch: () => Promise<void>;
 }
 
-export function useClientProfiles(): ClientProfilesResponse {
+interface UseClientProfilesOptions {
+  filters?: Record<string, any>;
+  search?: string;
+  sort?: { field: string; order: "asc" | "desc" };
+}
+
+export function useClientProfiles(
+  options: UseClientProfilesOptions = {}
+): ClientProfilesResponse {
   const { user } = useClerkUser();
+  const { filters = {}, search = "", sort } = options;
   const [state, setState] = useState<Omit<ClientProfilesResponse, "refetch">>({
     data: [],
     loading: true,
     error: null,
   });
 
-  const fetchProfiles = async () => {
-    try {
-      setState((prev) => ({ ...prev, loading: true }));
+  const buildFilteredQuery = () => {
+    let baseQuery = `*[_type == "user" && references(*[_type == "clientProfile"]._id)`;
+    const filterConditions: string[] = [];
 
-      const query = `*[_type == "user" && references(*[_type == "clientProfile"]._id)] {
+    // Add search condition
+    if (search) {
+      filterConditions.push(`(
+        coreIdentity.fullName match "*${search}*" ||
+        coreIdentity.tagline match "*${search}*" ||
+        coreIdentity.bio match "*${search}*" ||
+        personalDetails.username match "*${search}*"
+      )`);
+    }
+
+    // Add filter conditions based on the clientProfile data
+    Object.entries(filters).forEach(([key, value]) => {
+      if (!value) return;
+
+      switch (key) {
+        case "availability":
+          if (value) {
+            // For clients, we might check if they have active projects
+            filterConditions.push(
+              `count(*[_type == "project" && references(^._id) && status == "active"]) > 0`
+            );
+          }
+          break;
+        case "industry":
+          if (Array.isArray(value) && value.length > 0) {
+            const industryConditions = value
+              .map(
+                (v) =>
+                  `"${v}" in *[_type == "clientProfile" && references(^._id)][0].mustHaveRequirements.industryDomain`
+              )
+              .join(" || ");
+            filterConditions.push(`(${industryConditions})`);
+          }
+          break;
+        case "automationNeeds":
+          if (Array.isArray(value) && value.length > 0) {
+            const needsConditions = value
+              .map(
+                (v) =>
+                  `"${v}" in *[_type == "clientProfile" && references(^._id)][0].automationNeeds.automationRequirements`
+              )
+              .join(" || ");
+            filterConditions.push(`(${needsConditions})`);
+          }
+          break;
+        case "tools":
+          if (Array.isArray(value) && value.length > 0) {
+            const toolsConditions = value
+              .map(
+                (v) =>
+                  `"${v}" in *[_type == "clientProfile" && references(^._id)][0].automationNeeds.currentTools`
+              )
+              .join(" || ");
+            filterConditions.push(`(${toolsConditions})`);
+          }
+          break;
+        case "budgetRange":
+          if (Array.isArray(value) && value.length > 0) {
+            const budgetConditions = value
+              .map(
+                (v) =>
+                  `*[_type == "clientProfile" && references(^._id)][0].projectPreferences.budgetRange == "${v}"`
+              )
+              .join(" || ");
+            filterConditions.push(`(${budgetConditions})`);
+          }
+          break;
+      }
+    });
+
+    // Add filter conditions to base query
+    if (filterConditions.length > 0) {
+      baseQuery += ` && (${filterConditions.join(" && ")})`;
+    }
+
+    baseQuery += `]`;
+
+    // Add sorting
+    if (sort) {
+      baseQuery += ` | order(${sort.field} ${sort.order})`;
+    }
+
+    return (
+      baseQuery +
+      ` {
         "userProfile": {
           "_id": _id,
           "personalDetails": {
@@ -172,6 +268,9 @@ export function useClientProfiles(): ClientProfilesResponse {
             "teamSize": coalesce(projectPreferences.teamSize, "solo"),
             "experienceLevel": coalesce(projectPreferences.experienceLevel, "none")
           },
+          "mustHaveRequirements": {
+            "industryDomain": coalesce(mustHaveRequirements.industryDomain, [])
+          },
           "activeProjects": *[_type == "project" && references(^._id) && status == "active"]| order(startDate desc) {
             _id,
             title,
@@ -183,65 +282,43 @@ export function useClientProfiles(): ClientProfilesResponse {
             updatedAt
           }
         }
-      }`;
+      }`
+    );
+  };
 
+  const fetchProfiles = async () => {
+    try {
+      setState((prev) => ({ ...prev, loading: true }));
+
+      const query = buildFilteredQuery();
       const result = await client.fetch(query);
 
-      // Transform the values to titles
+      // Transform the values to titles for UI display
       const transformedData = (result || []).map(
         (client: ClientWithProfile) => ({
           ...client,
-          userProfile: {
-            ...client.userProfile,
-            companyDetails: client.userProfile.companyDetails
-              ? {
-                  ...client.userProfile.companyDetails,
-                  industry: getTitleByValue(
-                    INDUSTRY_DOMAINS,
-                    client.userProfile.companyDetails.industry || "other"
-                  ),
-                  size: getTitleByValue(
-                    COMPANY_SIZES,
-                    client.userProfile.companyDetails.size || "solo"
-                  ),
-                }
-              : undefined,
-          },
           clientProfile: {
             ...client.clientProfile,
             automationNeeds: {
-              ...client.clientProfile?.automationNeeds,
+              ...client.clientProfile.automationNeeds,
               automationRequirements: (
                 client.clientProfile?.automationNeeds?.automationRequirements ||
                 []
-              ).map((req) => getTitleByValue(CLIENT_AUTOMATION_NEEDS, req)),
+              ).map((requirement: string) =>
+                getTitleByValue(CLIENT_AUTOMATION_NEEDS, requirement)
+              ),
               currentTools: (
                 client.clientProfile?.automationNeeds?.currentTools || []
-              ).map((tool) => getTitleByValue(CLIENT_CURRENT_TOOLS, tool)),
+              ).map((tool: string) =>
+                getTitleByValue(CLIENT_CURRENT_TOOLS, tool)
+              ),
               businessDomain: getTitleByValue(
                 INDUSTRY_DOMAINS,
                 client.clientProfile?.automationNeeds?.businessDomain || "other"
               ),
             },
-            communicationPreferences: {
-              ...client.clientProfile?.communicationPreferences,
-              languagesSpoken: (
-                client.clientProfile?.communicationPreferences
-                  ?.languagesSpoken || ["english"]
-              ).map((lang) => getTitleByValue(LANGUAGE_OPTIONS, lang)),
-              updateFrequency: getTitleByValue(
-                UPDATE_FREQUENCIES,
-                client.clientProfile?.communicationPreferences
-                  ?.updateFrequency || "asNeeded"
-              ),
-              meetingAvailability: getTitleByValue(
-                MEETING_AVAILABILITIES,
-                client.clientProfile?.communicationPreferences
-                  ?.meetingAvailability || "flexible"
-              ),
-            },
             projectPreferences: {
-              ...client.clientProfile?.projectPreferences,
+              ...client.clientProfile.projectPreferences,
               budgetRange: getTitleByValue(
                 BUDGET_RANGES,
                 client.clientProfile?.projectPreferences?.budgetRange || "micro"
@@ -270,12 +347,48 @@ export function useClientProfiles(): ClientProfilesResponse {
                   "none"
               ),
             },
-            availabilityOptions: availabilityOptions,
-            activeProjects:
-              client.clientProfile?.activeProjects?.map((project) => ({
-                ...project,
-                priority: getTitleByValue(PRIORITY_LEVELS, project.priority),
-              })) || [],
+            communicationPreferences: {
+              ...client.clientProfile.communicationPreferences,
+              languagesSpoken: (
+                client.clientProfile?.communicationPreferences
+                  ?.languagesSpoken || ["english"]
+              ).map((language: string) =>
+                getTitleByValue(LANGUAGE_OPTIONS, language)
+              ),
+              updateFrequency: getTitleByValue(
+                UPDATE_FREQUENCIES,
+                client.clientProfile?.communicationPreferences
+                  ?.updateFrequency || "asNeeded"
+              ),
+              meetingAvailability: getTitleByValue(
+                MEETING_AVAILABILITIES,
+                client.clientProfile?.communicationPreferences
+                  ?.meetingAvailability || "flexible"
+              ),
+            },
+            mustHaveRequirements: {
+              industryDomain: (
+                client.clientProfile?.mustHaveRequirements?.industryDomain || []
+              ).map((industry: string) =>
+                getTitleByValue(INDUSTRY_DOMAINS, industry)
+              ),
+            },
+          },
+          userProfile: {
+            ...client.userProfile,
+            companyDetails: client.userProfile.companyDetails
+              ? {
+                  ...client.userProfile.companyDetails,
+                  industry: getTitleByValue(
+                    INDUSTRY_DOMAINS,
+                    client.userProfile.companyDetails.industry || "other"
+                  ),
+                  size: getTitleByValue(
+                    COMPANY_SIZES,
+                    client.userProfile.companyDetails.size || "solo"
+                  ),
+                }
+              : undefined,
           },
         })
       );
@@ -286,20 +399,18 @@ export function useClientProfiles(): ClientProfilesResponse {
         error: null,
       });
     } catch (error) {
+      console.error("Error fetching client profiles:", error);
       setState({
         data: [],
         loading: false,
-        error:
-          error instanceof Error
-            ? error
-            : new Error("Failed to fetch profiles"),
+        error: error as Error,
       });
     }
   };
 
   useEffect(() => {
     fetchProfiles();
-  }, []);
+  }, [filters, search, sort]); // Add dependencies to useEffect
 
   return {
     ...state,

@@ -169,9 +169,26 @@ export function ClientCard({
                   <Badge
                     key={index}
                     variant="outline"
-                    className="text-xs sm:text-sm bg-blue-900/30 border-blue-500/40 text-blue-200 hover:bg-blue-800/40 shrink-0"
+                    className="text-xs sm:text-sm bg-purple-900/30 border-purple-500/40 text-purple-200 hover:bg-purple-800/40 shrink-0"
                   >
                     {need}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Current Tools Tags */}
+          {automationNeeds?.currentTools?.length > 0 && (
+            <div className="w-full whitespace-nowrap pb-1.5 sm:pb-2 overflow-x-auto">
+              <div className="flex gap-1.5 sm:gap-2">
+                {automationNeeds.currentTools.map((tool, index) => (
+                  <Badge
+                    key={index}
+                    variant="outline"
+                    className="text-xs sm:text-sm bg-blue-900/30 border-blue-500/40 text-blue-200 hover:bg-blue-800/40 shrink-0"
+                  >
+                    {tool}
                   </Badge>
                 ))}
               </div>

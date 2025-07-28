@@ -1,58 +1,49 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useCallback } from "react";
 import { AgentCard } from "@/components/cards/AgentCard";
 import { useAgentProfiles, AgentWithProfile } from "@/hooks/useAgentProfiles";
+import { ProfilesPageLayout } from "@/components/shared/ProfilesPageLayout";
+import { FilterState } from "@/types/filters";
 
 export default function AgentsPage() {
-  const { data: agents, loading, error } = useAgentProfiles();
+  const [filters, setFilters] = useState<FilterState>({});
+  const [search, setSearch] = useState("");
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black p-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-white mb-8">
-            Loading Agents...
-          </h1>
-        </div>
-      </div>
-    );
-  }
+  const {
+    data: agents,
+    loading,
+    error,
+  } = useAgentProfiles({
+    filters,
+    search,
+  });
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black p-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-3xl font-bold text-white mb-8">
-            Error loading agents
-          </h1>
-          <p className="text-red-400">{error.message}</p>
-        </div>
-      </div>
-    );
-  }
+  const handleFiltersChange = useCallback(
+    (newFilters: FilterState, searchQuery: string) => {
+      setFilters(newFilters);
+      setSearch(searchQuery);
+    },
+    []
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black p-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-white mb-8">
-          Automation Agents
-        </h1>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {agents?.map((agent: AgentWithProfile) => (
-            <AgentCard
-              key={agent.userProfile._id}
-              userProfile={agent.userProfile}
-              agentProfile={agent.agentProfile}
-            />
-          ))}
-        </div>
-
-        {agents?.length === 0 && (
-          <p className="text-gray-400 text-center py-12">No agents found</p>
-        )}
-      </div>
-    </div>
+    <ProfilesPageLayout
+      title="Automation Agents"
+      subtitle="Connect with skilled automation experts who can transform your business processes and boost efficiency through cutting-edge solutions."
+      data={agents || []}
+      loading={loading}
+      error={error}
+      entityType="agent"
+      renderCard={(agent: AgentWithProfile) => (
+        <AgentCard
+          key={agent.userProfile._id}
+          userProfile={agent.userProfile}
+          agentProfile={agent.agentProfile}
+        />
+      )}
+      emptyStateMessage="No automation agents found"
+      onFiltersChange={handleFiltersChange}
+    />
   );
 }

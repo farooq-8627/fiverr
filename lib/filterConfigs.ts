@@ -1,9 +1,36 @@
 import { FilterConfig, EntityType } from "@/types/filters";
-import { INDUSTRY_DOMAINS } from "@/sanity/schemaTypes/constants";
+import {
+  INDUSTRY_DOMAINS,
+  AGENT_AUTOMATION_SERVICES,
+  AGENT_TOOLS_EXPERTISE,
+  CLIENT_AUTOMATION_NEEDS,
+  BUDGET_RANGES,
+  CLIENT_CURRENT_TOOLS,
+} from "@/sanity/schemaTypes/constants";
 
 const industryOptions = INDUSTRY_DOMAINS.map((domain) => ({
   label: domain.title,
   value: domain.value,
+}));
+
+const automationServicesOptions = AGENT_AUTOMATION_SERVICES.map((service) => ({
+  label: service.title,
+  value: service.value,
+}));
+
+const toolsExpertiseOptions = AGENT_TOOLS_EXPERTISE.map((tool) => ({
+  label: tool.title,
+  value: tool.value,
+}));
+
+const automationNeedsOptions = CLIENT_AUTOMATION_NEEDS.map((need) => ({
+  label: need.title,
+  value: need.value,
+}));
+
+const budgetOptions = BUDGET_RANGES.map((budget) => ({
+  label: budget.title,
+  value: budget.value,
 }));
 
 const priorityOptions = [
@@ -27,60 +54,82 @@ const companySizeOptions = [
   { label: "Enterprise (1000+)", value: "enterprise" },
 ];
 
+const toolsOptions = CLIENT_CURRENT_TOOLS.map((tool) => ({
+  label: tool.title,
+  value: tool.value,
+}));
+
 export const filterConfigs: Record<EntityType, FilterConfig[]> = {
   agent: [
     {
       id: "availability",
       label: "Availability",
       type: "toggle",
-      field: "availability",
+      field: "availability.currentStatus",
     },
     {
       id: "industry",
       label: "Industry",
       type: "multiSelect",
       options: industryOptions,
-      field: "industryDomain",
+      field: "mustHaveRequirements.industryDomain",
     },
     {
-      id: "experience",
-      label: "Experience (Years)",
-      type: "range",
-      field: "yearsOfExperience",
+      id: "automationServices",
+      label: "Automation Services",
+      type: "multiSelect",
+      options: automationServicesOptions,
+      field: "automationExpertise.automationServices",
     },
     {
-      id: "rating",
-      label: "Rating",
-      type: "range",
-      field: "rating",
+      id: "toolsExpertise",
+      label: "Tools Expertise",
+      type: "multiSelect",
+      options: toolsExpertiseOptions,
+      field: "automationExpertise.toolsExpertise",
     },
     {
-      id: "pricing",
+      id: "hourlyRate",
       label: "Hourly Rate ($)",
       type: "range",
-      field: "hourlyRate",
+      field: "pricing.hourlyRateRange",
     },
   ],
 
   client: [
     {
+      id: "availability",
+      label: "Availability",
+      type: "toggle",
+      field: "activeProjects",
+    },
+    {
       id: "industry",
       label: "Industry",
       type: "multiSelect",
       options: industryOptions,
-      field: "industryDomain",
+      field: "mustHaveRequirements.industryDomain",
     },
     {
-      id: "projectCount",
-      label: "Project Count",
-      type: "range",
-      field: "projectCount",
+      id: "automationNeeds",
+      label: "Automation Needs",
+      type: "multiSelect",
+      options: automationNeedsOptions,
+      field: "automationNeeds.automationRequirements",
     },
     {
-      id: "rating",
-      label: "Rating",
-      type: "range",
-      field: "rating",
+      id: "budgetRange",
+      label: "Budget Range",
+      type: "multiSelect",
+      options: budgetOptions,
+      field: "projectPreferences.budgetRange",
+    },
+    {
+      id: "tools",
+      label: "Current Tools",
+      type: "multiSelect",
+      options: toolsOptions,
+      field: "automationNeeds.currentTools",
     },
   ],
 
