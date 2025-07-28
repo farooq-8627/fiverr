@@ -455,7 +455,7 @@ export async function createPost(data: CreatePostData) {
     await backendClient
       .patch(data.authorId)
       .setIfMissing({ posts: [] })
-      .append("posts", [
+      .insert("before", "posts[0]", [
         {
           _type: "reference",
           _ref: doc._id,

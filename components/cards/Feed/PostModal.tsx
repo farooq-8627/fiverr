@@ -55,7 +55,6 @@ interface PostModalProps {
     createdAt: string;
     likes: Like[]; // Array of user IDs who liked the post
     comments: number;
-    reposts: number;
     media?: Media[];
     author: {
       _id: string;

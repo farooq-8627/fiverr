@@ -2,22 +2,40 @@ import { PostFilter } from "@/types/post";
 
 const postProjection = `{
   ...,
-  "author": author->{
-    _id,
-    personalDetails {
-      username,
-      profilePicture {
-        asset-> {
-          url
+  "author": coalesce(
+    author->{
+      _id,
+      personalDetails {
+        username,
+        profilePicture {
+          asset-> {
+            url
+          }
         }
+      },
+      coreIdentity {
+        fullName,
+        tagline,
+        bio
       }
     },
-    coreIdentity {
-      fullName,
-      tagline,
-      bio
+    author->userId->{
+      _id,
+      personalDetails {
+        username,
+        profilePicture {
+          asset-> {
+            url
+          }
+        }
+      },
+      coreIdentity {
+        fullName,
+        tagline,
+        bio
+      }
     }
-  },
+  ),
   media[] {
     type,
     caption,
@@ -32,32 +50,39 @@ const postProjection = `{
     _key,
     text,
     createdAt,
-    "author": author->{
-      _id,
-      personalDetails {
-        username,
-        profilePicture {
-          asset-> {
-            url
+    "author": coalesce(
+      author->{
+        _id,
+        personalDetails {
+          username,
+          profilePicture {
+            asset-> {
+              url
+            }
           }
+        },
+        coreIdentity {
+          fullName
         }
       },
-      coreIdentity {
-        fullName
+      {
+        "_id": author._id,
+        "personalDetails": author.personalDetails,
+        "coreIdentity": author.coreIdentity
       }
-    },
+    ),
   },
-    likes[] {
-      _id,
-      personalDetails {
-        username,
-        profilePicture {
-          asset-> {
-            url
-          }
+  likes[] {
+    _id,
+    personalDetails {
+      username,
+      profilePicture {
+        asset-> {
+          url
         }
       }
     }
+  }
 }`;
 
 export const postQueries = {
@@ -105,7 +130,7 @@ export const postQueries = {
   },
 
   getUserPosts: (username: string, limit: number = 10) => {
-    return `*[_type == "post" && author->personalDetails.username == "${username}"] | order(createdAt desc)[0...${limit}]${postProjection}`;
+    return `*[_type == "post" && author->personalDetails.username == "${username}" || author->userId->personalDetails.username == "${username}"] | order(createdAt desc)[0...${limit}]${postProjection}`;
   },
 
   getUserAchievements: (username: string, limit: number = 10) => {

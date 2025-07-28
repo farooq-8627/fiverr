@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { usePosts } from "@/hooks/usePosts";
 import { PostCard, Media } from "@/components/cards/Feed/PostCard";
 import { useUser } from "@clerk/nextjs";
-import { Post } from "@/types/post";
+import { Like, Post } from "@/types/post";
 
 interface PostCardPost {
   _id: string;
@@ -12,7 +12,7 @@ interface PostCardPost {
   content: string;
   tags: string[];
   createdAt: string;
-  likes: string[]; // Array of user IDs who liked the post
+  likes: Like[]; // Array of user IDs who liked the post
   comments: number;
   reposts: number;
   media?: Media[];
@@ -85,7 +85,7 @@ export default function FeedPage() {
       content: post.content,
       tags: post.tags || [],
       createdAt: post.createdAt,
-      likes: post.likes || [], // Pass the likes array directly
+      likes: post.likes,
       comments: post.comments?.length || 0,
       reposts: 0,
       media: transformedMedia,

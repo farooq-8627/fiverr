@@ -65,7 +65,8 @@ export async function addComment(
 
     // Revalidate the feed page to show new comment
     revalidatePath("/feed");
-    revalidatePath("/dashboard/[username]", "page");
+    revalidatePath("/dashboard/[username]", "layout");
+    revalidatePath("/dashboard/[username]/posts", "page");
 
     // Return the comment with expanded author data for immediate UI update
     const responseData = {
@@ -147,7 +148,8 @@ export async function editComment(
 
     // Revalidate the feed page to show edited comment
     revalidatePath("/feed");
-    revalidatePath("/dashboard/[username]", "page");
+    revalidatePath("/dashboard/[username]", "layout");
+    revalidatePath("/dashboard/[username]/posts", "page");
 
     return {
       success: true,
@@ -205,8 +207,8 @@ export async function deleteComment(
 
     // Revalidate the feed page
     revalidatePath("/feed");
-    revalidatePath("/dashboard/[username]", "page");
-
+    revalidatePath("/dashboard/[username]", "layout");
+    revalidatePath("/dashboard/[username]/posts", "page");
     return {
       success: true,
     };
@@ -245,8 +247,8 @@ export async function updateComment(
 
     // Revalidate the feed page to show updated comment
     revalidatePath("/feed");
-    revalidatePath("/dashboard/[username]");
-
+    revalidatePath("/dashboard/[username]", "layout");
+    revalidatePath("/dashboard/[username]/posts", "page");
     return { success: true };
   } catch (error) {
     console.error("Error updating comment:", {

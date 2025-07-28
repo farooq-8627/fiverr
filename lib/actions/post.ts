@@ -60,7 +60,10 @@ export async function likePost(postId: string, userId: string) {
 
       await backendClient.patch(postId).set({ likes: likesToKeep }).commit();
 
+      // Revalidate all paths that show posts
       revalidatePath("/feed");
+      revalidatePath("/dashboard/[username]/posts", "page");
+      revalidatePath("/dashboard/[username]", "layout");
       return { success: true, action: "unlike" };
     } else {
       console.log("Adding like...");
@@ -83,7 +86,10 @@ export async function likePost(postId: string, userId: string) {
         .append("likes", [likeData])
         .commit();
 
+      // Revalidate all paths that show posts
       revalidatePath("/feed");
+      revalidatePath("/dashboard/[username]/posts", "page");
+      revalidatePath("/dashboard/[username]", "layout");
       return { success: true, action: "like" };
     }
   } catch (error) {

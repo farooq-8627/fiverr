@@ -19,6 +19,7 @@ import { Switch } from "@/components/UI/switch";
 import { Badge } from "@/components/UI/badge";
 import { FileText, ImagePlus, Tag, UserIcon, X } from "lucide-react";
 import { Award } from "lucide-react";
+import { ACHIEVEMENT_TYPES } from "@/sanity/schemaTypes/constants";
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -30,14 +31,6 @@ interface CreatePostModalProps {
   isCurrentUser: boolean;
   onPostUpdate: (data: FeedPost) => void;
 }
-
-const ACHIEVEMENT_TYPES = [
-  { title: "Project Completion", value: "projectCompletion" },
-  { title: "Milestone", value: "milestone" },
-  { title: "Award", value: "award" },
-  { title: "Certification", value: "certification" },
-  { title: "Other", value: "other" },
-];
 
 export function CreatePostModal({
   isOpen,

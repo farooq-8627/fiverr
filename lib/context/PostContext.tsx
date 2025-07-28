@@ -13,6 +13,12 @@ interface PostContextType {
   popularPosts: Post[];
   loading: boolean;
   error: string | null;
+  // State setters
+  setPosts: React.Dispatch<React.SetStateAction<Post[]>>;
+  setUserPosts: React.Dispatch<React.SetStateAction<Post[]>>;
+  setAchievementPosts: React.Dispatch<React.SetStateAction<Post[]>>;
+  setLatestPosts: React.Dispatch<React.SetStateAction<Post[]>>;
+  setPopularPosts: React.Dispatch<React.SetStateAction<Post[]>>;
   // Post Operations
   fetchPosts: (filter?: PostFilter) => Promise<void>;
   fetchUserPosts: (username: string) => Promise<void>;
@@ -33,6 +39,14 @@ interface PostContextType {
 }
 
 const PostContext = createContext<PostContextType | undefined>(undefined);
+
+export function usePost() {
+  const context = useContext(PostContext);
+  if (!context) {
+    throw new Error("usePost must be used within a PostProvider");
+  }
+  return context;
+}
 
 export function PostProvider({ children }: { children: React.ReactNode }) {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -156,20 +170,29 @@ export function PostProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Helper function to update post likes in all post lists
+  const updatePostLikesInState = useCallback(
+    (postId: string, updatedLikes: Like[]) => {
+      const updatePostsState = (posts: Post[]): Post[] =>
+        posts.map((post) =>
+          post._id === postId ? { ...post, likes: updatedLikes } : post
+        );
+
+      setPosts(updatePostsState);
+      setUserPosts(updatePostsState);
+      setAchievementPosts(updatePostsState);
+      setLatestPosts(updatePostsState);
+      setPopularPosts(updatePostsState);
+    },
+    []
+  );
+
   const likePost = useCallback(
     async (postId: string, userId: string) => {
       try {
-        // Find the post and check if it's already liked
-        const post = posts.find((p) => p._id === postId);
-        if (!post) return;
+        console.log("=== Starting client-side like operation ===");
 
-        const isLiked = post.likes.some(
-          (like) => like?.personalDetails?.username === userId
-        );
-        const action = isLiked ? "unlike" : "like";
-
-        // Make the backend call first since we need user details
-        console.log("Calling likePost server action...");
+        // Make the backend call
         const result = await likePostAction(postId, userId);
         console.log("Server action result:", result);
 
@@ -177,30 +200,11 @@ export function PostProvider({ children }: { children: React.ReactNode }) {
           throw new Error(result.error || "Failed to like/unlike post");
         }
 
-        // Update UI after successful backend call
-        const updatePostsState = (prevPosts: Post[]): Post[] =>
-          prevPosts.map((post): Post => {
-            if (post._id !== postId) return post;
-
-            const updatedLikes =
-              action === "unlike"
-                ? post.likes.filter(
-                    (like) => like?.personalDetails?.username !== userId
-                  )
-                : post.likes;
-
-            return {
-              ...post,
-              likes: updatedLikes,
-            };
-          });
-
-        // Update all post states
-        setPosts(updatePostsState);
-        setUserPosts(updatePostsState);
-        setAchievementPosts(updatePostsState);
-        setLatestPosts(updatePostsState);
-        setPopularPosts(updatePostsState);
+        // Fetch updated post to get the new likes
+        const updatedPost = await client.fetch(postQueries.getPostById(postId));
+        if (updatedPost) {
+          updatePostLikesInState(postId, updatedPost.likes);
+        }
       } catch (err) {
         console.error("Error in likePost:", err);
         setError(
@@ -208,40 +212,16 @@ export function PostProvider({ children }: { children: React.ReactNode }) {
         );
       }
     },
-    [posts]
+    [updatePostLikesInState]
   );
 
-  const unlikePost = useCallback(async (postId: string, userId: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const result = await likePostAction(postId, userId);
-
-      if (!result.success) {
-        throw new Error(result.error);
-      }
-
-      // Update posts state based on the action
-      const updatePostsState = (posts: Post[]) =>
-        posts.map((post) =>
-          post._id === postId
-            ? {
-                ...post,
-                likes:
-                  result.action === "unlike"
-                    ? post.likes.filter((like) => like._id !== userId)
-                    : [...(post.likes || []), userId],
-              }
-            : post
-        );
-    } catch (err) {
-      setError("Failed to like/unlike post");
-      console.error("Error in unlikePost:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const unlikePost = useCallback(
+    async (postId: string, userId: string) => {
+      // We can just use likePost since it handles both liking and unliking
+      await likePost(postId, userId);
+    },
+    [likePost]
+  );
 
   const addComment = useCallback(
     async (postId: string, text: string, author: any) => {
@@ -327,6 +307,11 @@ export function PostProvider({ children }: { children: React.ReactNode }) {
     popularPosts,
     loading,
     error,
+    setPosts,
+    setUserPosts,
+    setAchievementPosts,
+    setLatestPosts,
+    setPopularPosts,
     fetchPosts,
     fetchUserPosts,
     fetchAchievementPosts,
@@ -342,12 +327,4 @@ export function PostProvider({ children }: { children: React.ReactNode }) {
   };
 
   return <PostContext.Provider value={value}>{children}</PostContext.Provider>;
-}
-
-export function usePost() {
-  const context = useContext(PostContext);
-  if (context === undefined) {
-    throw new Error("usePost must be used within a PostProvider");
-  }
-  return context;
 }

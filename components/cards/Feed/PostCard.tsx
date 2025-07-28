@@ -59,7 +59,6 @@ interface PostCardProps {
     createdAt: string;
     likes: Like[];
     comments: number;
-    reposts: number;
     media?: Media[];
     author: {
       _id: string;
@@ -76,16 +75,9 @@ interface PostCardProps {
     };
   };
   className?: string;
-  onCommentAdded?: (postId: string, comment: Comment) => void;
-  onCommentDeleted?: (postId: string, commentKey: string) => void;
 }
 
-export function PostCard({
-  post: initialPost,
-  className,
-  onCommentAdded,
-  onCommentDeleted,
-}: PostCardProps) {
+export function PostCard({ post: initialPost, className }: PostCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
@@ -590,10 +582,7 @@ export function PostCard({
         )}
 
         {/* Content Section */}
-        <div
-          className="mt-3 cursor-pointer"
-          onClick={() => setIsModalOpen(true)}
-        >
+        <div className="mt-3 cursor-pointer">
           <p className="whitespace-pre-wrap text-sm text-gray-200">
             {displayContent}
             {shouldTruncate && !isExpanded && "..."}

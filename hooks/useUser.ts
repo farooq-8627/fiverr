@@ -78,15 +78,31 @@ export interface UserData {
         asset: {
           _ref: string;
           _type: string;
+          url: string;
         };
-        url: string;
       };
       caption: string;
       altText: string;
     }>;
     tags: string[];
-    author: string;
-    authorType: string;
+    author: {
+      _id: string;
+      coreIdentity: {
+        fullName: string;
+      };
+      personalDetails: {
+        username: string;
+        tagline?: string;
+        profilePicture?: {
+          asset: {
+            url: string;
+          };
+        };
+      };
+      authorType: string;
+    };
+    likes: Array<any>;
+    comments: Array<any>;
     isAchievement: boolean;
     achievementType: string;
     createdAt: string;
@@ -173,10 +189,38 @@ export function useUser(username?: string) {
               _id,
               title,
               content,
-              media,
+              media[] {
+                _key,
+                type,
+                file {
+                  asset-> {
+                    _ref,
+                    _type,
+                    url
+                  }
+                },
+                caption,
+                altText
+              },
               tags,
-              author,
-              authorType,
+              author-> {
+                _id,
+                coreIdentity {
+                  fullName
+                },
+                personalDetails {
+                  username,
+                  tagline,
+                  profilePicture {
+                    asset-> {
+                      url
+                    }
+                  }
+                },
+                authorType
+              },
+              likes,
+              comments,
               isAchievement,
               achievementType,
               createdAt,

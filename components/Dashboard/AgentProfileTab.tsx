@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { AgentProfile } from "@/types/index";
 import { AgentAutomationCard } from "@/components/Dashboard/ProfileCards/AgentProfile/AgentAutomationCard";
 import BusinessCard from "@/components/Dashboard/ProfileCards/AgentProfile/BusinessCard";
@@ -12,80 +12,101 @@ interface AgentProfileTabProps {
   isCurrentUser?: boolean;
 }
 
-export function AgentProfileTab({
+function AgentProfileTabContent({
   profiles,
   isCurrentUser,
 }: AgentProfileTabProps) {
-  if (!profiles?.length) {
+  // Memoize the profile and derived data
+  const profileData = useMemo(() => {
+    if (!profiles?.length) return null;
+
+    const profile = profiles[0];
+
+    return {
+      profile,
+      availability: {
+        currentStatus: profile.availability?.currentStatus || "availableNow",
+        workingHours: profile.availability?.workingHours || "fullTime",
+        timeZone:
+          profile.availability?.timeZone ||
+          Intl.DateTimeFormat().resolvedOptions().timeZone,
+        responseTime: profile.availability?.responseTime || "sameDay",
+        availabilityHours:
+          profile.availability?.availabilityHours || "businessHours",
+      },
+      pricing: profile.pricing || {
+        hourlyRateRange: "",
+        minimumProjectBudget: "",
+        preferredPaymentMethods: [],
+      },
+      mustHaveRequirements: profile.mustHaveRequirements || {
+        experience: "",
+        dealBreakers: [],
+        industryDomain: [],
+        requirements: [],
+        customIndustry: [],
+      },
+      projects: profile.projects || [],
+    };
+  }, [profiles]);
+
+  // Memoize the current user flag
+  const currentUserFlag = useMemo(
+    () => isCurrentUser ?? false,
+    [isCurrentUser]
+  );
+
+  if (!profileData) {
     return (
-      <div className="text-center py-8">
+      <div className="text-center py-8 min-h-[200px] flex items-center justify-center">
         <p className="text-muted-foreground">No agent profiles found.</p>
       </div>
     );
   }
 
-  const profile = profiles[0];
+  const { profile, availability, pricing, mustHaveRequirements, projects } =
+    profileData;
 
   return (
     <div className="space-y-4">
       <AgentAutomationCard
         automationExpertise={profile.automationExpertise}
-        isCurrentUser={isCurrentUser ?? false}
+        isCurrentUser={currentUserFlag}
         profileId={profile._id}
       />
 
       <BusinessCard
         businessDetails={profile.businessDetails}
-        isCurrentUser={isCurrentUser ?? false}
+        isCurrentUser={currentUserFlag}
         profileId={profile._id}
       />
 
       <AvailabilityCard
-        availability={{
-          currentStatus: profile.availability?.currentStatus || "availableNow",
-          workingHours: profile.availability?.workingHours || "fullTime",
-          timeZone:
-            profile.availability?.timeZone ||
-            Intl.DateTimeFormat().resolvedOptions().timeZone,
-          responseTime: profile.availability?.responseTime || "sameDay",
-          availabilityHours:
-            profile.availability?.availabilityHours || "businessHours",
-        }}
-        isCurrentUser={isCurrentUser ?? false}
+        availability={availability}
+        isCurrentUser={currentUserFlag}
         profileId={profile._id}
       />
 
       <AgentProjectCard
-        projects={profile.projects || []}
-        isCurrentUser={isCurrentUser ?? false}
+        projects={projects}
+        isCurrentUser={currentUserFlag}
         profileId={profile._id}
       />
 
       <PricingCard
-        pricing={
-          profile.pricing || {
-            hourlyRateRange: "",
-            minimumProjectBudget: "",
-            preferredPaymentMethods: [],
-          }
-        }
-        isCurrentUser={isCurrentUser ?? false}
+        pricing={pricing}
+        isCurrentUser={currentUserFlag}
         profileId={profile._id}
       />
 
       <RequirementsCard
-        mustHaveRequirements={
-          profile.mustHaveRequirements || {
-            experience: "",
-            dealBreakers: [],
-            industryDomain: [],
-            requirements: [],
-            customIndustry: [],
-          }
-        }
-        isCurrentUser={isCurrentUser ?? false}
+        mustHaveRequirements={mustHaveRequirements}
+        isCurrentUser={currentUserFlag}
         profileId={profile._id}
       />
     </div>
   );
 }
+
+// Memoize the entire component to prevent unnecessary re-renders
+export const AgentProfileTab = React.memo(AgentProfileTabContent);
