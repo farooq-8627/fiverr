@@ -102,8 +102,8 @@ export function ConclusionSectionUI({
           description: "Complete your profile to start your journey",
         },
       ]}
-      currentStep={5}
-      totalSteps={6}
+      currentStep={7}
+      totalSteps={7}
     />
   );
 

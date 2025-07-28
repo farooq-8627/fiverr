@@ -135,8 +135,8 @@ export function ProjectScopeDetails() {
           description: "Share your team's size and automation experience",
         },
       ]}
-      currentStep={4}
-      totalSteps={6}
+      currentStep={6}
+      totalSteps={7}
     />
   );
 

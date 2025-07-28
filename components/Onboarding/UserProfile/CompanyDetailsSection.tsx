@@ -158,8 +158,8 @@ export function CompanyDetailsSection() {
           description: "Share your team size and organizational capabilities",
         },
       ]}
-      currentStep={2}
-      totalSteps={6}
+      currentStep={3}
+      totalSteps={7}
     />
   );
 

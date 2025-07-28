@@ -15,13 +15,13 @@ export function OnboardingCard({
   ...props
 }: OnboardingCardProps) {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen w-full flex items-center justify-center p-1 sm:p-2 md:p-4 lg:p-8">
       <div className={cn("relative w-full max-w-7xl mx-auto", className)}>
         <div className="relative">
           {/* Glass card background */}
           <GlassCard
             theme="dark"
-            className="w-full h-full bg-black/70"
+            className="w-full h-full bg-black/60"
             {...props}
           >
             {children}

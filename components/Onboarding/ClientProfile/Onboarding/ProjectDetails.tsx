@@ -119,8 +119,8 @@ export function ProjectDetails() {
           description: "Detailed requirements lead to more accurate solutions",
         },
       ]}
-      currentStep={3}
-      totalSteps={6}
+      currentStep={5}
+      totalSteps={7}
     />
   );
 

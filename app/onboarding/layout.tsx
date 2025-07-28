@@ -18,7 +18,7 @@ export default function OnboardingLayout({
 
       {/* Center the content */}
       <div className="relative z-10 min-h-screen w-full flex items-center justify-center">
-        <div className="w-full max-w-[90%] md:max-w-[80%] lg:max-w-[1200px]">
+        <div className="w-full max-w-[95%] md:max-w-[95%] lg:max-w-[92%] xl:max-w-[1200px]">
           {children}
         </div>
       </div>

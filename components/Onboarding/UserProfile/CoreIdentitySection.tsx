@@ -130,8 +130,8 @@ export function CoreIdentitySection() {
             "Define your tagline and position within your organization",
         },
       ]}
-      currentStep={1}
-      totalSteps={6}
+      currentStep={2}
+      totalSteps={7}
     />
   );
 

@@ -123,8 +123,8 @@ export function BusinessDetailsSection() {
             "Set clear expectations about your working hours and commitment",
         },
       ]}
-      currentStep={5}
-      totalSteps={6}
+      currentStep={6}
+      totalSteps={7}
     />
   );
 

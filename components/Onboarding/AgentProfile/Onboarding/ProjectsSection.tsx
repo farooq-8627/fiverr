@@ -231,8 +231,8 @@ export function ProjectsSection() {
             "Help clients understand your specialization and capabilities",
         },
       ]}
-      currentStep={3}
-      totalSteps={6}
+      currentStep={5}
+      totalSteps={7}
     />
   );
 

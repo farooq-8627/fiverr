@@ -20,7 +20,7 @@ const clientAutomationNeeds = convertToOnboardingFormat(
 const clientCurrentTools = convertToOnboardingFormat(CLIENT_CURRENT_TOOLS);
 
 export function AutomationNeedsSection() {
-  const { handleNext, handlePrev, handleSkip } = useClientProfileForm();
+  const { handleNext, goToFirstSection, handleSkip } = useClientProfileForm();
   const { watch, setValue } = useClientProfileFormFields();
 
   // Get form data
@@ -96,16 +96,15 @@ export function AutomationNeedsSection() {
             "Get tailored automation solutions that fit your business goals",
         },
       ]}
-      currentStep={3}
-      totalSteps={6}
+      currentStep={4}
+      totalSteps={7}
     />
   );
 
   return (
     <Automation
       onNext={handleCustomNext}
-      onPrev={handlePrev}
-      onSkip={handleSkip}
+      onPrev={goToFirstSection}
       rightContent={rightContent}
       title="Automation Needs"
       description="Tell us what you need automated and what tools you currently use"

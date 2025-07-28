@@ -18,7 +18,7 @@ const agentAutomationServices = convertToOnboardingFormat(
 const agentToolsExpertise = convertToOnboardingFormat(AGENT_TOOLS_EXPERTISE);
 
 export function AutomationExpertiseSection() {
-  const { handleNext, handlePrev, canProceed } = useAgentProfileForm();
+  const { handleNext, goToFirstSection, canProceed } = useAgentProfileForm();
   const {
     register,
     watch,
@@ -65,16 +65,15 @@ export function AutomationExpertiseSection() {
             "Receive personalized recommendations for high-value projects",
         },
       ]}
-      currentStep={2}
-      totalSteps={6}
+      currentStep={4}
+      totalSteps={7}
     />
   );
 
   return (
     <Automation
       onNext={handleNext}
-      onPrev={handlePrev}
-      onSkip={() => {}} // Removed handleSkip as per new_code
+      onPrev={goToFirstSection}
       rightContent={rightContent}
       title="Automation Expertise"
       description="Select your primary automation services and tools expertise"

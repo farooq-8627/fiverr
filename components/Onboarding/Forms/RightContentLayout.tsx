@@ -24,21 +24,30 @@ export function RightContentLayout({
     typeof currentStep === "number" &&
     typeof totalSteps === "number" &&
     totalSteps > 0;
-  const progress = showProgress ? (currentStep / totalSteps) * 100 : 0;
+
+  // Calculate progress based on completed steps (currentStep - 1)
+  const completedSteps = showProgress ? Math.max(0, currentStep! - 1) : 0;
+  const progress = showProgress ? (completedSteps / totalSteps!) * 100 : 0;
 
   const getMotivationalMessage = (step: number, total: number) => {
-    if (step === 0) return "";
-    if (step === total - 1)
-      return "You're at the final step! Let's wrap this up.";
-
-    const messages = [
-      "Great progress! Your profile is taking shape.",
-      "You're doing great! Keep going.",
-      "More than halfway there! Looking good.",
-      "Almost there! Just one more step.",
-    ];
-
-    return messages[Math.min(step - 1, messages.length - 1)];
+    switch (step) {
+      case 1:
+        return "Welcome! Let's get started with your profile.";
+      case 2:
+        return "Great start! Your profile is taking shape.";
+      case 3:
+        return "You're doing great! Keep going.";
+      case 4:
+        return "Excellent progress! More than halfway there.";
+      case 5:
+        return "Looking good! Almost there.";
+      case 6:
+        return "Amazing! Just one more step to go.";
+      case 7:
+        return "You're at the final step! Let's wrap this up.";
+      default:
+        return "Keep going! You're doing great.";
+    }
   };
 
   return (
@@ -73,25 +82,23 @@ export function RightContentLayout({
               transition={{ duration: 0.5, ease: "easeOut" }}
             />
           </div>
-          <motion.div className="flex gap-6">
+          <motion.div className="flex flex-col gap-2">
             <motion.p
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.5 }}
               className="text-sm text-white/50"
             >
-              Step {currentStep + 1} of {totalSteps}
+              Step {currentStep} of {totalSteps}
             </motion.p>
-            {currentStep > 0 && (
-              <motion.p
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.5 }}
-                className="text-sm font-medium text-purple-400"
-              >
-                {getMotivationalMessage(currentStep, totalSteps)}
-              </motion.p>
-            )}
+            <motion.p
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+              className="text-sm font-medium text-purple-400"
+            >
+              {getMotivationalMessage(currentStep!, totalSteps!)}
+            </motion.p>
           </motion.div>
         </motion.div>
       )}
