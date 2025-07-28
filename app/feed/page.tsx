@@ -1,68 +1,37 @@
 "use client";
 
-import React, {
-  useEffect,
-  useState,
-  useRef,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { usePosts } from "@/hooks/usePosts";
-import { PostCard, Media } from "@/components/cards/Feed/PostCard";
-import { useUser } from "@clerk/nextjs";
-import { Like, Post } from "@/types/post";
-
-interface PostCardPost {
-  _id: string;
-  title: string;
-  content: string;
-  tags: string[];
-  createdAt: string;
-  likes: Like[]; // Array of user IDs who liked the post
-  comments: number;
-  reposts: number;
-  media?: Media[];
-  author: {
-    _id: string;
-    name: string;
-    username: string;
-    portfolio?: string;
-    profilePicture: {
-      asset: {
-        url: string;
-      };
-    };
-    tagline?: string;
-    verified?: boolean;
-    roles?: string[];
-  };
-}
+import { PostCard } from "@/components/cards/Feed/PostCard";
+import { InfiniteFeedPageLayout } from "@/components/shared/InfiniteFeedPageLayout";
+import { FeedPageLayout } from "@/components/shared/FeedPageLayout";
+import { Post } from "@/types/post";
 
 export default function FeedPage() {
-  const { user } = useUser();
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<{ field: string; order: "asc" | "desc" }>({
+    field: "createdAt",
+    order: "desc",
+  });
+  const [authorTypes, setAuthorTypes] = useState<("agent" | "client")[]>([]);
+  const [isAchievementFilter, setIsAchievementFilter] = useState(false);
+  const [useInfiniteScroll, setUseInfiniteScroll] = useState(true);
+
   const {
     posts,
     latestPosts,
     popularPosts,
+    achievementPosts,
     loading,
     error,
     fetchPosts,
     fetchLatestPosts,
     fetchPopularPosts,
-  } = usePosts();
-
-  const [activeTab, setActiveTab] = useState<"all" | "latest" | "popular">(
-    "all"
-  );
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [allLoadedPosts, setAllLoadedPosts] = useState<Post[]>([]);
-  const observerTarget = useRef<HTMLDivElement>(null);
-  const POSTS_PER_PAGE = 5;
+    fetchAchievementPosts,
+  } = usePosts({ search, sort, authorTypes });
 
   // Transform Sanity post data to match PostCard component's expected format
-  const transformPost = useCallback((post: Post): PostCardPost => {
+  const transformPost = useCallback((post: Post) => {
     // Handle media transformation with null checks
     const transformedMedia = post.media
       ?.filter((media) => media && media.type && media.file?.asset?.url)
@@ -105,200 +74,122 @@ export default function FeedPage() {
         },
         tagline: post.author.personalDetails?.tagline || "",
         verified: false,
-        roles: [post.author.authorType || "user"],
+        roles: [post.authorType || "user"],
       },
     };
   }, []);
 
-  // Load more posts for infinite scroll
-  const loadMorePosts = useCallback(async () => {
-    if (!hasMore || isLoadingMore) return;
+  // Get posts based on current sort and filters
+  const currentPosts = useMemo(() => {
+    // If achievement filter is active, show achievement posts
+    if (isAchievementFilter) {
+      return achievementPosts;
+    }
 
-    setIsLoadingMore(true);
-    try {
-      // Simulate pagination by slicing existing posts
-      // In a real app, you'd make an API call with page parameter
-      let postsToUse: Post[] = [];
-      switch (activeTab) {
-        case "latest":
-          postsToUse = latestPosts;
-          break;
-        case "popular":
-          postsToUse = popularPosts;
-          break;
-        default:
-          postsToUse = posts;
-      }
-
-      const startIndex = (page - 1) * POSTS_PER_PAGE;
-      const endIndex = startIndex + POSTS_PER_PAGE;
-      const newPosts = postsToUse.slice(startIndex, endIndex);
-
-      if (newPosts.length < POSTS_PER_PAGE || endIndex >= postsToUse.length) {
-        setHasMore(false);
-      }
-
-      if (page === 1) {
-        setAllLoadedPosts(newPosts);
-      } else {
-        setAllLoadedPosts((prev) => [...prev, ...newPosts]);
-      }
-
-      setPage((prev) => prev + 1);
-    } catch (err) {
-      console.error("Error loading more posts:", err);
-    } finally {
-      setIsLoadingMore(false);
+    // Otherwise show based on sort
+    switch (sort.field) {
+      case "likes":
+        return popularPosts;
+      case "createdAt":
+      default:
+        return latestPosts.length > 0 ? latestPosts : posts;
     }
   }, [
-    activeTab,
-    page,
-    hasMore,
-    isLoadingMore,
+    sort.field,
     posts,
     latestPosts,
     popularPosts,
+    achievementPosts,
+    isAchievementFilter,
   ]);
 
-  // Reset pagination when tab changes
-  const handleTabChange = useCallback((tab: "all" | "latest" | "popular") => {
-    setActiveTab(tab);
-    setPage(1);
-    setHasMore(true);
-    setAllLoadedPosts([]);
-  }, []);
-
-  // Intersection Observer for infinite scroll
+  // Light debug logging only in development
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
-          loadMorePosts();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
-    return () => {
-      if (observerTarget.current) {
-        observer.unobserve(observerTarget.current);
-      }
-    };
-  }, [hasMore, isLoadingMore, loadMorePosts]);
-
-  // Initial data fetch
-  useEffect(() => {
-    // Fetch all types of posts when the component mounts
-    fetchPosts();
-    fetchLatestPosts();
-    fetchPopularPosts();
-  }, [fetchPosts, fetchLatestPosts, fetchPopularPosts]);
-
-  // Load initial posts when data is available or tab changes
-  useEffect(() => {
-    if (
-      (posts.length > 0 || latestPosts.length > 0 || popularPosts.length > 0) &&
-      allLoadedPosts.length === 0
-    ) {
-      loadMorePosts();
+    if (process.env.NODE_ENV === "development") {
+      console.log("Feed data:", {
+        count: currentPosts?.length || 0,
+        loading,
+        error: !!error,
+        hasFilters: search || authorTypes.length > 0 || isAchievementFilter,
+        posts: posts?.length || 0,
+        latestPosts: latestPosts?.length || 0,
+        popularPosts: popularPosts?.length || 0,
+        achievementPosts: achievementPosts?.length || 0,
+      });
     }
   }, [
-    posts,
-    latestPosts,
-    popularPosts,
-    activeTab,
-    allLoadedPosts.length,
-    loadMorePosts,
+    currentPosts?.length,
+    loading,
+    error,
+    search,
+    authorTypes.length,
+    isAchievementFilter,
+    posts?.length,
+    latestPosts?.length,
+    popularPosts?.length,
+    achievementPosts?.length,
   ]);
 
-  // Memoize the posts to display to prevent unnecessary re-renders
-  const displayPosts = useMemo(() => {
-    if (loading && allLoadedPosts.length === 0) {
-      return null; // Show loading state
-    }
+  const handleSearchAndFiltersChange = useCallback(
+    (
+      searchQuery: string,
+      newAuthorTypes: ("agent" | "client")[],
+      newSort?: { field: string; order: "asc" | "desc" },
+      achievementFilter?: boolean
+    ) => {
+      setSearch(searchQuery);
+      setAuthorTypes(newAuthorTypes);
+      setIsAchievementFilter(achievementFilter || false);
+      if (newSort) {
+        setSort(newSort);
+      }
+    },
+    []
+  );
 
-    if (error) {
-      return null; // Show error state
-    }
+  const handleSortChange = useCallback(
+    (newSort: { field: string; order: "asc" | "desc" }) => {
+      setSort(newSort);
+      setIsAchievementFilter(false); // Reset achievement filter when changing sort
+    },
+    []
+  );
 
-    if (!allLoadedPosts?.length) {
-      return null; // Show no posts state
-    }
+  const handleAchievementToggle = useCallback(() => {
+    const newAchievementFilter = !isAchievementFilter;
+    setIsAchievementFilter(newAchievementFilter);
 
-    return (
-      <div className="space-y-6">
-        {allLoadedPosts.map((post) => (
-          <PostCard key={post._id} post={transformPost(post)} />
-        ))}
-        {isLoadingMore && (
-          <div className="text-center py-4">Loading more posts...</div>
-        )}
-        {!isLoadingMore && hasMore && (
-          <div ref={observerTarget} className="h-10" />
-        )}
-        {!hasMore && allLoadedPosts.length > 0 && (
-          <div className="text-center py-4 text-gray-500">
-            No more posts to load
-          </div>
-        )}
-      </div>
-    );
-  }, [allLoadedPosts, transformPost, isLoadingMore, hasMore]);
+    // Fetch achievement posts when toggling on
+    if (newAchievementFilter) {
+      fetchAchievementPosts(""); // Fetch all achievement posts
+    }
+  }, [isAchievementFilter, fetchAchievementPosts]);
+
+  const LayoutComponent = useInfiniteScroll
+    ? InfiniteFeedPageLayout
+    : FeedPageLayout;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
-      {/* Feed Tabs */}
-      <div className="flex gap-4 mb-6">
-        <button
-          onClick={() => handleTabChange("all")}
-          className={`px-4 py-2 rounded-lg transition-colors ${
-            activeTab === "all"
-              ? "bg-blue-500 text-white"
-              : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-          }`}
-        >
-          All Posts
-        </button>
-        <button
-          onClick={() => handleTabChange("latest")}
-          className={`px-4 py-2 rounded-lg transition-colors ${
-            activeTab === "latest"
-              ? "bg-blue-500 text-white"
-              : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-          }`}
-        >
-          Latest
-        </button>
-        <button
-          onClick={() => handleTabChange("popular")}
-          className={`px-4 py-2 rounded-lg transition-colors ${
-            activeTab === "popular"
-              ? "bg-blue-500 text-white"
-              : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-          }`}
-        >
-          Popular
-        </button>
-      </div>
-
-      {/* Posts Display */}
-      {loading && allLoadedPosts.length === 0 && (
-        <div className="text-center py-8">Loading posts...</div>
+    <LayoutComponent
+      title="Community Feed"
+      subtitle="Discover the latest updates, achievements, and insights from our automation community. Connect with experts and stay informed about industry trends."
+      data={currentPosts || []}
+      loading={loading}
+      error={error ? new Error(error) : null}
+      renderCard={(post: Post) => (
+        <PostCard key={post._id} post={transformPost(post)} />
       )}
-
-      {error && (
-        <div className="text-center py-8 text-red-500">Error: {error}</div>
-      )}
-
-      {!loading && !error && allLoadedPosts.length === 0 && (
-        <div className="text-center py-8">No posts found</div>
-      )}
-
-      {displayPosts}
-    </div>
+      emptyStateMessage="No posts found"
+      onSearchAndFiltersChange={handleSearchAndFiltersChange}
+      onSortChange={handleSortChange}
+      onAchievementToggle={handleAchievementToggle}
+      currentSort={sort}
+      currentAuthorTypes={authorTypes}
+      isAchievementFilter={isAchievementFilter}
+      {...(useInfiniteScroll && {
+        initialBatchSize: 5,
+        batchSize: 5,
+      })}
+    />
   );
 }

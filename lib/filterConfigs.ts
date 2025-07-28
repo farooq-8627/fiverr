@@ -39,6 +39,20 @@ const priorityOptions = [
   { label: "High", value: "high" },
 ];
 
+const authorTypeOptions = [
+  { label: "Agents", value: "agent" },
+  { label: "Clients", value: "client" },
+];
+
+const achievementTypeOptions = [
+  { label: "Project Completion", value: "projectCompletion" },
+  { label: "Milestone Achievement", value: "milestoneAchievement" },
+  { label: "Skill Certification", value: "skillCertification" },
+  { label: "Business Growth", value: "businessGrowth" },
+  { label: "Client Success", value: "clientSuccess" },
+  { label: "Innovation", value: "innovation" },
+];
+
 const statusOptions = [
   { label: "Open", value: "open" },
   { label: "In Progress", value: "in-progress" },
@@ -194,21 +208,37 @@ export const filterConfigs: Record<EntityType, FilterConfig[]> = {
 
   feed: [
     {
-      id: "type",
-      label: "Content Type",
+      id: "authorType",
+      label: "Author Type",
       type: "multiSelect",
-      options: [
-        { label: "Projects", value: "project" },
-        { label: "Updates", value: "update" },
-        { label: "Announcements", value: "announcement" },
-      ],
-      field: "type",
+      options: authorTypeOptions,
+      field: "authorType",
     },
     {
-      id: "date",
-      label: "Date Range",
-      type: "range",
-      field: "date",
+      id: "industry",
+      label: "Industry",
+      type: "multiSelect",
+      options: industryOptions,
+      field: "author.mustHaveRequirements.industryDomain",
+    },
+    {
+      id: "isAchievement",
+      label: "Achievement Posts",
+      type: "toggle",
+      field: "isAchievement",
+    },
+    {
+      id: "achievementType",
+      label: "Achievement Type",
+      type: "multiSelect",
+      options: achievementTypeOptions,
+      field: "achievementType",
+    },
+    {
+      id: "tags",
+      label: "Tags",
+      type: "search",
+      field: "tags",
     },
   ],
 };

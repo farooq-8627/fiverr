@@ -93,7 +93,11 @@ export function PostModal({
   const [replyText, setReplyText] = useState("");
   const [expandedReplies, setExpandedReplies] = useState<string[]>([]);
   const { user } = useUser();
-  const { addComment, deleteComment, updateComment } = usePosts();
+  const {
+    handleAddComment: addCommentAPI,
+    handleDeleteComment: deleteCommentAPI,
+    handleEditComment: updateCommentAPI,
+  } = usePosts();
 
   // Fetch comments when modal is opened
   useEffect(() => {
@@ -146,7 +150,11 @@ export function PostModal({
         },
       };
 
-      const result = await addComment(post._id, commentText.trim(), authorData);
+      const result = await addCommentAPI(
+        post._id,
+        commentText.trim(),
+        authorData
+      );
 
       if (result.success && result.data) {
         await fetchComments(); // Fetch fresh comments
@@ -161,7 +169,7 @@ export function PostModal({
 
   const handleDeleteComment = async (commentKey: string) => {
     try {
-      const result = await deleteComment(post._id, commentKey);
+      const result = await deleteCommentAPI(post._id, commentKey);
       if (result.success) {
         await fetchComments(); // Fetch fresh comments
       }
@@ -180,7 +188,11 @@ export function PostModal({
 
   const handleSaveEdit = async (commentKey: string) => {
     try {
-      const result = await updateComment(post._id, commentKey, editText.trim());
+      const result = await updateCommentAPI(
+        post._id,
+        commentKey,
+        editText.trim()
+      );
       if (result.success) {
         await fetchComments();
         setEditingCommentKey(null);
@@ -205,7 +217,7 @@ export function PostModal({
 
     try {
       setIsSubmitting(true);
-      const result = await addComment(
+      const result = await addCommentAPI(
         post._id,
         replyText.trim(),
         {
@@ -243,7 +255,7 @@ export function PostModal({
     parentCommentKey: string
   ) => {
     try {
-      const result = await deleteComment(
+      const result = await deleteCommentAPI(
         post._id,
         commentKey,
         true,
@@ -274,7 +286,7 @@ export function PostModal({
     parentCommentKey: string
   ) => {
     try {
-      const result = await updateComment(
+      const result = await updateCommentAPI(
         post._id,
         commentKey,
         editText.trim(),

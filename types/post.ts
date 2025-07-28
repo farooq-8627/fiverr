@@ -63,6 +63,7 @@ export interface Post {
   comments: Comment[];
   media?: Media[];
   author: Author;
+  authorType?: string;
   isAchievement?: boolean;
   achievementType?: string;
 }

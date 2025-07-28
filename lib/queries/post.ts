@@ -17,6 +17,9 @@ const postProjection = `{
         fullName,
         tagline,
         bio
+      },
+      mustHaveRequirements {
+        industryDomain
       }
     },
     author->userId->{
@@ -33,6 +36,9 @@ const postProjection = `{
         fullName,
         tagline,
         bio
+      },
+      mustHaveRequirements {
+        industryDomain
       }
     }
   ),
