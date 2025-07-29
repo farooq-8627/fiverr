@@ -10,10 +10,7 @@ import { uploadMediaToSanity } from "@/lib/mediaUploads";
 export interface FormState {
   success: boolean;
   message: string;
-  data?: {
-    profileImage?: string;
-    bannerImage?: string;
-  };
+  data?: any;
 }
 
 // Main function to save user profile to Sanity
@@ -66,7 +63,7 @@ export async function saveUserProfile(formData: FormData): Promise<FormState> {
     // Only process company details if the toggle is on
     let companyId = null;
     if (hasCompany) {
-      // Create company document
+      // Create company document with proper ownership
       const companyDoc = {
         _type: "company",
         name: formData.get("company.name") as string,
@@ -74,6 +71,16 @@ export async function saveUserProfile(formData: FormData): Promise<FormState> {
         website: formData.get("company.website") as string,
         tagline: formData.get("company.tagline") as string,
         teamSize: formData.get("company.teamSize") as string,
+        industries: JSON.parse(
+          (formData.get("company.industries") as string) || "[]"
+        ),
+        customIndustries: JSON.parse(
+          (formData.get("company.customIndustries") as string) || "[]"
+        ),
+        companyType: (formData.get("company.companyType") as string) || "agent",
+        createdBy: userId, // Set the owner to current user
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
       // Create the company document and get its ID
@@ -427,6 +434,160 @@ export interface CreatePostData {
   tags?: string[];
   isAchievement?: boolean;
   achievementType?: string;
+}
+
+// Function to update company details
+export async function updateCompanyDetails(formData: {
+  companyId: string;
+  name?: string;
+  tagline?: string;
+  bio?: string;
+  website?: string;
+  teamSize?: string;
+  industries?: string[];
+  customIndustries?: string[];
+  companyType?: "agent" | "client";
+  logo?: File;
+  banner?: File;
+}): Promise<FormState> {
+  try {
+    // Get authenticated user ID
+    const { userId } = await auth();
+
+    if (!userId) {
+      return {
+        success: false,
+        message: "Authentication required. Please sign in.",
+      };
+    }
+
+    // Find the company document in Sanity
+    const existingCompany = await backendClient.getDocument(formData.companyId);
+
+    if (!existingCompany) {
+      return {
+        success: false,
+        message: "Company not found.",
+      };
+    }
+
+    // Check if the user is the owner of the company
+    if (existingCompany.createdBy !== userId) {
+      return {
+        success: false,
+        message: "You don't have permission to edit this company.",
+      };
+    }
+
+    console.log("Existing company document:", existingCompany);
+    console.log("Form data being submitted:", formData);
+
+    // Prepare update data - only include fields that are provided
+    const updateData: any = {
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (formData.name !== undefined) {
+      updateData.name = formData.name;
+    }
+    if (formData.tagline !== undefined) {
+      updateData.tagline = formData.tagline;
+    }
+    if (formData.bio !== undefined) {
+      updateData.bio = formData.bio;
+    }
+    if (formData.website !== undefined) {
+      updateData.website = formData.website;
+    }
+    if (formData.teamSize !== undefined) {
+      updateData.teamSize = formData.teamSize;
+    }
+    if (formData.industries !== undefined) {
+      updateData.industries = formData.industries;
+    }
+    if (formData.customIndustries !== undefined) {
+      updateData.customIndustries = formData.customIndustries;
+    }
+    if (formData.companyType !== undefined) {
+      updateData.companyType = formData.companyType;
+    }
+
+    console.log("Update data being sent to Sanity:", updateData);
+
+    try {
+      // Handle image uploads if provided
+      if (formData.logo) {
+        try {
+          const logoAsset = await uploadImageToSanity(formData.logo);
+          if (logoAsset?._id) {
+            updateData.logo = {
+              _type: "image",
+              asset: {
+                _type: "reference",
+                _ref: logoAsset._id,
+              },
+            };
+          }
+        } catch (error) {
+          console.error("Failed to upload company logo:", error);
+          return {
+            success: false,
+            message: "Failed to upload company logo. Please try again.",
+          };
+        }
+      }
+
+      if (formData.banner) {
+        try {
+          const bannerAsset = await uploadImageToSanity(formData.banner);
+          if (bannerAsset?._id) {
+            updateData.banner = {
+              _type: "image",
+              asset: {
+                _type: "reference",
+                _ref: bannerAsset._id,
+              },
+            };
+          }
+        } catch (error) {
+          console.error("Failed to upload company banner:", error);
+          return {
+            success: false,
+            message: "Failed to upload company banner. Please try again.",
+          };
+        }
+      }
+
+      // Update the company document
+      const result = await backendClient
+        .patch(formData.companyId)
+        .set(updateData)
+        .commit();
+      console.log("Update result from Sanity:", result);
+
+      // Revalidate cached data
+      revalidatePath("/companies/[id]");
+      revalidatePath("/companies");
+
+      return {
+        success: true,
+        message: "Company updated successfully",
+        data: result,
+      };
+    } catch (error: any) {
+      console.error("Error updating company:", error);
+      return {
+        success: false,
+        message: `Failed to update company: ${error.message || "Unknown error"}`,
+      };
+    }
+  } catch (error: any) {
+    console.error("Error updating company:", error);
+    return {
+      success: false,
+      message: `Failed to update company: ${error.message || "Unknown error"}`,
+    };
+  }
 }
 
 export async function createPost(data: CreatePostData) {

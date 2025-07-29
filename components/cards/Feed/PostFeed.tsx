@@ -26,8 +26,8 @@ export function PostFeed({
     fetchAchievementPosts,
     likePost,
     unlikePost,
-    addComment,
-    deleteComment,
+    handleAddComment: addComment,
+    handleDeleteComment: deleteComment,
   } = usePosts();
 
   useEffect(() => {
@@ -35,8 +35,6 @@ export function PostFeed({
       fetchAchievementPosts(username);
     } else if (username) {
       fetchUserPosts(username);
-    } else if (filter) {
-      fetchPosts(filter);
     } else {
       fetchPosts();
     }
@@ -68,10 +66,13 @@ export function PostFeed({
   }
 
   const handleLike = async (postId: string) => {
-    if (!user?.id) return;
+    if (!user?.id || !user?.username) return;
 
-    const isLiked = displayPosts.find(
-      (post) => post._id === postId && post.likes.includes(user.id)
+    const post = displayPosts.find((post) => post._id === postId);
+    if (!post) return;
+
+    const isLiked = post.likes.some(
+      (like) => like.personalDetails?.username === user.username
     );
 
     if (isLiked) {
@@ -156,7 +157,12 @@ export function PostFeed({
             <button
               onClick={() => handleLike(post._id)}
               className={`flex items-center gap-1 ${
-                user?.id && post.likes.includes(user.id) ? "text-red-500" : ""
+                user?.username &&
+                post.likes.some(
+                  (like) => like.personalDetails?.username === user.username
+                )
+                  ? "text-red-500"
+                  : ""
               }`}
             >
               <span>❤️</span>

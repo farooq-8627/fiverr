@@ -6,6 +6,7 @@ import {
   CLIENT_AUTOMATION_NEEDS,
   BUDGET_RANGES,
   CLIENT_CURRENT_TOOLS,
+  TEAM_SIZES,
 } from "@/sanity/schemaTypes/constants";
 
 const industryOptions = INDUSTRY_DOMAINS.map((domain) => ({
@@ -60,13 +61,10 @@ const statusOptions = [
   { label: "On Hold", value: "on-hold" },
 ];
 
-const companySizeOptions = [
-  { label: "Startup (1-10)", value: "startup" },
-  { label: "Small (11-50)", value: "small" },
-  { label: "Medium (51-200)", value: "medium" },
-  { label: "Large (201-1000)", value: "large" },
-  { label: "Enterprise (1000+)", value: "enterprise" },
-];
+const teamSizeOptions = TEAM_SIZES.map((size) => ({
+  label: size.title,
+  value: size.value,
+}));
 
 const toolsOptions = CLIENT_CURRENT_TOOLS.map((tool) => ({
   label: tool.title,
@@ -185,18 +183,18 @@ export const filterConfigs: Record<EntityType, FilterConfig[]> = {
 
   company: [
     {
-      id: "industry",
-      label: "Industry",
+      id: "industries",
+      label: "Industries",
       type: "multiSelect",
       options: industryOptions,
-      field: "industryDomain",
+      field: "industries",
     },
     {
-      id: "size",
-      label: "Company Size",
+      id: "teamSize",
+      label: "Team Size",
       type: "select",
-      options: companySizeOptions,
-      field: "size",
+      options: teamSizeOptions,
+      field: "teamSize",
     },
     {
       id: "location",

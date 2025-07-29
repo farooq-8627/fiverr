@@ -14,7 +14,7 @@ interface ProfilesPageLayoutProps {
   data: any[];
   loading: boolean;
   error: Error | null;
-  entityType: "agent" | "client";
+  entityType: "agent" | "client" | "company";
   renderCard: (item: any) => React.ReactNode;
   emptyStateMessage?: string;
   onFiltersChange?: (filters: FilterState, search: string) => void;
@@ -190,7 +190,7 @@ export function ProfilesPageLayout({
         >
           {data?.map((item, index) => (
             <motion.div
-              key={item.userProfile._id}
+              key={item.userProfile?._id || item._id || index}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 * index }}

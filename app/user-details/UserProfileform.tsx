@@ -91,7 +91,7 @@ function FormContent() {
   };
 
   return (
-    <div className="w-full h-screen flex items-center justify-center relative overflow-hidden">
+    <div className="w-full h-screen flex items-center justify-center relative">
       <Toaster position="top-center" richColors />
       <AnimatePresence initial={false} mode="wait">
         {renderSection()}

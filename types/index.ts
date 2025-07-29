@@ -118,6 +118,10 @@ export interface ClientProject {
   startDate: string;
   priority: string;
   status: string;
+  assignedAgents?: Array<{
+    _ref: string;
+    _type: "reference";
+  }>;
   createdAt: string;
   updatedAt: string;
 }

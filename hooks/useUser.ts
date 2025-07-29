@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createClient } from "@sanity/client";
+import { clientCache, cacheKeys } from "@/lib/cache";
 import { useUser as useClerkUser } from "@clerk/nextjs";
 
 const client = createClient({
@@ -125,6 +126,17 @@ export function useUser(username?: string) {
         return;
       }
 
+      // Check cache first
+      const identifier = username || clerkUser?.id;
+      const cacheKey = cacheKeys.user(identifier || "");
+      const cachedUser = clientCache.get(cacheKey);
+      if (cachedUser) {
+        setUserData(cachedUser);
+        setIsLoading(false);
+        setError(null);
+        return;
+      }
+
       try {
         setIsLoading(true);
         setError(null);
@@ -134,7 +146,7 @@ export function useUser(username?: string) {
           ? `*[_type == "user" && personalDetails.username == $identifier][0]`
           : `*[_type == "user" && clerkId == $identifier][0]`;
 
-        const params = { identifier: username || clerkUser?.id };
+        const params = { identifier };
 
         // Fetch user data with linked profiles and companies
         const user = await client.fetch<UserData | null>(
@@ -233,6 +245,11 @@ export function useUser(username?: string) {
         );
 
         setUserData(user);
+
+        // Cache the result for 5 minutes
+        if (user) {
+          clientCache.set(cacheKey, user, 5 * 60 * 1000);
+        }
       } catch (err) {
         setError(
           err instanceof Error ? err : new Error("Failed to fetch user data")
