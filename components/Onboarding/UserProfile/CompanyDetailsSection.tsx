@@ -122,21 +122,6 @@ export function CompanyDetailsSection() {
     updateCompany({ banner: file });
   };
 
-  const validateAndProceed = () => {
-    // Validate company fields if hasCompany is true
-    if (hasCompany) {
-      if (!company.name?.trim()) {
-        toast.error("Please enter your company name");
-        return;
-      }
-      if (!company.bio?.trim()) {
-        toast.error("Please enter your company description");
-        return;
-      }
-    }
-    handleNext();
-  };
-
   const rightContent = (
     <RightContentLayout
       title="Establish Your Identity"

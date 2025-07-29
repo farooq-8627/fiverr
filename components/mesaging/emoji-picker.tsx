@@ -6,8 +6,7 @@ import {
   PopoverTrigger,
 } from "@/components/mesaging/ui/popover";
 import { SmileIcon } from "lucide-react";
-import Picker from "@emoji-mart/react";
-import data from "@emoji-mart/data";
+import EmojiPickerReact, { EmojiClickData, Theme } from "emoji-picker-react";
 import { useTheme } from "next-themes";
 
 interface EmojiPickerProps {
@@ -17,18 +16,21 @@ interface EmojiPickerProps {
 export const EmojiPicker = ({ onChange }: EmojiPickerProps) => {
   const { theme } = useTheme();
 
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    onChange(emojiData.emoji);
+  };
+
   return (
     <Popover>
       <PopoverTrigger>
         <SmileIcon className="h-5 w-5 text-muted-foreground hover:text-foreground transition" />
       </PopoverTrigger>
       <PopoverContent className="w-full">
-        <Picker
-          emojiSize={18}
-          theme={theme || "light"}
-          data={data}
-          maxFrequentRows={1}
-          onEmojiSelect={(emoji: any) => onChange(emoji.native)}
+        <EmojiPickerReact
+          theme={theme === "dark" ? Theme.DARK : Theme.LIGHT}
+          onEmojiClick={handleEmojiClick}
+          width={320}
+          height={400}
         />
       </PopoverContent>
     </Popover>

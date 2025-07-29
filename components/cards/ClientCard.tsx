@@ -14,8 +14,11 @@ import {
   Briefcase,
 } from "lucide-react";
 import Image from "next/image";
+import { UserMessageButton } from "@/components/mesaging/UserMessageButton";
 
 interface UserProfile {
+  _id?: string;
+  clerkId?: string;
   personalDetails: {
     username?: string;
     website?: string;
@@ -251,13 +254,17 @@ export function ClientCard({
             </div>
 
             {/* Message Button */}
-            <Button
-              variant="outline"
-              className="ml-auto border-blue-600/50 bg-blue-900/20 text-blue-300 hover:bg-blue-800/30 p-1.5 sm:p-2 rounded-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MessageSquare className="h-4 w-4" />
-            </Button>
+            {userProfile.clerkId && (
+              <UserMessageButton
+                targetUserId={userProfile.clerkId}
+                targetUserName={coreIdentity?.fullName || "User"}
+                variant="outline"
+                size="sm"
+                className="ml-auto border-blue-600/50 bg-blue-900/20 text-blue-300 hover:bg-blue-800/30 p-1.5 sm:p-2 rounded-full"
+              >
+                <MessageSquare className="h-4 w-4" />
+              </UserMessageButton>
+            )}
           </div>
         </div>
       </GlassCard>

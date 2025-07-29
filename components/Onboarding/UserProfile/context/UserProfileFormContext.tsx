@@ -249,7 +249,7 @@ export function UserProfileFormProvider({
         toast.success(result.message);
         localStorage.removeItem(FORM_STORAGE_KEY);
         setTimeout(() => {
-          router.push("/dashboard");
+          router.push("/onboarding");
         }, 1500);
       } else {
         toast.error(

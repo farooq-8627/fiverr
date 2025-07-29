@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 import {
   Menu,
   Home,
@@ -60,9 +61,6 @@ export function Navbar() {
   const isOnboardingPage = pathname?.startsWith("/onboarding");
   const isUserDetailsPage = pathname?.startsWith("/user-details");
   const isMessagingPage = pathname?.startsWith("/messaging");
-  if (isOnboardingPage || isUserDetailsPage || isMessagingPage) {
-    return null;
-  }
 
   // Determine active item based on current pathname
   const isActiveItem = (href: string, label: string) => {
@@ -109,6 +107,10 @@ export function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isMobileMenuOpen]);
 
+  if (isOnboardingPage || isUserDetailsPage || isMessagingPage) {
+    return null;
+  }
+
   return (
     <>
       {/* Fixed Navbar */}
@@ -132,11 +134,12 @@ export function Navbar() {
                   <button
                     key={item.label}
                     onClick={() => handleNavigation(item.href, item.label)}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium ${
+                    className={cn(
+                      "flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                       isActive
                         ? "text-violet-400 bg-violet-500/10"
                         : "text-gray-300 hover:text-white"
-                    }`}
+                    )}
                   >
                     <Icon className="w-4 h-4" />
                     <span>{item.label}</span>
@@ -226,11 +229,12 @@ export function Navbar() {
                   <button
                     key={item.label}
                     onClick={() => handleNavigation(item.href, item.label)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left ${
+                    className={cn(
+                      "w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors",
                       isActive
                         ? "text-violet-400 bg-violet-500/10"
                         : "text-gray-300 hover:text-white hover:bg-gray-800"
-                    }`}
+                    )}
                   >
                     <Icon className="w-5 h-5" />
                     <span className="font-medium">{item.label}</span>

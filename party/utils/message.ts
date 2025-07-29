@@ -1,66 +1,114 @@
-import { nanoid } from "nanoid";
+import { User } from "./auth";
 
-export type Sender = {
+export interface Message {
   id: string;
-  image?: string;
-};
-
-export type Message = {
-  id: string;
-  from: Sender;
   text: string;
-  at: number; // Date
-};
+  from: {
+    id: string;
+    name?: string;
+    avatar?: string;
+  };
+  at: number;
+  type?: "text" | "image" | "file";
+  edited?: boolean;
+  reactions?: Record<string, string[]>; // emoji -> user ids
+}
 
-// Outbound message types
+export interface UserMessage {
+  type: "new" | "edit" | "delete";
+  id?: string;
+  text: string;
+}
 
-export type BroadcastMessage = {
-  type: "new" | "edit";
-} & Message;
-
-export type SyncMessage = {
+export interface SyncMessage {
   type: "sync";
   messages: Message[];
-};
+}
 
-export type ClearRoomMessage = {
+export interface ClearRoomMessage {
   type: "clear";
-};
+}
 
-// Inbound message types
+export interface TypingMessage {
+  type: "typing";
+  from: string;
+  isTyping: boolean;
+}
 
-export type NewMessage = {
-  type: "new";
-  text: string;
-  id?: string; // optional, server will set if not provided
-};
+export interface UserStatusMessage {
+  type: "user_status";
+  userId: string;
+  isOnline: boolean;
+  lastSeen?: number;
+}
 
-export type EditMessage = {
-  type: "edit";
-  text: string;
-  id: string;
-};
+export interface RoomUsersMessage {
+  type: "room_users";
+  users: User[];
+}
 
-export type UserMessage = NewMessage | EditMessage;
-export type ChatMessage = BroadcastMessage | SyncMessage | ClearRoomMessage;
+export type MessageType =
+  | Message
+  | SyncMessage
+  | ClearRoomMessage
+  | TypingMessage
+  | UserStatusMessage
+  | RoomUsersMessage;
 
-export const newMessage = (msg: Omit<Message, "id" | "at">) =>
-  JSON.stringify(<BroadcastMessage>{
+export function newMessage(message: Omit<Message, "type">): string {
+  return JSON.stringify({
     type: "new",
-    id: nanoid(),
-    at: Date.now(),
-    ...msg,
+    ...message,
   });
+}
 
-export const editMessage = (msg: Omit<Message, "at">) =>
-  JSON.stringify(<BroadcastMessage>{
+export function editMessage(message: Omit<Message, "type">): string {
+  return JSON.stringify({
     type: "edit",
-    at: Date.now(),
-    ...msg,
+    ...message,
   });
+}
 
-export const syncMessage = (messages: Message[]) =>
-  JSON.stringify(<SyncMessage>{ type: "sync", messages });
+export function syncMessage(messages: Message[]): string {
+  return JSON.stringify({
+    type: "sync",
+    messages,
+  });
+}
 
-export const systemMessage = (text: string) =>
-  newMessage({ from: { id: "system" }, text });
+export function systemMessage(text: string): string {
+  return newMessage({
+    id: `system-${Date.now()}`,
+    from: { id: "system", name: "System" },
+    text,
+    at: Date.now(),
+  });
+}
+
+export function typingMessage(from: string, isTyping: boolean): string {
+  return JSON.stringify({
+    type: "typing",
+    from,
+    isTyping,
+  });
+}
+
+export function userStatusMessage(
+  userId: string,
+  isOnline: boolean,
+  lastSeen?: number
+): string {
+  return JSON.stringify({
+    type: "user_status",
+    userId,
+    isOnline,
+    lastSeen,
+  });
+}
+
+export function roomUsersMessage(users: User[]): string {
+  return JSON.stringify({
+    type: "room_users",
+    users,
+  });
+}

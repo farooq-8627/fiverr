@@ -40,6 +40,7 @@ const getTitleByValue = (
 export interface ClientWithProfile {
   userProfile: {
     _id: string;
+    clerkId: string;
     personalDetails: {
       username?: string;
       website?: string;
@@ -212,6 +213,7 @@ export function useClientProfiles(
       ` {
         "userProfile": {
           "_id": _id,
+          "clerkId": clerkId,
           "personalDetails": {
             "username": personalDetails.username,
             "website": personalDetails.website,

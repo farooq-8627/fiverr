@@ -114,7 +114,7 @@ export function useCompanyProfiles({
           url
         }
       },
-      createdBy,
+      "createdBy": createdBy->clerkId,
       createdAt,
       updatedAt
     }`;

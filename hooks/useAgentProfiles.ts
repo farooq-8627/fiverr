@@ -30,6 +30,7 @@ const getTitleByValue = (
 export interface AgentWithProfile {
   userProfile: {
     _id: string;
+    clerkId: string;
     personalDetails: {
       username?: string;
       website?: string;
@@ -191,6 +192,7 @@ export function useAgentProfiles(
       ` {
         "userProfile": {
           "_id": _id,
+          "clerkId": clerkId,
           "personalDetails": {
             "username": personalDetails.username,
             "website": personalDetails.website,

@@ -7,6 +7,7 @@ import { Badge } from "@/components/UI/badge";
 import { Button } from "@/components/UI/button";
 import { ExternalLink, MessageSquare, Building2, Users } from "lucide-react";
 import Image from "next/image";
+import { UserMessageButton } from "@/components/mesaging/UserMessageButton";
 
 export interface CompanyProfile {
   _id: string;
@@ -28,7 +29,7 @@ export interface CompanyProfile {
       url: string;
     };
   };
-  createdBy?: string;
+  createdBy?: string; // This will be the clerkId of the user who created the company
   createdAt: string;
   updatedAt?: string;
 }
@@ -178,13 +179,17 @@ export function CompanyCard({ company, className }: CompanyCardProps) {
 
           {/* Actions */}
           <div className="flex items-center gap-4 pb-4">
-            <Button
-              variant="outline"
-              className="flex items-center gap-2 text-xs sm:text-sm p-2 rounded-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MessageSquare size={14} />
-            </Button>
+            {company.createdBy && (
+              <UserMessageButton
+                targetUserId={company.createdBy}
+                targetUserName={company.name}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2 text-xs sm:text-sm p-2 rounded-full"
+              >
+                <MessageSquare size={14} />
+              </UserMessageButton>
+            )}
           </div>
         </div>
       </GlassCard>

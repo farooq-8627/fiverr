@@ -265,10 +265,8 @@ export function AgentProfileFormProvider({
         localStorage.removeItem(FORM_STORAGE_KEY);
         console.log("Local storage cleared");
 
-        // Redirect to dashboard
-        console.log("Redirecting to dashboard...");
         setTimeout(() => {
-          router.push("/dashboard");
+          router.push("/");
         }, 1500);
       } else {
         console.error("Form submission failed:", result.message);

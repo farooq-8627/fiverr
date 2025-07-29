@@ -161,9 +161,8 @@ export function ClientProfileFormProvider({
         console.log("Form submission successful!");
         toast.success(result.message);
         localStorage.removeItem(FORM_STORAGE_KEY);
-        console.log("Local storage cleared");
         setTimeout(() => {
-          router.push("/dashboard");
+          router.push("/");
         }, 1500);
       } else {
         console.error("Form submission failed:", result.message);
