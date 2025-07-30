@@ -68,8 +68,31 @@ export default class ChatRoomsServer implements Party.Server {
     }
 
     if (request.method === "DELETE") {
-      // Clean up test rooms
+      const action = url.searchParams.get("action");
+
+      if (action === "cleanupEmptyRooms") {
+        return this.cleanupRoomsWithoutParticipantData();
+      }
+
+      if (action === "deleteRoom") {
+        const body = (await request.json()) as any;
+        return this.deleteRoom(body.roomId);
+      }
+
+      if (url.searchParams.get("action") === "debugStorage") {
+        return this.debugStorage();
+      }
+
+      // Default: Clean up test rooms
       return this.cleanupTestRooms();
+    }
+
+    if (url.searchParams.get("action") === "cleanupTestRooms") {
+      return this.cleanupTestRooms();
+    }
+
+    if (url.searchParams.get("action") === "cleanupEmptyRooms") {
+      return this.cleanupRoomsWithoutParticipantData();
     }
 
     return new Response("Method Not Allowed", { status: 405 });
@@ -78,19 +101,20 @@ export default class ChatRoomsServer implements Party.Server {
   async createRoom(request: CreateRoomRequest) {
     const { participants, createdBy, participantData } = request;
 
-    console.log(
-      "Creating room with participants:",
-      participants,
-      "createdBy:",
-      createdBy
-    );
+    console.log("🎈 PartyKit chatRooms: createRoom called");
+    console.log("🎈 PartyKit chatRooms: participants:", participants);
+    console.log("🎈 PartyKit chatRooms: createdBy:", createdBy);
+    console.log("🎈 PartyKit chatRooms: participantData:", participantData);
 
     if (
       !participants ||
       !Array.isArray(participants) ||
       participants.length < 2
     ) {
-      console.error("Invalid participants:", participants);
+      console.error(
+        "🎈 PartyKit chatRooms: Invalid participants:",
+        participants
+      );
       return new Response("Invalid participants", { status: 400 });
     }
 
@@ -98,13 +122,32 @@ export default class ChatRoomsServer implements Party.Server {
     const sortedParticipants = [...participants].sort();
     const roomId = `room-${sortedParticipants.join("-")}`;
 
-    console.log("Generated room ID:", roomId);
+    console.log("🎈 PartyKit chatRooms: Generated room ID:", roomId);
 
     const rooms =
       (await this.party.storage.get<Record<string, ChatRoom>>("rooms")) ?? {};
 
+    console.log("🎈 PartyKit chatRooms: Existing rooms:", Object.keys(rooms));
+
     // Check if room already exists
     if (rooms[roomId]) {
+      console.log("🎈 PartyKit chatRooms: Room already exists:", rooms[roomId]);
+
+      // Update existing room with participantData if it doesn't have it
+      if (
+        !rooms[roomId].participantData &&
+        participantData &&
+        participantData.length > 0
+      ) {
+        console.log(
+          "🎈 PartyKit chatRooms: Updating existing room with participantData"
+        );
+        rooms[roomId].participantData = participantData;
+        rooms[roomId].lastActivity = Date.now();
+        await this.party.storage.put("rooms", rooms);
+        console.log("🎈 PartyKit chatRooms: Updated room:", rooms[roomId]);
+      }
+
       return json({ roomId, exists: true, room: rooms[roomId] });
     }
 
@@ -118,20 +161,36 @@ export default class ChatRoomsServer implements Party.Server {
       connections: 0,
     };
 
+    console.log("🎈 PartyKit chatRooms: Creating new room:", newRoom);
+
     rooms[roomId] = newRoom;
     await this.party.storage.put("rooms", rooms);
+
+    console.log("🎈 PartyKit chatRooms: Room saved to storage");
 
     // Create the actual room party
     try {
       await this.party.context.parties.chatroom.get(roomId).fetch({
         method: "POST",
       });
-      console.log("Successfully created party for room:", roomId);
+      console.log(
+        "🎈 PartyKit chatRooms: Successfully created party for room:",
+        roomId
+      );
     } catch (error) {
-      console.error("Failed to create party for room:", roomId, error);
+      console.error(
+        "🎈 PartyKit chatRooms: Failed to create party for room:",
+        roomId,
+        error
+      );
       // Continue anyway, the room creation in storage succeeded
     }
 
+    console.log("🎈 PartyKit chatRooms: Returning room data:", {
+      roomId,
+      exists: false,
+      room: newRoom,
+    });
     return json({ roomId, exists: false, room: newRoom });
   }
 
@@ -156,15 +215,45 @@ export default class ChatRoomsServer implements Party.Server {
   }
 
   async getRoomsForUser(userId: string) {
+    console.log(
+      "🎈 PartyKit chatRooms: getRoomsForUser called for userId:",
+      userId
+    );
+
     const rooms =
       (await this.party.storage.get<Record<string, ChatRoom>>("rooms")) ?? {};
 
-    // Filter rooms where user is a participant
-    const userRooms = Object.values(rooms).filter((room) =>
-      room.participants.includes(userId)
+    console.log("🎈 PartyKit chatRooms: All stored rooms:", rooms);
+    console.log(
+      "🎈 PartyKit chatRooms: Total rooms count:",
+      Object.keys(rooms).length
     );
 
-    return json({ rooms: userRooms });
+    // Filter rooms where user is a participant
+    const userRooms = Object.values(rooms).filter((room) => {
+      const isParticipant = room.participants.includes(userId);
+      console.log(
+        `🎈 PartyKit chatRooms: Room ${room.id} - User ${userId} is participant:`,
+        isParticipant
+      );
+      console.log(
+        `🎈 PartyKit chatRooms: Room ${room.id} participants:`,
+        room.participants
+      );
+      console.log(
+        `🎈 PartyKit chatRooms: Room ${room.id} participantData:`,
+        room.participantData
+      );
+      return isParticipant;
+    });
+
+    console.log("🎈 PartyKit chatRooms: Filtered user rooms:", userRooms);
+    console.log("🎈 PartyKit chatRooms: User rooms count:", userRooms.length);
+
+    const result = { rooms: userRooms };
+    console.log("🎈 PartyKit chatRooms: Returning result:", result);
+
+    return json(result);
   }
 
   async getAllRooms() {
@@ -203,6 +292,66 @@ export default class ChatRoomsServer implements Party.Server {
       message: `Cleaned up ${deletedCount} test rooms`,
       remainingRooms: Object.keys(filteredRooms).length,
     });
+  }
+
+  async cleanupRoomsWithoutParticipantData() {
+    console.log(
+      "🎈 PartyKit chatRooms: Cleaning up rooms without participantData"
+    );
+
+    const rooms =
+      (await this.party.storage.get<Record<string, ChatRoom>>("rooms")) ?? {};
+
+    const roomsToDelete: string[] = [];
+
+    Object.entries(rooms).forEach(([roomId, room]) => {
+      if (!room.participantData || room.participantData.length === 0) {
+        console.log(
+          "🎈 PartyKit chatRooms: Marking room for deletion:",
+          roomId
+        );
+        roomsToDelete.push(roomId);
+      }
+    });
+
+    roomsToDelete.forEach((roomId) => {
+      delete rooms[roomId];
+    });
+
+    if (roomsToDelete.length > 0) {
+      await this.party.storage.put("rooms", rooms);
+      console.log("🎈 PartyKit chatRooms: Deleted rooms:", roomsToDelete);
+    }
+
+    return json({ deletedRooms: roomsToDelete });
+  }
+
+  async deleteRoom(roomId: string) {
+    console.log("🎈 PartyKit chatRooms: Deleting room:", roomId);
+
+    const rooms =
+      (await this.party.storage.get<Record<string, ChatRoom>>("rooms")) ?? {};
+
+    if (rooms[roomId]) {
+      delete rooms[roomId];
+      await this.party.storage.put("rooms", rooms);
+      console.log("🎈 PartyKit chatRooms: Room deleted from storage:", roomId);
+      return json({ success: true, deletedRoom: roomId });
+    } else {
+      console.log(
+        "🎈 PartyKit chatRooms: Room not found for deletion:",
+        roomId
+      );
+      return json({ success: false, error: "Room not found" });
+    }
+  }
+
+  async debugStorage() {
+    console.log("🎈 PartyKit chatRooms: Debug storage called");
+    const rooms =
+      await this.party.storage.get<Record<string, ChatRoom>>("rooms");
+    console.log("🎈 PartyKit chatRooms: All rooms in storage:", rooms);
+    return json({ allRooms: rooms });
   }
 }
 

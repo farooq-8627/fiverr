@@ -246,88 +246,83 @@ export default class ChatRoomServer implements Party.Server {
   /**
    * Executes when a new WebSocket connection is made to the room
    */
-  async onConnect(connection: ChatConnection) {
-    await this.ensureLoadMessages();
+  async onConnect(connection: ChatConnection, ctx: Party.ConnectionContext) {
+    console.log("📨 ChatRoom: New connection:", connection.id);
 
-    // Send the whole list of messages to user when they connect
-    connection.send(syncMessage(this.messages ?? []));
+    try {
+      // Get user data from query parameters
+      const url = new URL(ctx.request.url);
+      const userDataString = url.searchParams.get("userData");
 
-    // Send current room users
-    connection.send(roomUsersMessage(Array.from(this.users.values())));
+      if (!userDataString) {
+        console.error("📨 ChatRoom: No userData in connection query");
+        connection.close(1008, "Authentication required");
+        return;
+      }
 
-    // Keep track of connections
-    this.updateRoomList("enter", connection);
+      const userData = JSON.parse(userDataString);
+      console.log("📨 ChatRoom: User data from connection:", userData);
+
+      // Store user in connection state
+      connection.setState({
+        user: userData,
+        lastActivity: Date.now(),
+      });
+
+      // Store user in users map
+      this.users.set(userData.id, userData);
+
+      await this.ensureLoadMessages();
+
+      // Send the whole list of messages to user when they connect
+      connection.send(syncMessage(this.messages ?? []));
+
+      // Send current room users
+      connection.send(roomUsersMessage(Array.from(this.users.values())));
+
+      // Keep track of connections
+      this.updateRoomList("enter", connection);
+
+      console.log("📨 ChatRoom: User connected successfully:", userData.id);
+    } catch (error) {
+      console.error("📨 ChatRoom: Error in onConnect:", error);
+      connection.close(1011, "Authentication failed");
+    }
   }
 
-  async onMessage(messageString: string, connection: ChatConnection) {
-    const message = JSON.parse(messageString) as UserMessage | TypingMessage;
-    const user = connection.state?.user;
+  async onMessage(message: string, sender: ChatConnection) {
+    console.log("📨 ChatRoom: Received message:", message);
 
-    if (!isSessionValid(user)) {
-      return connection.send(
-        systemMessage("You must sign in to send messages to this room")
-      );
-    }
+    try {
+      const data = JSON.parse(message);
+      const user = sender.state?.user;
 
-    // Update user's last activity
-    connection.setState({
-      ...connection.state,
-      lastActivity: Date.now(),
-    });
-
-    // Handle typing indicator
-    if (message.type === "typing") {
-      const typingMsg = message as TypingMessage;
-      return this.handleTyping(user.id, typingMsg.isTyping);
-    }
-
-    // Handle user messages
-    if (message.type === "new" || message.type === "edit") {
-      if (message.text.length > 2000) {
-        return connection.send(
-          systemMessage("Message too long (max 2000 characters)")
-        );
+      if (!user) {
+        console.error("📨 ChatRoom: User not found for connection:", sender.id);
+        return;
       }
 
-      if (message.text.trim().length === 0) {
-        return connection.send(systemMessage("Message cannot be empty"));
+      switch (data.type) {
+        case "message":
+          await this.handleUserMessage(data, user, sender);
+          break;
+        case "typing":
+          await this.handleTyping(user.id, data.isTyping);
+          break;
+        case "delete_message":
+          await this.handleMessageDeletion(data, user);
+          break;
+        case "edit_message":
+          await this.handleMessageEdit(data, user);
+          break;
+        case "delete_room":
+          await this.handleRoomDeletion(data, user);
+          break;
+        default:
+          console.log("📨 ChatRoom: Unknown message type:", data.type);
       }
-
-      const payload = <Message>{
-        id: message.id ?? nanoid(),
-        from: {
-          id: user.id,
-          name: user.fullName,
-          avatar: user.avatar,
-        },
-        text: message.text.trim(),
-        at: Date.now(),
-        type: "text",
-      };
-
-      // Send new message to all connections
-      if (message.type === "new") {
-        this.party.broadcast(newMessage(payload));
-        this.messages!.push(payload);
-      }
-
-      // Send edited message to all connections
-      if (message.type === "edit") {
-        payload.edited = true;
-        this.party.broadcast(editMessage(payload));
-        this.messages = this.messages!.map((m) =>
-          m.id === message.id ? payload : m
-        );
-      }
-
-      // Persist the messages to storage
-      await this.party.storage.put("messages", this.messages);
-
-      // Automatically clear the room storage after period of inactivity
-      await this.party.storage.deleteAlarm();
-      await this.party.storage.setAlarm(
-        new Date().getTime() + DELETE_MESSAGES_AFTER_INACTIVITY_PERIOD
-      );
+    } catch (error) {
+      console.error("📨 ChatRoom: Error processing message:", error);
     }
   }
 
@@ -359,6 +354,181 @@ export default class ChatRoomServer implements Party.Server {
       await this.removeRoomMessages();
       await this.removeRoomFromRoomList(id);
     }
+  }
+
+  private async handleUserMessage(
+    data: any,
+    user: User,
+    sender: ChatConnection
+  ) {
+    if (!data.text || data.text.trim().length === 0) {
+      return sender.send(systemMessage("Message cannot be empty"));
+    }
+
+    if (data.text.length > 2000) {
+      return sender.send(
+        systemMessage("Message too long (max 2000 characters)")
+      );
+    }
+
+    const messageId = data.id || nanoid();
+    const payload = {
+      id: messageId,
+      from: {
+        id: user.id,
+        name: user.fullName,
+        avatar: user.avatar,
+      },
+      text: data.text.trim(),
+      at: Date.now(),
+      type: "text" as const,
+    };
+
+    // Send message to all connections
+    this.party.broadcast(JSON.stringify(payload));
+    this.messages!.push(payload);
+
+    // Persist messages to storage
+    await this.party.storage.put("messages", this.messages);
+  }
+
+  private async handleMessageDeletion(data: any, user: User) {
+    const { messageId } = data;
+
+    if (!messageId) {
+      console.error("📨 ChatRoom: No messageId provided for deletion");
+      return;
+    }
+
+    // Find the message to delete
+    const messageIndex = this.messages!.findIndex(
+      (msg) => msg.id === messageId
+    );
+    if (messageIndex === -1) {
+      console.error("📨 ChatRoom: Message not found for deletion:", messageId);
+      return;
+    }
+
+    const message = this.messages![messageIndex];
+
+    // Check if user owns the message
+    if (message.from.id !== user.id) {
+      console.error("📨 ChatRoom: User cannot delete message they don't own");
+      return;
+    }
+
+    // Remove message from array
+    this.messages!.splice(messageIndex, 1);
+
+    // Broadcast deletion to all users
+    this.party.broadcast(
+      JSON.stringify({
+        type: "message_deleted",
+        messageId: messageId,
+      })
+    );
+
+    // Persist updated messages
+    await this.party.storage.put("messages", this.messages);
+    console.log("📨 ChatRoom: Message deleted:", messageId);
+  }
+
+  private async handleMessageEdit(data: any, user: User) {
+    const { messageId, text } = data;
+
+    if (!messageId || !text) {
+      console.error("📨 ChatRoom: Missing messageId or text for edit");
+      return;
+    }
+
+    if (text.trim().length === 0) {
+      console.error("📨 ChatRoom: Cannot edit message to empty text");
+      return;
+    }
+
+    if (text.length > 2000) {
+      console.error("📨 ChatRoom: Edited message too long");
+      return;
+    }
+
+    // Find the message to edit
+    const messageIndex = this.messages!.findIndex(
+      (msg) => msg.id === messageId
+    );
+    if (messageIndex === -1) {
+      console.error("📨 ChatRoom: Message not found for editing:", messageId);
+      return;
+    }
+
+    const message = this.messages![messageIndex];
+
+    // Check if user owns the message
+    if (message.from.id !== user.id) {
+      console.error("📨 ChatRoom: User cannot edit message they don't own");
+      return;
+    }
+
+    // Update message
+    this.messages![messageIndex] = {
+      ...message,
+      text: text.trim(),
+      edited: true,
+      editedAt: Date.now(),
+    } as Message;
+
+    // Broadcast edit to all users
+    this.party.broadcast(
+      JSON.stringify({
+        type: "message_edited",
+        messageId: messageId,
+        text: text.trim(),
+        editedAt: Date.now(),
+      })
+    );
+
+    // Persist updated messages
+    await this.party.storage.put("messages", this.messages);
+    console.log("📨 ChatRoom: Message edited:", messageId);
+  }
+
+  private async handleRoomDeletion(data: any, user: User) {
+    console.log("📨 ChatRoom: Room deletion requested by user:", user.id);
+
+    // Clear all messages
+    this.messages = [];
+    await this.party.storage.put("messages", this.messages);
+
+    // Broadcast room deletion to all users
+    this.party.broadcast(
+      JSON.stringify({
+        type: "room_deleted",
+        roomId: this.party.id,
+        deletedBy: user.id,
+      })
+    );
+
+    // Optionally clear the room from the chatrooms storage
+    try {
+      const response = await fetch(
+        `http://localhost:1999/parties/chatrooms/chatrooms`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "deleteRoom",
+            roomId: this.party.id,
+          }),
+        }
+      );
+      console.log("📨 ChatRoom: Room deleted from chatrooms storage");
+    } catch (error) {
+      console.error(
+        "📨 ChatRoom: Failed to delete room from chatrooms storage:",
+        error
+      );
+    }
+
+    console.log("📨 ChatRoom: Room deleted successfully");
   }
 }
 

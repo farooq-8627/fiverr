@@ -1,3 +1,5 @@
+"use client";
+
 import {
   FileImage,
   Mic,
@@ -7,7 +9,7 @@ import {
   ThumbsUp,
 } from "lucide-react";
 import Link from "next/link";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState, useCallback, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Button, buttonVariants } from "../ui/button";
 import { cn } from "@/lib/utils";
@@ -27,21 +29,49 @@ export default function ChatBottombar({ isMobile }: ChatBottombarProps) {
   const { user } = useUser();
   const [message, setMessage] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
-
   const { sendMessage, startTyping, stopTyping, isConnected } = useChatStore();
-
-  const [isLoading, setisLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setMessage(event.target.value);
 
-    // Trigger typing indicator
+    // Debounced typing indicator
     if (event.target.value.trim()) {
-      startTyping();
+      if (!isTyping) {
+        setIsTyping(true);
+        startTyping();
+      }
+
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Set new timeout to stop typing after 1 second of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        setIsTyping(false);
+        stopTyping();
+      }, 1000);
     } else {
-      stopTyping();
+      if (isTyping) {
+        setIsTyping(false);
+        stopTyping();
+      }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     }
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleThumbsUp = () => {
     if (!isConnected) return;
@@ -54,7 +84,15 @@ export default function ChatBottombar({ isMobile }: ChatBottombarProps) {
     if (message.trim() && isConnected) {
       sendMessage(message.trim());
       setMessage("");
+
+      // Clear typing state
+      setIsTyping(false);
       stopTyping();
+
+      // Clear typing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
 
       if (inputRef.current) {
         inputRef.current.focus();
@@ -204,7 +242,7 @@ export default function ChatBottombar({ isMobile }: ChatBottombarProps) {
           <Button
             className="h-9 w-9 shrink-0"
             onClick={handleSend}
-            disabled={isLoading || !isConnected}
+            disabled={!isConnected}
             variant="ghost"
             size="icon"
           >
@@ -214,7 +252,7 @@ export default function ChatBottombar({ isMobile }: ChatBottombarProps) {
           <Button
             className="h-9 w-9 shrink-0"
             onClick={handleThumbsUp}
-            disabled={isLoading || !isConnected}
+            disabled={!isConnected}
             variant="ghost"
             size="icon"
           >

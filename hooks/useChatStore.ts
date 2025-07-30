@@ -3,16 +3,21 @@
 import { create } from "zustand";
 import { useUser } from "@clerk/nextjs";
 import PartySocket from "partysocket";
+import { client } from "@/sanity/lib/client";
 
 export interface Message {
-  id: number;
-  avatar: string;
-  name: string;
-  message?: string;
-  isLoading?: boolean;
-  timestamp?: string;
-  role?: string;
-  isLiked?: boolean;
+  id: string;
+  text: string;
+  from: {
+    id: string;
+    name: string;
+    avatar?: string;
+  };
+  at: number;
+  type?: "text" | "image" | "file";
+  edited?: boolean;
+  editedAt?: number;
+  status?: "sending" | "sent" | "delivered" | "read";
 }
 
 export interface ChatUser {
@@ -20,7 +25,8 @@ export interface ChatUser {
   clerkId?: string;
   fullName: string;
   username: string;
-  avatar: string;
+  email: string;
+  avatar?: string;
   isOnline?: boolean;
   lastSeen?: number;
 }
@@ -29,23 +35,37 @@ export interface ChatRoom {
   id: string;
   participants: string[];
   participantData?: { id: string; name: string; avatar?: string }[];
+  messages: Message[];
   lastActivity: number;
   createdAt: number;
-  messages: Message[];
   users: ChatUser[];
   typingUsers: Set<string>;
+}
+
+interface SelectedUserState {
+  name: string;
+  clerkId: string;
+  avatar?: string;
+  roomId: string;
+}
+
+interface MessageState {
+  messages: Message[];
+  lastSyncTimestamp: number;
 }
 
 interface ChatStore {
   messages: Message[];
   rooms: ChatRoom[];
   currentRoom: ChatRoom | null;
+  selectedUser: SelectedUserState | null;
   connectedUsers: ChatUser[];
   isConnected: boolean;
   isLoading: boolean;
   error: string | null;
   typingUsers: Set<string>;
   hasInitialResponse: boolean;
+  lastSyncTimestamp: number;
 
   // Socket connection
   socket: PartySocket | null;
@@ -53,10 +73,15 @@ interface ChatStore {
   // Actions
   setMessages: (messages: Message[]) => void;
   addMessage: (message: Message) => void;
-  updateMessage: (id: number, message: Partial<Message>) => void;
+  updateMessage: (messageId: string, updatedMessage: Partial<Message>) => void;
+  deleteMessage: (messageId: string) => void;
+  editMessage: (messageId: string, newText: string) => void;
+  deleteChat: () => void;
   setConnectedUsers: (users: ChatUser[]) => void;
   setTypingUsers: (users: Set<string>) => void;
   setHasInitialResponse: (hasInitialResponse: boolean) => void;
+  setLastSyncTimestamp: (timestamp: number) => void;
+  refreshRooms: () => Promise<void>;
 
   // Real-time messaging actions
   connectToRoom: (roomId: string, userData: any) => void;
@@ -70,33 +95,118 @@ interface ChatStore {
   ) => Promise<string>;
   switchRoom: (roomId: string) => void;
   loadUserRooms: (userId: string) => Promise<void>;
+
+  // New persistence actions
+  setSelectedUser: (user: SelectedUserState | null, userId?: string) => void;
+  restoreSelectedChat: (userId: string) => Promise<void>;
+  clearSelectedUser: (userId: string) => void;
+}
+
+interface MessageUpdate extends Partial<Message> {
+  status?: "sending" | "sent" | "delivered" | "read";
 }
 
 const useChatStore = create<ChatStore>((set, get) => ({
   messages: [],
   rooms: [],
   currentRoom: null,
+  selectedUser: null,
   connectedUsers: [],
   isConnected: false,
   isLoading: false,
   error: null,
   typingUsers: new Set(),
   hasInitialResponse: false,
+  lastSyncTimestamp: 0,
   socket: null,
 
-  setMessages: (messages) => set({ messages }),
+  setMessages: (messages) => {
+    console.log("🏪 useChatStore: Setting messages, count:", messages.length);
+    set({ messages: messages.sort((a, b) => a.at - b.at) });
+  },
 
-  addMessage: (message) =>
-    set((state) => ({
-      messages: [...state.messages, message],
-    })),
+  addMessage: (message: Message) => {
+    const { messages } = get();
+    const existingIndex = messages.findIndex((m) => m.id === message.id);
 
-  updateMessage: (id, updates) =>
-    set((state) => ({
-      messages: state.messages.map((msg) =>
-        msg.id === id ? { ...msg, ...updates } : msg
-      ),
-    })),
+    if (existingIndex !== -1) {
+      // Update existing message - preserve important fields
+      const existingMessage = messages[existingIndex];
+      const updatedMessages = [...messages];
+
+      updatedMessages[existingIndex] = {
+        ...existingMessage,
+        ...message,
+        // Preserve status if the new message doesn't have a status or has a "lower" status
+        status: message.status || existingMessage.status,
+        // Always use the most recent timestamp
+        at: message.at || existingMessage.at,
+      };
+
+      set({ messages: updatedMessages });
+      return;
+    }
+
+    // Add new message
+    const newMessages = [...messages, message].sort((a, b) => a.at - b.at);
+
+    set({ messages: newMessages });
+  },
+
+  updateMessage: (messageId: string, update: MessageUpdate) => {
+    set((state) => {
+      const messageIndex = state.messages.findIndex((m) => m.id === messageId);
+      if (messageIndex === -1) {
+        return state;
+      }
+
+      const oldMessage = state.messages[messageIndex];
+      const updatedMessages = [...state.messages];
+      updatedMessages[messageIndex] = {
+        ...oldMessage,
+        ...update,
+      };
+
+      return { messages: updatedMessages };
+    });
+  },
+
+  deleteMessage: (messageId: string) => {
+    const { socket } = get();
+    if (!socket) return;
+
+    socket.send(
+      JSON.stringify({
+        type: "delete_message",
+        messageId: messageId,
+      })
+    );
+  },
+
+  editMessage: (messageId: string, newText: string) => {
+    const { socket } = get();
+    if (!socket) return;
+
+    socket.send(
+      JSON.stringify({
+        type: "edit_message",
+        messageId: messageId,
+        text: newText,
+      })
+    );
+  },
+
+  deleteChat: () => {
+    const { socket, currentRoom } = get();
+    if (!socket || !currentRoom) return;
+
+    socket.send(
+      JSON.stringify({
+        type: "delete_room",
+        roomId: currentRoom.id,
+      })
+    );
+  },
 
   setConnectedUsers: (users) => set({ connectedUsers: users }),
 
@@ -104,158 +214,238 @@ const useChatStore = create<ChatStore>((set, get) => ({
 
   setHasInitialResponse: (hasInitialResponse) => set({ hasInitialResponse }),
 
-  connectToRoom: (roomId: string, userData: any) => {
+  setLastSyncTimestamp: (timestamp) => set({ lastSyncTimestamp: timestamp }),
+
+  refreshRooms: async () => {
     const { socket } = get();
+    if (!socket) return;
 
-    // Disconnect existing connection
-    if (socket) {
-      socket.close();
+    // Get current user ID from socket
+    const url = new URL(socket.url);
+    const userDataString = url.searchParams.get("userData");
+    if (userDataString) {
+      try {
+        const userData = JSON.parse(userDataString);
+
+        const { loadUserRooms } = get();
+        await loadUserRooms(userData.id);
+      } catch (error) {
+        console.error("🏪 useChatStore: Failed to refresh rooms:", error);
+      }
     }
+  },
 
+  connectToRoom: async (roomId: string, userData: any) => {
     try {
-      const partyHost =
-        process.env.NEXT_PUBLIC_PARTYKIT_HOST || "localhost:1999";
+      const { socket } = get();
+      if (socket) {
+        socket.close();
+      }
 
-      const newSocket = new PartySocket({
-        host: partyHost,
+      // Fetch current user's profile from Sanity for complete data
+      let enhancedUserData = userData;
+      try {
+        const query = `*[_type == "user" && clerkId == $clerkId][0]{
+          _id,
+          clerkId,
+          personalDetails,
+          coreIdentity
+        }`;
+
+        const profile = await client.fetch(query, { clerkId: userData.id });
+        if (profile) {
+          enhancedUserData = {
+            ...userData,
+            fullName: profile.coreIdentity?.fullName || userData.fullName,
+            avatar:
+              profile.personalDetails?.profilePicture?.asset?.url ||
+              userData.avatar,
+          };
+        }
+      } catch (error) {
+        console.error(
+          "🏪 useChatStore: Failed to fetch user profile from Sanity:",
+          error
+        );
+      }
+
+      const partySocket = new PartySocket({
+        host: process.env.NEXT_PUBLIC_PARTYKIT_HOST || "localhost:1999",
         room: roomId,
         party: "chatroom",
         query: {
-          userData: JSON.stringify(userData),
+          userData: JSON.stringify(enhancedUserData),
         },
       });
 
-      newSocket.addEventListener("open", () => {
-        set({ isConnected: true, error: null });
-      });
+      partySocket.onopen = () => {
+        set({
+          isConnected: true,
+          currentRoom: {
+            id: roomId,
+            participants: [],
+            messages: [],
+            lastActivity: Date.now(),
+            createdAt: Date.now(),
+            users: [],
+            typingUsers: new Set(),
+          },
+        });
+      };
 
-      newSocket.addEventListener("message", (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          const state = get();
+      partySocket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
 
-          switch (data.type) {
-            case "sync":
-              // Convert PartyKit messages to our format
-              const convertedMessages = (data.messages || []).map(
-                (msg: any, index: number) => ({
-                  id: index + 1,
-                  avatar: msg.from.avatar || "/default-avatar.png",
-                  name: msg.from.name || "Unknown",
-                  message: msg.text,
-                  timestamp: new Date(msg.at).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  }),
-                  role: msg.from.id === userData.id ? "user" : "other",
-                })
-              );
+        switch (message.type) {
+          case "sync": {
+            const syncedMessages = message.messages || [];
+            const currentMessages = get().messages;
+            const { lastSyncTimestamp } = get();
 
-              set({
-                messages: convertedMessages,
-                hasInitialResponse: true,
+            // Create maps for efficient lookup
+            const currentMessageMap = new Map<string, Message>(
+              currentMessages.map((msg: Message) => [msg.id, msg])
+            );
+            const syncedMessageMap = new Map<string, Message>(
+              syncedMessages.map((msg: Message) => [msg.id, msg])
+            );
+
+            // Merge messages, preserving local state for messages we already have
+            const mergedMessages = new Map<string, Message>();
+
+            // First, add all synced messages
+            syncedMessages.forEach((msg: Message) => {
+              const existingMsg = currentMessageMap.get(msg.id);
+              mergedMessages.set(msg.id, {
+                ...msg,
+                status: existingMsg?.status || "delivered",
               });
-              break;
+            });
 
-            case "new":
-              // Add new message
-              const newMessage: Message = {
-                id: state.messages.length + 1,
-                avatar: data.from.avatar || "/default-avatar.png",
-                name: data.from.name || "Unknown",
-                message: data.text,
-                timestamp: new Date(data.at).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                }),
-                role: data.from.id === userData.id ? "user" : "other",
-              };
-
-              set((state) => ({
-                messages: [...state.messages, newMessage],
-              }));
-              break;
-
-            case "edit":
-              // Update existing message
-              set((state) => ({
-                messages: state.messages.map((msg) => {
-                  // Find message by comparing content and timestamp (since we don't have direct ID mapping)
-                  if (
-                    msg.message === data.text ||
-                    (msg.timestamp &&
-                      new Date(data.at).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }) === msg.timestamp)
-                  ) {
-                    return {
-                      ...msg,
-                      message: data.text,
-                      timestamp: new Date(data.at).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      }),
-                    };
-                  }
-                  return msg;
-                }),
-              }));
-              break;
-
-            case "room_users":
-              set({ connectedUsers: data.users || [] });
-              break;
-
-            case "typing":
-              const typingUsers = new Set(state.typingUsers);
-              if (data.isTyping) {
-                typingUsers.add(data.from);
-              } else {
-                typingUsers.delete(data.from);
+            // Then, add any local messages that aren't in the sync
+            currentMessages.forEach((msg: Message) => {
+              if (!syncedMessageMap.has(msg.id) && msg.at > lastSyncTimestamp) {
+                mergedMessages.set(msg.id, msg);
               }
-              set({ typingUsers });
-              break;
+            });
 
-            case "user_status":
-              // Update user online status
-              set((state) => ({
-                connectedUsers: state.connectedUsers.map((user) =>
-                  user.id === data.userId
-                    ? {
-                        ...user,
-                        isOnline: data.isOnline,
-                        lastSeen: data.lastSeen,
-                      }
-                    : user
-                ),
-              }));
-              break;
+            // Convert to array and sort
+            const finalMessages = Array.from(mergedMessages.values()).sort(
+              (a, b) => a.at - b.at
+            );
 
-            case "clear":
-              set({ messages: [] });
-              break;
+            set({
+              messages: finalMessages,
+              lastSyncTimestamp: Math.max(
+                ...syncedMessages.map((msg: Message) => msg.at),
+                lastSyncTimestamp
+              ),
+            });
+            break;
           }
-        } catch (err) {
-          console.error("Failed to parse message:", err);
+
+          case "text": {
+            const { socket, addMessage, updateMessage } = get();
+            let currentUserId = "unknown";
+
+            if (socket) {
+              const url = new URL(socket.url);
+              const userDataString = url.searchParams.get("userData");
+              if (userDataString) {
+                try {
+                  const userData = JSON.parse(userDataString);
+                  currentUserId = userData.id;
+                } catch (error) {
+                  console.error("Failed to parse user data:", error);
+                }
+              }
+            }
+
+            const isOwnMessage = message.from.id === currentUserId;
+
+            if (isOwnMessage) {
+              // This is our own message coming back from server
+              updateMessage(message.id, {
+                status: "delivered",
+                at: message.at, // Update with server timestamp
+              });
+            } else {
+              // This is a message from another user - add it immediately
+              const incomingMessage: Message = {
+                ...message,
+                status: "received",
+              };
+              addMessage(incomingMessage);
+            }
+            break;
+          }
+
+          case "message_deleted":
+            const { messages } = get();
+            set({
+              messages: messages.filter((msg) => msg.id !== message.messageId),
+            });
+            break;
+          case "message_edited":
+            const { updateMessage } = get();
+            updateMessage(message.messageId, {
+              text: message.text,
+              edited: true,
+              editedAt: message.editedAt,
+            });
+            break;
+          case "room_deleted":
+            const { currentRoom } = get();
+
+            // Remove the room from the rooms array
+            set((state) => ({
+              rooms: state.rooms.filter((room) => room.id !== currentRoom?.id),
+              currentRoom: null,
+              messages: [],
+              isConnected: false,
+            }));
+
+            // Disconnect the socket
+            const { socket } = get();
+            if (socket) {
+              socket.close();
+              set({ socket: null });
+            }
+
+            // Redirect to main messaging page
+            if (typeof window !== "undefined") {
+              window.location.href = "/messaging";
+            }
+            break;
+          case "room_users":
+            const { setConnectedUsers } = get();
+            setConnectedUsers(message.users || []);
+            break;
+          case "typing":
+            const { typingUsers, setTypingUsers } = get();
+            if (message.isTyping) {
+              typingUsers.add(message.userId);
+            } else {
+              typingUsers.delete(message.userId);
+            }
+            setTypingUsers(new Set(typingUsers));
+            break;
         }
-      });
+      };
 
-      newSocket.addEventListener("error", (event) => {
-        console.error("Socket error:", event);
-        set({ error: "Connection error", isConnected: false });
-      });
+      partySocket.onerror = (error) => {
+        console.error("🏪 useChatStore: Socket error:", error);
+        set({ isConnected: false, error: "Connection error" });
+      };
 
-      newSocket.addEventListener("close", () => {
+      partySocket.onclose = () => {
         set({ isConnected: false });
-      });
+      };
 
-      set({ socket: newSocket });
-    } catch (err) {
-      set({
-        error: err instanceof Error ? err.message : "Failed to connect",
-        isConnected: false,
-      });
+      set({ socket: partySocket });
+    } catch (error) {
+      console.error("🏪 useChatStore: Failed to connect to room:", error);
+      set({ error: "Failed to connect to chat room" });
     }
   },
 
@@ -268,16 +458,58 @@ const useChatStore = create<ChatStore>((set, get) => ({
   },
 
   sendMessage: (text: string) => {
-    const { socket } = get();
+    const { socket, addMessage } = get();
     if (!socket || !text.trim()) return;
 
-    const message = {
-      type: "new",
-      text: text.trim(),
-      id: `msg-${Date.now()}-${Math.random().toString(36).substring(2)}`,
+    // Get current user data from socket connection
+    const url = new URL(socket.url);
+    const userDataString = url.searchParams.get("userData");
+    let currentUser: any = {
+      id: "unknown",
+      name: "Unknown User",
+      avatar: "",
     };
 
-    socket.send(JSON.stringify(message));
+    if (userDataString) {
+      try {
+        currentUser = JSON.parse(userDataString);
+      } catch (error) {
+        console.error("Failed to parse user data:", error);
+      }
+    }
+
+    const messageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2)}`;
+
+    // Add message to local state immediately with "sending" status
+    const localMessage: Message = {
+      id: messageId,
+      text: text.trim(),
+      from: {
+        id: currentUser.id,
+        name: currentUser.fullName || currentUser.name || "You",
+        avatar: currentUser.avatar,
+      },
+      at: Date.now(),
+      type: "text",
+      status: "sending",
+    };
+
+    addMessage(localMessage);
+
+    // Send to server
+    const serverMessage = {
+      type: "message",
+      text: text.trim(),
+      id: messageId,
+    };
+
+    socket.send(JSON.stringify(serverMessage));
+
+    // Update status to "sent" after a brief delay
+    setTimeout(() => {
+      const { updateMessage } = get();
+      updateMessage(messageId, { status: "sent" });
+    }, 100);
   },
 
   startTyping: () => {
@@ -316,25 +548,45 @@ const useChatStore = create<ChatStore>((set, get) => ({
     participantData?: { id: string; name: string; avatar?: string }[]
   ): Promise<string> => {
     try {
+      const requestBody = {
+        participants: participantIds,
+        createdBy: participantIds[0], // Assuming first participant is creator
+        participantData: participantData || [], // Include user profile data
+      };
+
       const response = await fetch(`/api/messaging/rooms`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          participants: participantIds,
-          createdBy: participantIds[0], // Assuming first participant is creator
-          participantData: participantData || [], // Include user profile data
-        }),
+        credentials: "include",
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create room");
+        const errorText = await response.text();
+        console.error("🏪 useChatStore: API error response:", errorText);
+        console.error("🏪 useChatStore: Full response object:", response);
+        throw new Error(
+          `Failed to create room: ${response.status} - ${errorText}`
+        );
       }
 
-      const { roomId } = await response.json();
+      const responseData = await response.json();
+
+      const { roomId } = responseData;
+      if (!roomId) {
+        console.error("🏪 useChatStore: No roomId in response:", responseData);
+        throw new Error("No roomId received from server");
+      }
+
       return roomId;
     } catch (err) {
+      console.error("🏪 useChatStore: Error in createOrJoinRoom:", err);
+      console.error(
+        "🏪 useChatStore: Error stack:",
+        err instanceof Error ? err.stack : undefined
+      );
       set({
         error: err instanceof Error ? err.message : "Failed to create room",
       });
@@ -354,13 +606,18 @@ const useChatStore = create<ChatStore>((set, get) => ({
   loadUserRooms: async (userId: string) => {
     try {
       set({ isLoading: true });
-      const response = await fetch(`/api/messaging/rooms?userId=${userId}`);
+
+      const url = `/api/messaging/rooms?userId=${userId}`;
+
+      const response = await fetch(url);
+
       if (response.ok) {
-        const { rooms: userRooms } = await response.json();
-        const formattedRooms = userRooms.map((room: any) => ({
-          ...room,
-          messages: [],
-          users:
+        const responseData = await response.json();
+
+        const { rooms: userRooms } = responseData;
+
+        const formattedRooms = userRooms.map((room: any) => {
+          const users =
             room.participantData?.map(
               (participant: { id: string; name: string; avatar?: string }) => ({
                 id: participant.id,
@@ -368,17 +625,113 @@ const useChatStore = create<ChatStore>((set, get) => ({
                 avatar: participant.avatar || "/default-avatar.png",
                 username: participant.name,
               })
-            ) || [],
-          typingUsers: new Set(),
-        }));
+            ) || [];
+
+          return {
+            ...room,
+            messages: [],
+            users: users,
+            typingUsers: new Set(),
+          };
+        });
+
         set({ rooms: formattedRooms });
+      } else {
+        const errorText = await response.text();
+        console.error("🏪 useChatStore: loadUserRooms API error:", errorText);
       }
     } catch (err) {
-      console.error("Failed to load rooms:", err);
+      console.error("🏪 useChatStore: Failed to load rooms:", err);
       set({ error: "Failed to load conversations" });
     } finally {
       set({ isLoading: false });
     }
+  },
+
+  // New persistence actions
+  setSelectedUser: (user, userId) => {
+    if (userId && user) {
+      try {
+        localStorage.setItem(`selectedUser_${userId}`, JSON.stringify(user));
+        console.log(
+          "🏪 useChatStore: Saved selectedUser to localStorage:",
+          user
+        );
+      } catch (e) {
+        console.error(
+          "🏪 useChatStore: Failed to save selectedUser to localStorage:",
+          e
+        );
+      }
+    } else if (userId && !user) {
+      // Remove from localStorage if user is null
+      try {
+        localStorage.removeItem(`selectedUser_${userId}`);
+        console.log("🏪 useChatStore: Removed selectedUser from localStorage");
+      } catch (e) {
+        console.error(
+          "🏪 useChatStore: Failed to remove selectedUser from localStorage:",
+          e
+        );
+      }
+    }
+    set({ selectedUser: user });
+  },
+
+  restoreSelectedChat: async (userId) => {
+    console.log(
+      "🏪 useChatStore: Attempting to restore selected chat for user:",
+      userId
+    );
+
+    // Only proceed if we're in browser environment
+    if (typeof window === "undefined") {
+      console.log(
+        "🏪 useChatStore: Not in browser environment, skipping restore"
+      );
+      return;
+    }
+
+    try {
+      const storedUser = localStorage.getItem(`selectedUser_${userId}`);
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        console.log("🏪 useChatStore: Found stored selectedUser:", parsedUser);
+
+        // Validate that the stored user has the required properties
+        if (parsedUser.name && parsedUser.clerkId && parsedUser.roomId) {
+          set({ selectedUser: parsedUser });
+          console.log("🏪 useChatStore: Successfully restored selectedUser");
+        } else {
+          console.warn(
+            "🏪 useChatStore: Stored selectedUser is invalid, clearing localStorage"
+          );
+          localStorage.removeItem(`selectedUser_${userId}`);
+        }
+      } else {
+        console.log("🏪 useChatStore: No stored selectedUser found");
+      }
+    } catch (e) {
+      console.error(
+        "🏪 useChatStore: Failed to restore selectedUser from localStorage:",
+        e
+      );
+      // Clear corrupted data
+      try {
+        localStorage.removeItem(`selectedUser_${userId}`);
+      } catch (clearError) {
+        console.error(
+          "🏪 useChatStore: Failed to clear corrupted localStorage data:",
+          clearError
+        );
+      }
+    }
+  },
+
+  clearSelectedUser: (userId) => {
+    localStorage.removeItem(`selectedUser_${userId}`);
+    set({ selectedUser: null });
+    console.log("🏪 useChatStore: Cleared selected user for userId:", userId);
   },
 }));
 

@@ -1,51 +1,93 @@
 import React from "react";
 import { Avatar, AvatarImage } from "../ui/avatar";
-import { UserData } from "@/components/mesaging/data";
-import { Info, Phone, Video } from "lucide-react";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
-import { buttonVariants } from "../ui/button";
-import { ExpandableChatHeader } from "./chat/expandable-chat";
+import { Button } from "../ui/button";
+import { Info, Phone, Video, Trash2 } from "lucide-react";
+import useChatStore from "@/hooks/useChatStore";
 
 interface ChatTopbarProps {
-  selectedUser: UserData;
+  selectedUser: any;
 }
 
-export const TopbarIcons = [{ icon: Phone }, { icon: Video }, { icon: Info }];
-
 export default function ChatTopbar({ selectedUser }: ChatTopbarProps) {
+  const { deleteChat, typingUsers, connectedUsers } = useChatStore();
+
+  const handleDeleteChat = () => {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this entire chat? This action cannot be undone."
+      )
+    ) {
+      deleteChat();
+    }
+  };
+
+  const isTyping = typingUsers.has(selectedUser.clerkId);
+  const otherUser = connectedUsers.find(
+    (user) => user.id === selectedUser.clerkId
+  );
+  const isOnline = otherUser?.isOnline;
+  const lastSeen = otherUser?.lastSeen;
+
+  const formatLastSeen = (timestamp?: number) => {
+    if (!timestamp) return "";
+    const now = Date.now();
+    const diff = now - timestamp;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return "last seen just now";
+    if (minutes < 60) return `last seen ${minutes}m ago`;
+    if (hours < 24) return `last seen ${hours}h ago`;
+    return `last seen ${days}d ago`;
+  };
+
+  const getStatusText = () => {
+    if (isTyping) return "typing...";
+    if (isOnline) return "online";
+    if (lastSeen) return formatLastSeen(lastSeen);
+    return "";
+  };
+
   return (
-    <ExpandableChatHeader>
+    <div className="flex justify-between items-center p-4 border-b">
       <div className="flex items-center gap-2">
         <Avatar className="flex justify-center items-center">
           <AvatarImage
-            src={selectedUser.avatar}
+            src={selectedUser.avatar || "/default-avatar.png"}
             alt={selectedUser.name}
             width={6}
             height={6}
-            className="w-10 h-10 "
+            className="w-10 h-10"
           />
         </Avatar>
         <div className="flex flex-col">
           <span className="font-medium">{selectedUser.name}</span>
-          <span className="text-xs">Active 2 mins ago</span>
+          {getStatusText() && (
+            <span
+              className={`text-xs ${
+                isTyping ? "text-green-500" : "text-muted-foreground"
+              }`}
+            >
+              {getStatusText()}
+            </span>
+          )}
         </div>
       </div>
-
       <div className="flex gap-1">
-        {TopbarIcons.map((icon, index) => (
-          <Link
-            key={index}
-            href="#"
-            className={cn(
-              buttonVariants({ variant: "ghost", size: "icon" }),
-              "h-9 w-9"
-            )}
-          >
-            <icon.icon size={20} className="text-muted-foreground" />
-          </Link>
-        ))}
+        <Button variant="ghost" size="icon">
+          <Phone className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon">
+          <Video className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon">
+          <Info className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" onClick={handleDeleteChat}>
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </div>
-    </ExpandableChatHeader>
+    </div>
   );
 }

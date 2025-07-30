@@ -2,16 +2,16 @@ import { User } from "./auth";
 
 export interface Message {
   id: string;
-  text: string;
   from: {
     id: string;
-    name?: string;
+    name: string;
     avatar?: string;
   };
+  text: string;
   at: number;
   type?: "text" | "image" | "file";
   edited?: boolean;
-  reactions?: Record<string, string[]>; // emoji -> user ids
+  editedAt?: number;
 }
 
 export interface UserMessage {

@@ -11,7 +11,7 @@ import {
   TooltipProvider,
 } from "@/components/mesaging/ui/tooltip";
 import { Avatar, AvatarImage } from "./ui/avatar";
-import { Message } from "@/components/mesaging/data";
+import { Message } from "@/hooks/useChatStore";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -142,11 +142,9 @@ export function Sidebar({
                 <span className="font-medium">{chat.name}</span>
                 {chat.messages.length > 0 && (
                   <span className="text-zinc-300 text-xs truncate ">
-                    {chat.messages[chat.messages.length - 1].name.split(" ")[0]}
-                    :{" "}
-                    {chat.messages[chat.messages.length - 1].isLoading
-                      ? "Typing..."
-                      : chat.messages[chat.messages.length - 1].message}
+                    {chat.messages[chat.messages.length - 1].from?.name ||
+                      "Unknown"}
+                    : {chat.messages[chat.messages.length - 1].text || ""}
                   </span>
                 )}
               </div>

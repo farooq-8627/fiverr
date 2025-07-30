@@ -1,92 +1,52 @@
-import { Message, UserData } from "@/components/mesaging/data";
-import React from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import {
-  ChatBubbleAvatar,
-  ChatBubbleMessage,
-  ChatBubble,
-  ChatBubbleAction,
-  ChatBubbleActionWrapper,
-} from "./chat/chat-bubble";
-import { ChatMessageList } from "./chat/chat-message-list";
-import { DotsVerticalIcon } from "@radix-ui/react-icons";
-import { Forward, Heart } from "lucide-react";
+import React, { useEffect, useRef, useCallback } from "react";
+import { ChatMessage } from "./chat-message";
+import { Message } from "@/hooks/useChatStore";
+import { useUser } from "@clerk/nextjs";
 
 interface ChatListProps {
   messages: Message[];
-  selectedUser: UserData;
-  sendMessage: (newMessage: Message) => void;
+  selectedUser: any;
   isMobile: boolean;
 }
 
-const getMessageVariant = (messageName: string, selectedUserName: string) =>
-  messageName !== selectedUserName ? "sent" : "received";
+export function ChatList({ messages, selectedUser, isMobile }: ChatListProps) {
+  const { user } = useUser();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-export function ChatList({
-  messages,
-  selectedUser,
-  sendMessage,
-  isMobile,
-}: ChatListProps) {
-  const actionIcons = [
-    { icon: DotsVerticalIcon, type: "More" },
-    { icon: Forward, type: "Like" },
-    { icon: Heart, type: "Share" },
-  ];
+  const scrollToBottom = useCallback(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, []);
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
   return (
-    <div className="w-full overflow-y-hidden h-full flex flex-col">
-      <ChatMessageList>
-        <AnimatePresence>
-          {messages.map((message, index) => {
-            const variant = getMessageVariant(message.name, selectedUser.name);
-            return (
-              <motion.div
-                key={index}
-                layout
-                initial={{ opacity: 0, scale: 1, y: 50, x: 0 }}
-                animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
-                exit={{ opacity: 0, scale: 1, y: 1, x: 0 }}
-                transition={{
-                  opacity: { duration: 0.1 },
-                  layout: {
-                    type: "spring",
-                    bounce: 0.3,
-                    duration: index * 0.05 + 0.2,
-                  },
-                }}
-                style={{ originX: 0.5, originY: 0.5 }}
-                className="flex flex-col gap-2 p-4"
-              >
-                {/* Usage of ChatBubble component */}
-                <ChatBubble variant={variant}>
-                  {/* <ChatBubbleAvatar src={message.avatar} /> */}
-                  <ChatBubbleMessage
-                    isLoading={message.isLoading}
-                    timestamp={message.timestamp}
-                  >
-                    {message.message}
-                  </ChatBubbleMessage>
-                  <ChatBubbleActionWrapper>
-                    {actionIcons.map(({ icon: Icon, type }) => (
-                      <ChatBubbleAction
-                        className="size-7"
-                        key={type}
-                        icon={<Icon className="size-4" />}
-                        onClick={() =>
-                          console.log(
-                            "Action " + type + " clicked for message " + index
-                          )
-                        }
-                      />
-                    ))}
-                  </ChatBubbleActionWrapper>
-                </ChatBubble>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
-      </ChatMessageList>
+    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {messages.length === 0 ? (
+        <div className="flex items-center justify-center h-full text-center">
+          <div>
+            <p className="text-muted-foreground">No messages yet</p>
+            <p className="text-sm text-muted-foreground">
+              Start the conversation!
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {messages.map((message) => (
+            <ChatMessage
+              key={`${message.id}-${message.status}`}
+              message={message}
+              isOwn={message.from.id === user?.id}
+            />
+          ))}
+          <div ref={messagesEndRef} />
+        </>
+      )}
     </div>
   );
 }

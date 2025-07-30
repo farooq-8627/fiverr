@@ -183,6 +183,7 @@ export function CompanyCard({ company, className }: CompanyCardProps) {
               <UserMessageButton
                 targetUserId={company.createdBy}
                 targetUserName={company.name}
+                targetUserAvatar={company.logo?.asset?.url}
                 variant="outline"
                 size="sm"
                 className="flex items-center gap-2 text-xs sm:text-sm p-2 rounded-full"
